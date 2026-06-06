@@ -43,6 +43,7 @@ class ParametroSistema(ModeloSaaS):
         ('TAXA_JUROS_MENSAL', 'Financeiro - Taxa de Juros Mensal (%)'),
         ('PLANO_CONTAS_MENSALIDADE_ID', 'Financeiro - ID Plano Contas (Mensalidade)'),
         ('PLANO_CONTAS_JUROS_ID', 'Financeiro - ID Plano Contas (Juros/Multa)'),
+        ('PLANO_CONTAS_SERVICOS_ID', 'Serviços - ID Plano Contas (Receita de Serviços)'),
     ]
 
     chave = models.CharField(max_length=100, choices=CHAVES_CHOICES)

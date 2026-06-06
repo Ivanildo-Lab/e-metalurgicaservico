@@ -149,6 +149,46 @@
 
                     </ul>
                 </li>
+
+                <!-- 5. SERVIÇOS (MENU DROP-DOWN) -->
+                <li>
+                    <button type="button" onclick="toggleMenu('servicos-menu')" class="w-full flex items-center justify-between py-3 px-4 text-gray-300 hover:text-white sidebar-hover transition-all focus:outline-none {% if '/servicos/' in request.path %}text-white bg-black/10{% endif %}">
+                        <div class="flex items-center">
+                            <i class="fa fa-tools w-6 text-center text-lg"></i>
+                            <span class="ml-2 font-medium">Serviços</span>
+                        </div>
+                        <i id="servicos-arrow" class="fa fa-angle-right transition-transform duration-200 text-xs {% if '/servicos/' in request.path %}rotate-90{% endif %}"></i>
+                    </button>
+                    
+                    <!-- Sub-itens Serviços -->
+                    <ul id="servicos-menu" class="bg-black/20 overflow-hidden transition-all duration-300 {% if '/servicos/' not in request.path %}hidden{% endif %}">
+                        <li>
+                            <a href="{% url 'servicos:lista_ordens' %}" class="flex items-center py-2 pl-12 pr-4 text-gray-400 hover:text-white text-xs hover:bg-white/5 border-l-2 border-transparent hover:border-indigo-400 {% if 'ordens' in request.path %}text-white font-bold{% endif %}">
+                                <i class="fa fa-wrench mr-2 w-3"></i> Ordens de Serviço
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'servicos:lista_funcionarios' %}" class="flex items-center py-2 pl-12 pr-4 text-gray-400 hover:text-white text-xs hover:bg-white/5 border-l-2 border-transparent hover:border-teal-400 {% if 'funcionarios' in request.path %}text-white font-bold{% endif %}">
+                                <i class="fa fa-hard-hat mr-2 w-3"></i> Funcionários
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'servicos:lista_metas' %}" class="flex items-center py-2 pl-12 pr-4 text-gray-400 hover:text-white text-xs hover:bg-white/5 border-l-2 border-transparent hover:border-orange-400 {% if 'metas' in request.path %}text-white font-bold{% endif %}">
+                                <i class="fa fa-bullseye mr-2 w-3"></i> Metas
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'servicos:relatorio_mensal' ano=current_year mes=current_month %}" target="_blank" class="flex items-center py-2 pl-12 pr-4 text-gray-400 hover:text-white text-xs hover:bg-white/5 border-l-2 border-transparent hover:border-yellow-400">
+                                <i class="fa fa-chart-bar mr-2 w-3"></i> Relatório Mensal
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'servicos:relatorio_anual' ano=current_year %}" target="_blank" class="flex items-center py-2 pl-12 pr-4 text-gray-400 hover:text-white text-xs hover:bg-white/5 border-l-2 border-transparent hover:border-red-400">
+                                <i class="fa fa-calendar-alt mr-2 w-3"></i> Relatório Anual
+                            </a>
+                        </li>
+                    </ul>
+                </li>
             </ul>
         </nav>
     </aside>

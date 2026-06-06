@@ -10,6 +10,7 @@ urlpatterns = [
     # Rotas dos Apps
     path('cadastros/', include('cadastros.urls')),
     path('financeiro/', include('financeiro.urls')),
+    path('servicos/', include('servicos.urls')),
     
     # O App WEB assume a raiz do site
     path('', include('web.urls')),

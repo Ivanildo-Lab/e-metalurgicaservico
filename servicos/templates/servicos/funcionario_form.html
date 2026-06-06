@@ -1,0 +1,70 @@
+{% extends 'base.html' %}
+
+{% block titulo_cabecalho %}{% if editar %}Editar Funcionário{% else %}Novo Funcionário{% endif %}{% endblock %}
+{% block subtitulo_cabecalho %}{% if editar %}Atualize os dados do funcionário{% else %}Cadastre um novo funcionário{% endif %}{% endblock %}
+{% block breadcrumb %}Serviços / Funcionários / {% if editar %}Editar{% else %}Novo{% endif %}{% endblock %}
+
+{% block content %}
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 border-t-4 border-indigo-500">
+        <div class="p-6">
+            <h2 class="text-lg font-bold text-gray-800 mb-4">
+                <i class="fa fa-user-plus mr-2 text-indigo-500"></i>
+                {% if editar %}Editando: {{ form.instance.nome }}{% else %}Dados do Funcionário{% endif %}
+            </h2>
+
+            {% if form.errors %}
+            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
+                <i class="fa fa-exclamation-triangle mr-2"></i>
+                {% for field, errors in form.errors.items %}
+                    {% for error in errors %}
+                        <p>{{ error }}</p>
+                    {% endfor %}
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            <form method="POST" class="space-y-4">
+                {% csrf_token %}
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Nome Completo *</label>
+                    {{ form.nome }}
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+                        {{ form.telefone }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
+                        {{ form.email }}
+                    </div>
+                </div>
+
+                <div class="flex items-center space-x-3">
+                    {{ form.ativo }}
+                    <label for="id_ativo" class="text-sm font-medium text-gray-700">Funcionário Ativo</label>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Observações</label>
+                    {{ form.observacoes }}
+                </div>
+
+                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
+                    <a href="{% url 'servicos:lista_funcionarios' %}"
+                       class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 font-medium transition">
+                        Cancelar
+                    </a>
+                    <button type="submit"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+                        <i class="fa fa-save mr-1"></i> {% if editar %}Salvar Alterações{% else %}Cadastrar{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
