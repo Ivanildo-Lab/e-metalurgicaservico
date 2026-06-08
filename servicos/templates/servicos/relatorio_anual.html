@@ -7,6 +7,7 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    {% load servicos_filters %}
     <style>
         @media print {
             .no-print { display: none !important; }
@@ -37,9 +38,9 @@
                 </div>
                 <div class="text-right">
                     <p class="text-sm text-gray-500">Meta Anual:</p>
-                    <p class="text-2xl font-bold text-orange-600 font-mono">R$ {{ meta_anual|floatformat:2 }}</p>
+                    <p class="text-2xl font-bold text-orange-600 font-mono">{{ meta_anual|moeda_br }}</p>
                     <p class="text-sm text-gray-500">Realizado Anual:</p>
-                    <p class="text-2xl font-bold text-blue-600 font-mono">R$ {{ realizado_anual|floatformat:2 }}</p>
+                    <p class="text-2xl font-bold text-blue-600 font-mono">{{ realizado_anual|moeda_br }}</p>
                     <p class="text-sm text-gray-500 mt-1">
                         Atingimento:
                         {% if meta_anual > 0 %}
@@ -80,8 +81,8 @@
                         {% for d in dados_meses %}
                         <tr class="hover:bg-gray-50">
                             <td class="px-4 py-3 font-medium text-gray-800">{{ d.nome }}</td>
-                            <td class="px-4 py-3 text-right font-mono text-gray-800">R$ {{ d.meta|floatformat:2 }}</td>
-                            <td class="px-4 py-3 text-right font-mono font-semibold text-blue-700">R$ {{ d.realizado|floatformat:2 }}</td>
+                            <td class="px-4 py-3 text-right font-mono text-gray-800">{{ d.meta|moeda_br }}</td>
+                            <td class="px-4 py-3 text-right font-mono font-semibold text-blue-700">{{ d.realizado|moeda_br }}</td>
                             <td class="px-4 py-3 text-center font-mono">
                                 {% if d.meta > 0 %}
                                 {% widthratio d.realizado d.meta 100 %}%
@@ -112,8 +113,8 @@
                     <tfoot class="bg-gray-50 border-t-2 border-gray-200">
                         <tr>
                             <td class="px-4 py-3 font-bold text-gray-700">TOTAL ANUAL</td>
-                            <td class="px-4 py-3 text-right font-mono font-bold text-gray-800">R$ {{ meta_anual|floatformat:2 }}</td>
-                            <td class="px-4 py-3 text-right font-mono font-bold text-blue-700">R$ {{ realizado_anual|floatformat:2 }}</td>
+                            <td class="px-4 py-3 text-right font-mono font-bold text-gray-800">{{ meta_anual|moeda_br }}</td>
+                            <td class="px-4 py-3 text-right font-mono font-bold text-blue-700">{{ realizado_anual|moeda_br }}</td>
                             <td class="px-4 py-3 text-center font-mono font-bold">
                                 {% if meta_anual > 0 %}{% widthratio realizado_anual meta_anual 100 %}{% else %}0{% endif %}%
                             </td>

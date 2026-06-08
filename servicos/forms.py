@@ -1,5 +1,8 @@
 from django import forms
-from .models import Funcionario, OrdemServico, ServicoOS, FuncionarioOS, MetaFuncionario
+from .models import (
+    Funcionario, OrdemServico, ServicoOS, FuncionarioOS,
+    MetaFuncionario, Orcamento, ServicoOrcamento
+)
 from cadastros.models import Cadastro
 
 
@@ -25,8 +28,8 @@ class OrdemServicoForm(forms.ModelForm):
         model = OrdemServico
         fields = ['cadastro', 'descricao_geral', 'data_entrada', 'data_prevista', 'observacoes']
         widgets = {
-            'data_entrada': forms.DateInput(attrs={'type': 'date'}),
-            'data_prevista': forms.DateInput(attrs={'type': 'date'}),
+            'data_entrada': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'data_prevista': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
             'descricao_geral': forms.Textarea(attrs={'rows': 4}),
         }
 
@@ -133,3 +136,44 @@ class MetaFuncionarioForm(forms.ModelForm):
                     'focus:ring-2 focus:ring-blue-500 focus:border-blue-500 '
                     'text-sm transition duration-150'
                 )
+
+
+class OrcamentoForm(forms.ModelForm):
+    class Meta:
+        model = Orcamento
+        fields = ['cadastro', 'descricao', 'data', 'data_validade', 'observacoes']
+        widgets = {
+            'data': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'data_validade': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
+            'descricao': forms.Textarea(attrs={'rows': 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        self.user = kwargs.pop('user', None)
+        super().__init__(*args, **kwargs)
+        if self.user and self.user.empresa:
+            self.fields['cadastro'].queryset = Cadastro.objects.filter(
+                empresa=self.user.empresa
+            ).order_by('nome')
+        for field in self.fields.values():
+            field.widget.attrs['class'] = (
+                'w-full px-3 py-2 border border-gray-300 rounded-lg '
+                'focus:ring-2 focus:ring-blue-500 focus:border-blue-500 '
+                'text-sm transition duration-150'
+            )
+        self.fields['observacoes'].widget.attrs['rows'] = 3
+
+
+class ServicoOrcamentoForm(forms.ModelForm):
+    class Meta:
+        model = ServicoOrcamento
+        fields = ['descricao', 'valor']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs['class'] = (
+                'w-full px-3 py-2 border border-gray-300 rounded-lg '
+                'focus:ring-2 focus:ring-blue-500 focus:border-blue-500 '
+                'text-sm transition duration-150'
+            )

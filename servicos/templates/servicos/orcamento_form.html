@@ -1,0 +1,104 @@
+{% extends 'base.html' %}
+
+{% block titulo_cabecalho %}{% if orcamento %}Editar {{ orcamento.numero }}{% else %}Novo Orçamento{% endif %}{% endblock %}
+{% block subtitulo_cabecalho %}{% if orcamento %}Atualize os dados do orçamento{% else %}Registre um novo orçamento{% endif %}{% endblock %}
+{% block breadcrumb %}Serviços / Orçamentos / {% if orcamento %}Editar{% else %}Novo{% endif %}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Botão Voltar -->
+    <div class="flex items-center justify-between">
+        <a href="{% if orcamento %}{% url 'servicos:detalhe_orcamento' orcamento.id %}{% else %}{% url 'servicos:lista_orcamentos' %}{% endif %}"
+           class="inline-flex items-center text-sm text-gray-600 hover:text-gray-800 font-medium transition">
+            <i class="fa fa-arrow-left mr-2"></i> {% if orcamento %}Voltar para {{ orcamento.numero }}{% else %}Voltar para Orçamentos{% endif %}
+        </a>
+    </div>
+
+    <!-- CABEÇALHO -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 border-t-4 border-teal-500 p-6">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 bg-teal-100 rounded-lg flex items-center justify-center">
+                <i class="fa fa-file-invoice text-teal-600 text-lg"></i>
+            </div>
+            <div>
+                <h2 class="text-lg font-bold text-gray-800">
+                    {% if orcamento %}Editando: {{ orcamento.numero }}{% else %}Dados do Orçamento{% endif %}
+                </h2>
+                <p class="text-xs text-gray-500">
+                    {% if orcamento %}Atualize as informações do orçamento{% else %}Preencha os dados para criar um novo orçamento{% endif %}
+                </p>
+            </div>
+        </div>
+
+        {% if form.errors %}
+        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
+            <i class="fa fa-exclamation-triangle mr-2"></i>
+            {% for field, errors in form.errors.items %}
+                <p><strong>{{ field }}:</strong> {{ errors.0 }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="POST" class="space-y-5">
+            {% csrf_token %}
+
+            <!-- Cliente -->
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <label class="block text-sm font-bold text-gray-700 mb-2">
+                    <i class="fa fa-user mr-1 text-teal-500"></i> Cliente *
+                </label>
+                {{ form.cadastro }}
+                <p class="text-xs text-gray-500 mt-1">Selecione o cliente para quem o orçamento será enviado</p>
+            </div>
+
+            <!-- Descrição -->
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <label class="block text-sm font-bold text-gray-700 mb-2">
+                    <i class="fa fa-align-left mr-1 text-teal-500"></i> Descrição / Observação do Orçamento *
+                </label>
+                {{ form.descricao }}
+                <p class="text-xs text-gray-500 mt-1">Descreva o serviço proposto ao cliente</p>
+            </div>
+
+            <!-- Datas -->
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fa fa-calendar mr-1 text-teal-500"></i> Data do Orçamento *
+                        </label>
+                        {{ form.data }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fa fa-calendar-check mr-1 text-teal-500"></i> Validade do Orçamento
+                        </label>
+                        {{ form.data_validade }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Observações -->
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <label class="block text-sm font-bold text-gray-700 mb-2">
+                    <i class="fa fa-sticky-note mr-1 text-teal-500"></i> Observações
+                </label>
+                {{ form.observacoes }}
+            </div>
+
+            <!-- Botões -->
+            <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+                <a href="{% if orcamento %}{% url 'servicos:detalhe_orcamento' orcamento.id %}{% else %}{% url 'servicos:lista_orcamentos' %}{% endif %}"
+                   class="inline-flex items-center px-4 py-2 text-sm text-gray-600 hover:text-gray-800 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                    <i class="fa fa-arrow-left mr-1"></i> Cancelar
+                </a>
+                <button type="submit"
+                        class="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold transition shadow-md inline-flex items-center">
+                    <i class="fa fa-save mr-1"></i> {% if orcamento %}Salvar Alterações{% else %}Criar Orçamento{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

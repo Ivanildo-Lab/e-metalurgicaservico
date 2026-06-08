@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load servicos_filters %}
 
 {% block titulo_cabecalho %}Metas dos Funcionários{% endblock %}
 {% block subtitulo_cabecalho %}Acompanhamento de metas mensais{% endblock %}
@@ -75,8 +76,8 @@
                                 <span class="font-medium text-gray-800">{{ item.meta.funcionario.nome }}</span>
                             </div>
                         </td>
-                        <td class="px-4 py-3 text-right font-mono font-semibold text-gray-800">R$ {{ item.meta.meta_valor|floatformat:2 }}</td>
-                        <td class="px-4 py-3 text-right font-mono font-semibold text-blue-700">R$ {{ item.realizado|floatformat:2 }}</td>
+                        <td class="px-4 py-3 text-right font-mono font-semibold text-gray-800">{{ item.meta.meta_valor|moeda_br }}</td>
+                        <td class="px-4 py-3 text-right font-mono font-semibold text-blue-700">{{ item.realizado|moeda_br }}</td>
                         <td class="px-4 py-3 text-center">
                             <div class="w-full bg-gray-200 rounded-full h-2.5">
                                 <div class="h-2.5 rounded-full {% if item.percentual >= 100 %}bg-green-500{% elif item.percentual >= 80 %}bg-blue-500{% elif item.percentual >= 50 %}bg-yellow-500{% else %}bg-red-500{% endif %}"

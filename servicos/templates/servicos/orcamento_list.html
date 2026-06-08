@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+{% load servicos_filters %}
+
+{% block titulo_cabecalho %}Orçamentos{% endblock %}
+{% block subtitulo_cabecalho %}Gestão de Orçamentos{% endblock %}
+{% block breadcrumb %}Serviços / Orçamentos{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+    <!-- Filtros + Tabela -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 border-t-4 border-teal-500">
+        <div class="p-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                <h2 class="text-lg font-bold text-gray-800"><i class="fa fa-file-invoice mr-2 text-teal-500"></i>Orçamentos</h2>
+                <a href="{% url 'servicos:novo_orcamento' %}" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+                    <i class="fa fa-plus mr-1"></i> Novo Orçamento
+                </a>
+            </div>
+
+            <!-- Filtros -->
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <input type="text" name="q" value="{{ q }}" placeholder="Nº Orçamento, cliente..."
+                       class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500">
+                <button type="submit" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                    <i class="fa fa-search mr-1"></i> Filtrar
+                </button>
+            </form>
+
+            <!-- Tabela -->
+            {% if orcamentos %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                            <th class="text-left px-4 py-3 font-semibold text-gray-600">Nº Orçamento</th>
+                            <th class="text-left px-4 py-3 font-semibold text-gray-600">Cliente</th>
+                            <th class="text-left px-4 py-3 font-semibold text-gray-600">Descrição</th>
+                            <th class="text-center px-4 py-3 font-semibold text-gray-600">Data</th>
+                            <th class="text-center px-4 py-3 font-semibold text-gray-600">Validade</th>
+                            <th class="text-right px-4 py-3 font-semibold text-gray-600">Valor Total</th>
+                            <th class="text-center px-4 py-3 font-semibold text-gray-600">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for orc in orcamentos %}
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-4 py-3">
+                                <a href="{% url 'servicos:detalhe_orcamento' orc.id %}" class="font-mono font-bold text-teal-600 hover:underline">
+                                    {{ orc.numero }}
+                                </a>
+                            </td>
+                            <td class="px-4 py-3 text-gray-800 font-medium">{{ orc.cadastro.nome }}</td>
+                            <td class="px-4 py-3 text-gray-600 max-w-xs truncate">{{ orc.descricao|truncatewords:12 }}</td>
+                            <td class="px-4 py-3 text-center text-gray-600">{{ orc.data|date:"d/m/Y" }}</td>
+                            <td class="px-4 py-3 text-center text-gray-600">
+                                {% if orc.data_validade %}{{ orc.data_validade|date:"d/m/Y" }}{% else %}—{% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-right font-mono font-semibold text-gray-800">
+                                {{ orc.valor_total|moeda_br }}
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <a href="{% url 'servicos:detalhe_orcamento' orc.id %}"
+                                   class="text-teal-500 hover:text-teal-700 p-1" title="Ver Detalhes">
+                                    <i class="fa fa-eye"></i>
+                                </a>
+                                <a href="{% url 'servicos:editar_orcamento' orc.id %}"
+                                   class="text-blue-500 hover:text-blue-700 p-1" title="Editar">
+                                    <i class="fa fa-edit"></i>
+                                </a>
+                                <a href="{% url 'servicos:imprimir_orcamento' orc.id %}" target="_blank"
+                                   class="text-gray-500 hover:text-gray-700 p-1" title="Imprimir">
+                                    <i class="fa fa-print"></i>
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="p-12 text-center">
+                <i class="fa fa-file-invoice text-4xl text-gray-300 mb-3"></i>
+                <p class="text-gray-500 font-medium">Nenhum orçamento encontrado</p>
+                <a href="{% url 'servicos:novo_orcamento' %}" class="text-teal-600 hover:underline text-sm mt-2 inline-block">
+                    + Criar primeiro Orçamento
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

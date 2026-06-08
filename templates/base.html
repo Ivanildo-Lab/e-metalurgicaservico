@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>e-Financeiro SaaS</title>
+    <title>e-MetalurgicaServiços SaaS</title>
     
     <!-- Favicon -->
     <link rel="shortcut icon" type="image/png" href="{% static 'img/favicon.png' %}">
@@ -36,7 +36,7 @@
     <aside class="w-64 skin-blue-sidebar text-white flex flex-col shadow-xl transition-all duration-300 hidden md:flex flex-shrink-0">
         <!-- Logo -->
         <div class="h-14 skin-blue-logo flex items-center justify-center font-bold text-xl tracking-wider uppercase shadow-md z-20">
-            <span class="mr-2"><i class="fa fa-chart-line"></i></span> e-Financ.
+            <span class="mr-2"><i class="fa fa-tools"></i></span> e-Serviços.
         </div>
 
         <!-- Painel do Usuário -->
@@ -165,6 +165,11 @@
                         <li>
                             <a href="{% url 'servicos:lista_ordens' %}" class="flex items-center py-2 pl-12 pr-4 text-gray-400 hover:text-white text-xs hover:bg-white/5 border-l-2 border-transparent hover:border-indigo-400 {% if 'ordens' in request.path %}text-white font-bold{% endif %}">
                                 <i class="fa fa-wrench mr-2 w-3"></i> Ordens de Serviço
+                            </a>
+                        </li>
+                        <li>
+                            <a href="{% url 'servicos:lista_orcamentos' %}" class="flex items-center py-2 pl-12 pr-4 text-gray-400 hover:text-white text-xs hover:bg-white/5 border-l-2 border-transparent hover:border-teal-400 {% if 'orcamentos' in request.path %}text-white font-bold{% endif %}">
+                                <i class="fa fa-file-invoice mr-2 w-3"></i> Orçamentos
                             </a>
                         </li>
                         <li>

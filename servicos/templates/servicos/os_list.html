@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load servicos_filters %}
 
 {% block titulo_cabecalho %}Ordens de Serviço{% endblock %}
 {% block subtitulo_cabecalho %}Gestão de Ordens de Serviço{% endblock %}
@@ -130,7 +131,7 @@
                                 {% endif %}
                             </td>
                             <td class="px-4 py-3 text-right font-mono font-semibold text-gray-800">
-                                R$ {{ os.valor_total|floatformat:2 }}
+                                {{ os.valor_total|moeda_br }}
                             </td>
                             <td class="px-4 py-3 text-center">
                                 <a href="{% url 'servicos:detalhe_os' os.id %}"

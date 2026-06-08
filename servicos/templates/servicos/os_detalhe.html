@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load servicos_filters %}
 
 {% block titulo_cabecalho %}{{ os.numero }}{% endblock %}
 {% block subtitulo_cabecalho %}Detalhe da Ordem de Serviço{% endblock %}
@@ -6,6 +7,14 @@
 
 {% block content %}
 <div class="space-y-6">
+
+    <!-- Botão Voltar -->
+    <div class="flex items-center justify-between">
+        <a href="{% url 'servicos:lista_ordens' %}"
+           class="inline-flex items-center text-sm text-gray-600 hover:text-gray-800 font-medium transition">
+            <i class="fa fa-arrow-left mr-2"></i> Voltar para Ordens de Serviço
+        </a>
+    </div>
 
     <!-- CABEÇALHO DA OS -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 border-t-4 border-indigo-500 p-6">
@@ -37,7 +46,7 @@
                 <p class="text-gray-500 text-sm mt-1"><i class="fa fa-sticky-note mr-1"></i> {{ os.observacoes }}</p>
                 {% endif %}
             </div>
-            <div class="text-right">
+            <div class="text-right flex-shrink-0">
                 <p class="text-xs text-gray-500">Entrada: <strong>{{ os.data_entrada|date:"d/m/Y" }}</strong></p>
                 {% if os.data_prevista %}
                 <p class="text-xs text-gray-500">Previsão: <strong>{{ os.data_prevista|date:"d/m/Y" }}</strong></p>
@@ -45,11 +54,12 @@
                 {% if os.data_conclusao %}
                 <p class="text-xs text-gray-500">Concluída: <strong>{{ os.data_conclusao|date:"d/m/Y" }}</strong></p>
                 {% endif %}
-                <div class="mt-3 space-x-2">
-                    <a href="{% url 'servicos:editar_os' os.id %}" class="text-blue-500 hover:text-blue-700 text-xs font-medium">
-                        <i class="fa fa-edit mr-1"></i> Editar
-                    </a>
-                </div>
+                {% if os.status != 'FECHADA' and os.status != 'CANCELADA' %}
+                <a href="{% url 'servicos:editar_os' os.id %}"
+                   class="mt-3 bg-blue-500 hover:bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-bold transition shadow-md inline-flex items-center">
+                    <i class="fa fa-edit mr-1"></i> Editar
+                </a>
+                {% endif %}
             </div>
         </div>
     </div>
@@ -58,16 +68,16 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 border-t-4 border-green-500">
             <p class="text-xs text-gray-500 font-medium uppercase">Valor Total dos Serviços</p>
-            <p class="text-2xl font-bold text-green-600 font-mono">R$ {{ valor_total|floatformat:2 }}</p>
+            <p id="valor-total-os" class="text-2xl font-bold text-green-600 font-mono">{{ valor_total|moeda_br }}</p>
         </div>
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 border-t-4 border-blue-500">
             <p class="text-xs text-gray-500 font-medium uppercase">Remuneração Funcionários</p>
-            <p class="text-2xl font-bold text-blue-600 font-mono">R$ {{ remuneracao_total|floatformat:2 }}</p>
+            <p class="text-2xl font-bold text-blue-600 font-mono">{{ remuneracao_total|moeda_br }}</p>
         </div>
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 border-t-4 {% if diferenca == 0 %}border-green-500{% else %}border-red-500{% endif %}">
             <p class="text-xs text-gray-500 font-medium uppercase">Diferença</p>
             <p class="text-2xl font-bold {% if diferenca == 0 %}text-green-600{% else %}text-red-600{% endif %} font-mono">
-                R$ {{ diferenca|floatformat:2 }}
+                {{ diferenca|moeda_br }}
             </p>
             {% if diferenca != 0 %}
             <p class="text-xs text-red-500 mt-1"><i class="fa fa-exclamation-triangle mr-1"></i> A remuneração deve fechar com o valor total</p>
@@ -106,7 +116,7 @@
                         <tr class="hover:bg-gray-50">
                             <td class="px-4 py-2 text-gray-500">{{ forloop.counter }}</td>
                             <td class="px-4 py-2 font-medium text-gray-800">{{ s.descricao }}</td>
-                            <td class="px-4 py-2 text-right font-mono font-semibold text-green-700">R$ {{ s.valor|floatformat:2 }}</td>
+                            <td class="px-4 py-2 text-right font-mono font-semibold text-green-700">{{ s.valor|moeda_br }}</td>
                             {% if os.status != 'FECHADA' and os.status != 'CANCELADA' %}
                             <td class="px-4 py-2 text-center">
                                 <button onclick="editarServico({{ s.id }}, '{{ s.descricao|escapejs }}', {{ s.valor }})"
@@ -126,7 +136,7 @@
                     <tfoot class="bg-gray-50 border-t-2 border-gray-200">
                         <tr>
                             <td colspan="2" class="px-4 py-2 font-bold text-gray-700 text-right">TOTAL:</td>
-                            <td class="px-4 py-2 text-right font-mono font-bold text-green-700 text-lg">R$ {{ valor_total|floatformat:2 }}</td>
+                            <td class="px-4 py-2 text-right font-mono font-bold text-green-700 text-lg">{{ valor_total|moeda_br }}</td>
                             <td></td>
                         </tr>
                     </tfoot>
@@ -179,7 +189,7 @@
                                     <span class="font-medium text-gray-800">{{ fo.funcionario.nome }}</span>
                                 </div>
                             </td>
-                            <td class="px-4 py-2 text-right font-mono font-semibold text-blue-700">R$ {{ fo.valor_remuneracao|floatformat:2 }}</td>
+                            <td class="px-4 py-2 text-right font-mono font-semibold text-blue-700">{{ fo.valor_remuneracao|moeda_br }}</td>
                             {% if os.status != 'FECHADA' and os.status != 'CANCELADA' %}
                             <td class="px-4 py-2 text-center">
                                 <button onclick="editarFuncionarioOS({{ fo.id }}, {{ fo.funcionario.id }}, {{ fo.valor_remuneracao }})"
@@ -199,7 +209,7 @@
                     <tfoot class="bg-gray-50 border-t-2 border-gray-200">
                         <tr>
                             <td colspan="2" class="px-4 py-2 font-bold text-gray-700 text-right">TOTAL REMUNERAÇÃO:</td>
-                            <td class="px-4 py-2 text-right font-mono font-bold text-blue-700 text-lg">R$ {{ remuneracao_total|floatformat:2 }}</td>
+                            <td class="px-4 py-2 text-right font-mono font-bold text-blue-700 text-lg">{{ remuneracao_total|moeda_br }}</td>
                             <td></td>
                         </tr>
                     </tfoot>
@@ -231,7 +241,7 @@
 
             {% if pode_fechar %}
             <button onclick="document.getElementById('modal-fechar').classList.remove('hidden')"
-                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-md">
                 <i class="fa fa-lock mr-1"></i> Fechar OS (Gerar Financeiro)
             </button>
             {% endif %}
@@ -245,6 +255,11 @@
                 </button>
             </form>
             {% endif %}
+
+            <a href="{% url 'servicos:imprimir_os' os.id %}" target="_blank"
+               class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm inline-block">
+                <i class="fa fa-print mr-1"></i> Imprimir OS
+            </a>
         </div>
         {% if not pode_fechar and os.status == 'CONCLUIDA' %}
         <p class="text-xs text-orange-600 mt-3">
@@ -252,8 +267,22 @@
             Para fechar: adicione serviços + funcionários e garanta que a remuneração feche com o valor total.
         </p>
         {% endif %}
+        {% if not pode_fechar and os.status == 'ABERTA' %}
+        <p class="text-xs text-blue-600 mt-3">
+            <i class="fa fa-info-circle mr-1"></i>
+            Adicione serviços e funcionários, depois marque como <strong>Concluída</strong> para poder fechar a OS.
+        </p>
+        {% endif %}
     </div>
     {% endif %}
+
+    <!-- Botão Voltar (Rodapé) -->
+    <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+        <a href="{% url 'servicos:lista_ordens' %}"
+           class="inline-flex items-center text-sm text-gray-600 hover:text-gray-800 font-medium transition">
+            <i class="fa fa-arrow-left mr-2"></i> Voltar para Ordens de Serviço
+        </a>
+    </div>
 </div>
 
 <!-- ============================================ -->
@@ -261,28 +290,32 @@
 <!-- ============================================ -->
 
 <!-- Modal: Adicionar Serviço -->
-<div id="modal-servico" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6">
-        <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fa fa-cogs mr-2 text-purple-500"></i>Adicionar Serviço</h3>
-        <form method="POST" action="{% url 'servicos:adicionar_servico_os' os.id %}">
+<div id="modal-servico" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="bg-purple-600 text-white px-6 py-4">
+            <h3 class="text-lg font-bold"><i class="fa fa-cogs mr-2"></i>Adicionar Serviço</h3>
+        </div>
+        <form method="POST" action="{% url 'servicos:adicionar_servico_os' os.id %}" class="p-6">
             {% csrf_token %}
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Descrição do Serviço *</label>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Descrição do Serviço *</label>
                     <input type="text" name="descricao" required placeholder="Ex: Usinagem do Cardan"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500">
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Valor (R$) *</label>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Valor (R$) *</label>
                     <input type="number" name="valor" step="0.01" min="0.01" required placeholder="0,00"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500">
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
                 </div>
             </div>
-            <div class="flex justify-end space-x-3 mt-6">
+            <div class="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
                 <button type="button" onclick="document.getElementById('modal-servico').classList.add('hidden')"
-                        class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 font-medium">Cancelar</button>
-                <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
-                    <i class="fa fa-save mr-1"></i> Adicionar
+                        class="px-4 py-2.5 text-sm text-gray-600 hover:text-gray-800 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                    Cancelar
+                </button>
+                <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold transition shadow-md">
+                    <i class="fa fa-save mr-1"></i> Adicionar Serviço
                 </button>
             </div>
         </form>
@@ -290,27 +323,31 @@
 </div>
 
 <!-- Modal: Adicionar Funcionário -->
-<div id="modal-funcionario" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md mx-4 p-6">
-        <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fa fa-hard-hat mr-2 text-teal-500"></i>Adicionar Funcionário</h3>
-        <form method="POST" action="{% url 'servicos:adicionar_funcionario_os' os.id %}">
+<div id="modal-funcionario" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="bg-teal-600 text-white px-6 py-4">
+            <h3 class="text-lg font-bold"><i class="fa fa-hard-hat mr-2"></i>Adicionar Funcionário</h3>
+        </div>
+        <form method="POST" action="{% url 'servicos:adicionar_funcionario_os' os.id %}" class="p-6">
             {% csrf_token %}
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Funcionário *</label>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Funcionário *</label>
                     {{ form_funcionario.funcionario }}
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Remuneração (R$) *</label>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Remuneração (R$) *</label>
                     <input type="number" name="valor_remuneracao" step="0.01" min="0.01" required placeholder="0,00"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500">
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
                 </div>
             </div>
-            <div class="flex justify-end space-x-3 mt-6">
+            <div class="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
                 <button type="button" onclick="document.getElementById('modal-funcionario').classList.add('hidden')"
-                        class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 font-medium">Cancelar</button>
-                <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
-                    <i class="fa fa-save mr-1"></i> Adicionar
+                        class="px-4 py-2.5 text-sm text-gray-600 hover:text-gray-800 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                    Cancelar
+                </button>
+                <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold transition shadow-md">
+                    <i class="fa fa-save mr-1"></i> Adicionar Funcionário
                 </button>
             </div>
         </form>
@@ -319,61 +356,90 @@
 
 <!-- Modal: Fechar OS (Gerar Financeiro) -->
 {% if pode_fechar %}
-<div id="modal-fechar" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg mx-4 p-6">
-        <h3 class="text-lg font-bold text-gray-800 mb-2"><i class="fa fa-lock mr-2 text-green-500"></i>Fechar OS — Gerar Financeiro</h3>
-        <p class="text-sm text-gray-600 mb-4">
-            A OS <strong>{{ os.numero }}</strong> será fechada e o financeiro será gerado automaticamente.
-        </p>
-        <div class="bg-gray-50 rounded-lg p-3 mb-4 text-sm">
-            <p><strong>Valor Total:</strong> <span class="font-mono text-green-700">R$ {{ valor_total|floatformat:2 }}</span></p>
+<div id="modal-fechar" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
+        <div class="bg-green-600 text-white px-6 py-4">
+            <h3 class="text-lg font-bold"><i class="fa fa-lock mr-2"></i>Fechar OS — Gerar Financeiro</h3>
         </div>
+        <div class="p-6">
+            <p class="text-sm text-gray-600 mb-4">
+                A OS <strong>{{ os.numero }}</strong> será fechada e o financeiro será gerado automaticamente.
+            </p>
+            <div class="bg-gray-50 rounded-lg p-3 mb-4 text-sm">
+                <p><strong>Valor Total:</strong> <span class="font-mono text-green-700">{{ valor_total|moeda_br }}</span></p>
+            </div>
 
-        <form method="POST" action="{% url 'servicos:fechar_os' os.id %}" id="form-fechar">
-            {% csrf_token %}
+            <form method="POST" action="{% url 'servicos:fechar_os' os.id %}" id="form-fechar">
+                {% csrf_token %}
             <div class="space-y-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-2">Forma de Pagamento *</label>
-                    <div class="flex space-x-4">
-                        <label class="flex items-center space-x-2 cursor-pointer">
-                            <input type="radio" name="forma_pagamento" value="A_VISTA" checked onchange="toggleParcelas()"
-                                   class="text-green-600 focus:ring-green-500">
-                            <span class="text-sm font-medium text-gray-700">À Vista</span>
+                    <label class="block text-sm font-bold text-gray-700 mb-3">Forma de Pagamento *</label>
+                    <div class="space-y-3">
+                        <!-- À Vista -->
+                        <label class="flex items-start space-x-3 cursor-pointer p-3 rounded-lg border-2 border-green-300 bg-green-50 transition hover:border-green-500">
+                            <input type="radio" name="forma_pagamento" value="A_VISTA" checked
+                                   onclick="alternarFormaPagamento(this.value)"
+                                   class="text-green-600 focus:ring-green-500 mt-0.5">
+                            <div>
+                                <span class="text-sm font-bold text-gray-700">À Vista</span>
+                                <p class="text-xs text-gray-500 mt-0.5">Pagamento imediato. Gera lançamento direto no Caixa.</p>
+                            </div>
                         </label>
-                        <label class="flex items-center space-x-2 cursor-pointer">
-                            <input type="radio" name="forma_pagamento" value="A_PRAZO" onchange="toggleParcelas()"
-                                   class="text-green-600 focus:ring-green-500">
-                            <span class="text-sm font-medium text-gray-700">A Prazo</span>
+                        <!-- A Prazo -->
+                        <label class="flex items-start space-x-3 cursor-pointer p-3 rounded-lg border-2 border-gray-200 hover:border-blue-400 transition">
+                            <input type="radio" name="forma_pagamento" value="A_PRAZO"
+                                   onclick="alternarFormaPagamento(this.value)"
+                                   class="text-blue-600 focus:ring-blue-500 mt-0.5">
+                            <div>
+                                <span class="text-sm font-bold text-gray-700">A Prazo</span>
+                                <p class="text-xs text-gray-500 mt-0.5">Gera parcelas no Contas a Receber. O lançamento no Caixa será feito na baixa de cada parcela.</p>
+                            </div>
                         </label>
                     </div>
                 </div>
 
-                <div id="div-parcelas" class="hidden">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Quantidade de Parcelas</label>
-                    <input type="number" name="qtd_parcelas" id="qtd-parcelas" value="1" min="2" max="60"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500">
+                <div id="div-parcelas" style="display:none;">
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Quantidade de Parcelas</label>
+                    <input type="number" name="qtd_parcelas" id="qtd-parcelas" value="1" min="1" max="60"
+                           oninput="calcularParcela()"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
                     <p class="text-xs text-gray-500 mt-1">
                         Valor de cada parcela: <span id="valor-parcela" class="font-mono font-semibold">R$ 0,00</span>
                     </p>
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
+                        <p class="text-xs text-blue-700">
+                            <i class="fa fa-info-circle mr-1"></i>
+                            Serão geradas <strong id="qtd-parcelas-texto">1</strong> parcela(s) no Contas a Receber.
+                            O lançamento no Caixa será feito automaticamente quando cada parcela for baixada pelo financeiro.
+                        </p>
+                    </div>
                 </div>
 
                 <!-- Seleção de Caixa (para pagamento à vista) -->
                 <div id="div-caixa">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Caixa/Banco para Recebimento *</label>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Caixa/Banco para Recebimento *</label>
                     <select name="caixa_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500" required>
                         <option value="">Selecione o caixa...</option>
                         {% for caixa in caixas %}
-                        <option value="{{ caixa.id }}">{{ caixa.nome }}</option>
+                        <option value="{{ caixa.id }}" {% if caixa.id == caixa_padrao_id %}selected{% endif %}>{{ caixa.nome }}</option>
                         {% endfor %}
                     </select>
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
+                        <p class="text-xs text-green-700">
+                            <i class="fa fa-info-circle mr-1"></i>
+                            O pagamento será registrado imediatamente no caixa selecionado.
+                        </p>
+                    </div>
                 </div>
             </div>
 
-            <div class="flex justify-end space-x-3 mt-6">
+            <div class="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
                 <button type="button" onclick="document.getElementById('modal-fechar').classList.add('hidden')"
-                        class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 font-medium">Cancelar</button>
+                        class="px-4 py-2.5 text-sm text-gray-600 hover:text-gray-800 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                    Cancelar
+                </button>
                 <button type="submit" onclick="return confirm('Confirmar fechamento da OS e geração do financeiro?')"
-                        class="bg-green-600 hover:bg-green-700 text-white px-5 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+                        class="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold transition shadow-md">
                     <i class="fa fa-check mr-1"></i> Confirmar Fechamento
                 </button>
             </div>
@@ -386,57 +452,58 @@
 
 {% block scripts %}
 <script>
-    const VALOR_TOTAL = {{ valor_total|floatformat:2 }};
+function alternarFormaPagamento(valor) {
+    var divParcelas = document.getElementById('div-parcelas');
+    var divCaixa = document.getElementById('div-caixa');
+    var inputParcelas = document.getElementById('qtd-parcelas');
+    var selectCaixa = document.querySelector('#div-caixa select');
 
-    function toggleParcelas() {
-        const forma = document.querySelector('input[name="forma_pagamento"]:checked').value;
-        const divParcelas = document.getElementById('div-parcelas');
-        const divCaixa = document.getElementById('div-caixa');
-        const inputParcelas = document.getElementById('qtd-parcelas');
-
-        if (forma === 'A_PRAZO') {
-            divParcelas.classList.remove('hidden');
-            divCaixa.classList.add('hidden');
-            inputParcelas.required = true;
-        } else {
-            divParcelas.classList.add('hidden');
-            divCaixa.classList.remove('hidden');
-            inputParcelas.required = false;
-        }
-        atualizarParcela();
+    if (valor === 'A_PRAZO') {
+        divParcelas.style.display = 'block';
+        divCaixa.style.display = 'none';
+        if (inputParcelas) inputParcelas.required = true;
+        if (selectCaixa) selectCaixa.required = false;
+    } else {
+        divParcelas.style.display = 'none';
+        divCaixa.style.display = 'block';
+        if (inputParcelas) inputParcelas.required = false;
+        if (selectCaixa) selectCaixa.required = true;
     }
+    calcularParcela();
+}
 
-    function atualizarParcela() {
-        const qtd = parseInt(document.getElementById('qtd-parcelas').value) || 1;
-        const valorParcela = VALOR_TOTAL / qtd;
-        document.getElementById('valor-parcela').textContent = 'R$ ' + valorParcela.toFixed(2).replace('.', ',');
-    }
+function calcularParcela() {
+    var inputParcelas = document.getElementById('qtd-parcelas');
+    var spanParcela = document.getElementById('valor-parcela');
+    var spanTexto = document.getElementById('qtd-parcelas-texto');
+    if (!inputParcelas || !spanParcela) return;
+    var qtd = parseInt(inputParcelas.value) || 1;
+    var totalText = document.getElementById('valor-total-os').textContent.replace('R$ ','').trim();
+    var total = parseFloat(totalText.replace(/\./g,'').replace(',','.')) || 0;
+    var valorParcela = total / qtd;
+    var parcelaFormatada = valorParcela.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    spanParcela.textContent = parcelaFormatada;
+    if (spanTexto) spanTexto.textContent = qtd;
+}
 
-    document.addEventListener('DOMContentLoaded', function() {
-        const inputParcelas = document.getElementById('qtd-parcelas');
-        if (inputParcelas) {
-            inputParcelas.addEventListener('input', atualizarParcela);
-        }
-    });
+function editarServico(id, descricao, valor) {
+    var modal = document.getElementById('modal-servico');
+    modal.querySelector('h3').innerHTML = '<i class="fa fa-cogs mr-2"></i>Editar Serviço';
+    modal.querySelector('form').action = '/servicos/ordens/servico/editar/' + id + '/';
+    modal.querySelector('input[name="descricao"]').value = descricao;
+    modal.querySelector('input[name="valor"]').value = valor;
+    modal.querySelector('button[type="submit"]').innerHTML = '<i class="fa fa-save mr-1"></i> Salvar Alterações';
+    modal.classList.remove('hidden');
+}
 
-    // Editar Serviço (preenche modal de edição reutilizando o de criação)
-    function editarServico(id, descricao, valor) {
-        const modal = document.getElementById('modal-servico');
-        modal.querySelector('h3').innerHTML = '<i class="fa fa-cogs mr-2 text-purple-500"></i>Editar Serviço';
-        modal.querySelector('form').action = '/servicos/ordens/servico/editar/' + id + '/';
-        modal.querySelector('input[name="descricao"]').value = descricao;
-        modal.querySelector('input[name="valor"]').value = valor;
-        modal.classList.remove('hidden');
-    }
-
-    // Editar Funcionário OS
-    function editarFuncionarioOS(id, funcionarioId, valor) {
-        const modal = document.getElementById('modal-funcionario');
-        modal.querySelector('h3').innerHTML = '<i class="fa fa-hard-hat mr-2 text-teal-500"></i>Editar Funcionário';
-        modal.querySelector('form').action = '/servicos/ordens/funcionario/editar/' + id + '/';
-        modal.querySelector('select[name="funcionario"]').value = funcionarioId;
-        modal.querySelector('input[name="valor_remuneracao"]').value = valor;
-        modal.classList.remove('hidden');
-    }
+function editarFuncionarioOS(id, funcionarioId, valor) {
+    var modal = document.getElementById('modal-funcionario');
+    modal.querySelector('h3').innerHTML = '<i class="fa fa-hard-hat mr-2"></i>Editar Funcionário';
+    modal.querySelector('form').action = '/servicos/ordens/funcionario/editar/' + id + '/';
+    modal.querySelector('select[name="funcionario"]').value = funcionarioId;
+    modal.querySelector('input[name="valor_remuneracao"]').value = valor;
+    modal.querySelector('button[type="submit"]').innerHTML = '<i class="fa fa-save mr-1"></i> Salvar Alterações';
+    modal.classList.remove('hidden');
+}
 </script>
 {% endblock %}

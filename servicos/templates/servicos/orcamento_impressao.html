@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ orcamento.numero }} — Impressão</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    {% load servicos_filters %}
+    <style>
+        @media print {
+            .no-print { display: none !important; }
+            body { background: white !important; margin: 0; }
+            .print-container { box-shadow: none !important; border: none !important; max-width: 100% !important; padding: 0 !important; }
+        }
+        @page { margin: 8mm 10mm; }
+        .text-xs-print { font-size: 11px; line-height: 1.3; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+
+    <!-- Botão Imprimir -->
+    <div class="no-print fixed top-4 right-4 z-50 space-x-2">
+        <button onclick="window.print()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-lg">
+            <i class="fa fa-print mr-1"></i> Imprimir
+        </button>
+        <a href="{% url 'servicos:detalhe_orcamento' orcamento.id %}" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium shadow-lg">
+            <i class="fa fa-arrow-left mr-1"></i> Voltar
+        </a>
+    </div>
+
+    <div class="max-w-3xl mx-auto py-2 px-2">
+        <div class="print-container bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+
+            <!-- CABEÇALHO: Logo + Empresa -->
+            <div class="flex items-center justify-between border-b-2 border-gray-800 pb-2 mb-3">
+                <div class="flex items-center gap-4">
+                    {% if user.empresa.logo %}
+                    <img src="{{ user.empresa.logo.url }}" alt="Logo" class="h-10 w-auto object-contain">
+                    {% else %}
+                    <div class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center">
+                        <i class="fa fa-industry text-gray-400 text-lg"></i>
+                    </div>
+                    {% endif %}
+                    <div>
+                        <h1 class="text-sm font-bold text-gray-800">{{ user.empresa.nome|default:"Empresa" }}</h1>
+                        <p class="text-xs text-gray-500">CNPJ: {{ user.empresa.cnpj|default:"—" }}</p>
+                    </div>
+                </div>
+                <div class="text-right">
+                    <h2 class="text-sm font-bold text-teal-700 font-mono">ORÇAMENTO</h2>
+                    <p class="text-xs font-mono text-gray-600">{{ orcamento.numero }}</p>
+                </div>
+            </div>
+
+            <!-- DADOS DO CLIENTE -->
+            <div class="mb-3">
+                <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 border-b border-gray-300 pb-0.5">
+                    <i class="fa fa-user mr-1"></i> Dados do Cliente
+                </h3>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs-print">
+                    <div><span class="text-gray-500">Nome:</span> <strong>{{ orcamento.cadastro.nome }}</strong></div>
+                    <div><span class="text-gray-500">CPF/CNPJ:</span> <strong>{{ orcamento.cadastro.cpf_cnpj }}</strong></div>
+                    <div><span class="text-gray-500">Telefone:</span> <strong>{{ orcamento.cadastro.celular|default:orcamento.cadastro.telefone_fixo|default:"—" }}</strong></div>
+                    <div><span class="text-gray-500">E-mail:</span> <strong>{{ orcamento.cadastro.email|default:"—" }}</strong></div>
+                    <div class="col-span-2"><span class="text-gray-500">Endereço:</span> <strong>{{ orcamento.cadastro.endereco }} {{ orcamento.cadastro.bairro }} {{ orcamento.cadastro.cidade }}/{{ orcamento.cadastro.uf }}</strong></div>
+                </div>
+            </div>
+
+            <!-- DADOS DO ORÇAMENTO -->
+            <div class="mb-3">
+                <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 border-b border-gray-300 pb-0.5">
+                    <i class="fa fa-file-invoice mr-1"></i> Dados do Orçamento
+                </h3>
+                <div class="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs-print">
+                    <div><span class="text-gray-500">Data:</span> <strong>{{ orcamento.data|date:"d/m/Y" }}</strong></div>
+                    <div><span class="text-gray-500">Validade:</span> <strong>{% if orcamento.data_validade %}{{ orcamento.data_validade|date:"d/m/Y" }}{% else %}—{% endif %}</strong></div>
+                </div>
+                <div class="mt-1 text-xs-print">
+                    <span class="text-gray-500">Descrição:</span>
+                    <p class="mt-0.5 text-gray-800 bg-gray-50 p-1.5 rounded border border-gray-200">{{ orcamento.descricao }}</p>
+                </div>
+                {% if orcamento.observacoes %}
+                <div class="mt-1 text-xs-print">
+                    <span class="text-gray-500">Observações:</span>
+                    <p class="mt-0.5 text-gray-600">{{ orcamento.observacoes }}</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- SERVIÇOS -->
+            <div class="mb-4">
+                <h3 class="text-xs font-bold text-gray-700 uppercase tracking-wider mb-1 border-b border-gray-300 pb-0.5">
+                    <i class="fa fa-cogs mr-1"></i> Serviços
+                </h3>
+                <table class="w-full text-xs-print border border-gray-300">
+                    <thead class="bg-gray-100">
+                        <tr>
+                            <th class="text-left px-2 py-1 font-semibold text-gray-700 border-b border-gray-300">#</th>
+                            <th class="text-left px-2 py-1 font-semibold text-gray-700 border-b border-gray-300">Descrição</th>
+                            <th class="text-right px-2 py-1 font-semibold text-gray-700 border-b border-gray-300">Valor (R$)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in servicos %}
+                        <tr class="{% if forloop.last %}{% else %}border-b border-gray-200{% endif %}">
+                            <td class="px-2 py-0.5 text-gray-500">{{ forloop.counter }}</td>
+                            <td class="px-2 py-0.5 text-gray-800">{{ s.descricao }}</td>
+                            <td class="px-2 py-0.5 text-right font-mono font-semibold">{{ s.valor|moeda_br_valor }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="bg-gray-100">
+                        <tr>
+                            <td colspan="2" class="px-2 py-1 font-bold text-gray-700 text-right border-t border-gray-300">TOTAL:</td>
+                            <td class="px-2 py-1 text-right font-mono font-bold border-t border-gray-300">{{ valor_total|moeda_br }}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+
+            <!-- DATA E HORA DA IMPRESSÃO -->
+            <div class="mt-4 text-xs text-gray-400 text-right">
+                Impresso em: {% now "d/m/Y H:i" %}
+            </div>
+
+        </div>
+    </div>
+</body>
+</html>

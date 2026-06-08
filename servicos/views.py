@@ -9,10 +9,13 @@ from django.http import JsonResponse
 from core.models import ParametroSistema
 from financeiro.models import Conta, Lancamento, Caixa, PlanoDeContas
 
-from .models import Funcionario, OrdemServico, ServicoOS, FuncionarioOS, MetaFuncionario
+from .models import (
+    Funcionario, OrdemServico, ServicoOS, FuncionarioOS,
+    MetaFuncionario, Orcamento, ServicoOrcamento
+)
 from .forms import (
     FuncionarioForm, OrdemServicoForm, ServicoOSForm, FuncionarioOSForm,
-    FecharOSForm, MetaFuncionarioForm,
+    FecharOSForm, MetaFuncionarioForm, OrcamentoForm, ServicoOrcamentoForm,
 )
 
 
@@ -166,6 +169,42 @@ def excluir_os(request, id):
 
 
 @login_required
+def salvar_os(request, id):
+    """Salva os dados da OS diretamente da tela de detalhe"""
+    os_obj = get_object_or_404(OrdemServico, id=id, empresa=request.user.empresa)
+
+    if request.method != 'POST':
+        return redirect('servicos:detalhe_os', id=os_obj.id)
+
+    if os_obj.status == 'FECHADA' or os_obj.status == 'CANCELADA':
+        messages.error(request, "Não é possível editar uma OS fechada ou cancelada.")
+        return redirect('servicos:detalhe_os', id=os_obj.id)
+
+    cadastro_id = request.POST.get('cadastro_id')
+    descricao_geral = request.POST.get('descricao_geral', '')
+    data_entrada = request.POST.get('data_entrada')
+    data_prevista = request.POST.get('data_prevista') or None
+    observacoes = request.POST.get('observacoes', '')
+
+    # Validação básica
+    if not cadastro_id or not descricao_geral or not data_entrada:
+        messages.error(request, "Cliente, Descrição e Data de Entrada são obrigatórios.")
+        return redirect('servicos:detalhe_os', id=os_obj.id)
+
+    from django.utils.dateparse import parse_date
+    os_obj.cadastro_id = int(cadastro_id)
+    os_obj.descricao_geral = descricao_geral
+    os_obj.data_entrada = parse_date(data_entrada)
+    if data_prevista:
+        os_obj.data_prevista = parse_date(data_prevista)
+    os_obj.observacoes = observacoes
+    os_obj.save()
+
+    messages.success(request, f"OS {os_obj.numero} salva com sucesso!")
+    return redirect('servicos:detalhe_os', id=os_obj.id)
+
+
+@login_required
 def detalhe_os(request, id):
     """Tela principal da OS — exibe serviços, funcionários e permite ações"""
     os_obj = get_object_or_404(OrdemServico, id=id, empresa=request.user.empresa)
@@ -191,6 +230,22 @@ def detalhe_os(request, id):
     # Caixas disponíveis para o modal de fechamento
     caixas = Caixa.objects.filter(empresa=request.user.empresa) if pode_fechar else []
 
+    # Buscar caixa padrão dos parâmetros
+    caixa_padrao_id = None
+    try:
+        param_caixa = ParametroSistema.objects.get(
+            empresa=request.user.empresa, chave='CAIXA_PADRAO_ID'
+        )
+        caixa_padrao_id = int(param_caixa.valor)
+    except (ParametroSistema.DoesNotExist, ValueError):
+        pass
+
+    # Clientes para o select de edição inline
+    from cadastros.models import Cadastro
+    clientes = Cadastro.objects.filter(
+        empresa=request.user.empresa
+    ).filter(Q(papel='CLI') | Q(papel='AMB')).order_by('nome')
+
     return render(request, 'servicos/os_detalhe.html', {
         'os': os_obj,
         'servicos': servicos,
@@ -203,6 +258,8 @@ def detalhe_os(request, id):
         'pode_concluir': pode_concluir,
         'pode_fechar': pode_fechar,
         'caixas': caixas,
+        'caixa_padrao_id': caixa_padrao_id,
+        'clientes': clientes,
     })
 
 
@@ -375,8 +432,8 @@ def fechar_os(request, id):
     qtd_parcelas = int(request.POST.get('qtd_parcelas', 1))
     caixa_id = request.POST.get('caixa_id', None)
 
-    if forma == 'A_PRAZO' and qtd_parcelas < 2:
-        messages.error(request, "Para pagamento a prazo, informe pelo menos 2 parcelas.")
+    if forma == 'A_PRAZO' and qtd_parcelas < 1:
+        messages.error(request, "Para pagamento a prazo, informe pelo menos 1 parcela.")
         return redirect('servicos:detalhe_os', id=os_obj.id)
 
     # Buscar Plano de Contas padrão para serviços
@@ -644,4 +701,160 @@ def relatorio_anual(request, ano):
         'realizado_data': realizado_data,
         'meta_anual': meta_anual,
         'realizado_anual': realizado_anual,
+    })
+
+
+@login_required
+def imprimir_os(request, id):
+    """Gera impressão da OS com dados do cliente, serviços e pagamento"""
+    os_obj = get_object_or_404(OrdemServico, id=id, empresa=request.user.empresa)
+    servicos = os_obj.servicos.all()
+    valor_total = os_obj.valor_total
+    valor_parcela = valor_total / os_obj.qtd_parcelas if os_obj.qtd_parcelas else valor_total
+
+    return render(request, 'servicos/os_impressao.html', {
+        'os': os_obj,
+        'servicos': servicos,
+        'valor_total': valor_total,
+        'valor_parcela': valor_parcela,
+    })
+
+
+# ==========================================================
+# 9. CRUD DE ORÇAMENTOS
+# ==========================================================
+@login_required
+def lista_orcamentos(request):
+    q = request.GET.get('q', '')
+    orcamentos = Orcamento.objects.filter(empresa=request.user.empresa)
+    if q:
+        orcamentos = orcamentos.filter(
+            Q(numero__icontains=q) | Q(cadastro__nome__icontains=q)
+        )
+    orcamentos = orcamentos[:50]
+
+    return render(request, 'servicos/orcamento_list.html', {
+        'orcamentos': orcamentos,
+        'q': q,
+    })
+
+
+@login_required
+def novo_orcamento(request):
+    if request.method == 'POST':
+        form = OrcamentoForm(request.POST, user=request.user)
+        if form.is_valid():
+            orcamento = form.save(commit=False)
+            orcamento.empresa = request.user.empresa
+            orcamento.save()
+            messages.success(request, f'Orçamento {orcamento.numero} criado com sucesso!')
+            return redirect('servicos:detalhe_orcamento', id=orcamento.id)
+    else:
+        from datetime import date as _date
+        form = OrcamentoForm(user=request.user, initial={'data': _date.today()})
+    return render(request, 'servicos/orcamento_form.html', {'form': form, 'titulo': 'Novo Orçamento'})
+
+
+@login_required
+def editar_orcamento(request, id):
+    orcamento = get_object_or_404(Orcamento, id=id, empresa=request.user.empresa)
+    if request.method == 'POST':
+        form = OrcamentoForm(request.POST, instance=orcamento, user=request.user)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Orçamento {orcamento.numero} atualizado com sucesso!')
+            return redirect('servicos:detalhe_orcamento', id=orcamento.id)
+    else:
+        form = OrcamentoForm(instance=orcamento, user=request.user)
+    return render(request, 'servicos/orcamento_form.html', {
+        'form': form, 'titulo': f'Editar {orcamento.numero}', 'orcamento': orcamento
+    })
+
+
+@login_required
+def detalhe_orcamento(request, id):
+    orcamento = get_object_or_404(Orcamento, id=id, empresa=request.user.empresa)
+    servicos = orcamento.servicos.all()
+    valor_total = orcamento.valor_total
+    return render(request, 'servicos/orcamento_detalhe.html', {
+        'orcamento': orcamento,
+        'servicos': servicos,
+        'valor_total': valor_total,
+    })
+
+
+@login_required
+def excluir_orcamento(request, id):
+    orcamento = get_object_or_404(Orcamento, id=id, empresa=request.user.empresa)
+    if request.method == 'POST':
+        numero = orcamento.numero
+        orcamento.delete()
+        messages.success(request, f'Orçamento {numero} excluído com sucesso!')
+        return redirect('servicos:lista_orcamentos')
+    return redirect('servicos:detalhe_orcamento', id=id)
+
+
+@login_required
+def adicionar_servico_orcamento(request, os_id):
+    """Adiciona serviço via AJAX"""
+    orcamento = get_object_or_404(Orcamento, id=os_id, empresa=request.user.empresa)
+    if request.method == 'POST':
+        form = ServicoOrcamentoForm(request.POST)
+        if form.is_valid():
+            servico = form.save(commit=False)
+            servico.orcamento = orcamento
+            servico.save()
+            return JsonResponse({
+                'sucesso': True,
+                'id': servico.id,
+                'descricao': servico.descricao,
+                'valor': float(servico.valor),
+                'valor_total': float(orcamento.valor_total),
+            })
+    return JsonResponse({'sucesso': False, 'erro': 'Dados inválidos'}, status=400)
+
+
+@login_required
+def editar_servico_orcamento(request, id):
+    """Edita serviço via AJAX"""
+    servico = get_object_or_404(ServicoOrcamento, id=id, orcamento__empresa=request.user.empresa)
+    if request.method == 'POST':
+        form = ServicoOrcamentoForm(request.POST, instance=servico)
+        if form.is_valid():
+            form.save()
+            orcamento = servico.orcamento
+            return JsonResponse({
+                'sucesso': True,
+                'descricao': servico.descricao,
+                'valor': float(servico.valor),
+                'valor_total': float(orcamento.valor_total),
+            })
+    return JsonResponse({'sucesso': False, 'erro': 'Dados inválidos'}, status=400)
+
+
+@login_required
+def excluir_servico_orcamento(request, id):
+    """Exclui serviço via AJAX"""
+    servico = get_object_or_404(ServicoOrcamento, id=id, orcamento__empresa=request.user.empresa)
+    if request.method == 'POST':
+        orcamento = servico.orcamento
+        servico.delete()
+        return JsonResponse({
+            'sucesso': True,
+            'valor_total': float(orcamento.valor_total),
+        })
+    return JsonResponse({'sucesso': False, 'erro': 'Método não permitido'}, status=400)
+
+
+@login_required
+def imprimir_orcamento(request, id):
+    """Gera impressão do Orçamento"""
+    orcamento = get_object_or_404(Orcamento, id=id, empresa=request.user.empresa)
+    servicos = orcamento.servicos.all()
+    valor_total = orcamento.valor_total
+
+    return render(request, 'servicos/orcamento_impressao.html', {
+        'orcamento': orcamento,
+        'servicos': servicos,
+        'valor_total': valor_total,
     })

@@ -197,3 +197,76 @@ class MetaFuncionario(ModeloSaaS):
         verbose_name_plural = "Metas dos Funcionários"
         ordering = ['-ano', '-mes', 'funcionario__nome']
         unique_together = ['empresa', 'funcionario', 'mes', 'ano']
+
+
+class Orcamento(ModeloSaaS):
+    """Orçamento — proposta de serviços para o cliente"""
+    FORMA_PGTO_CHOICES = [
+        ('A_VISTA', 'À Vista'),
+        ('A_PRAZO', 'A Prazo'),
+    ]
+
+    numero = models.CharField(max_length=20, unique=True, verbose_name="Nº Orçamento", editable=False)
+    cadastro = models.ForeignKey(
+        Cadastro, on_delete=models.PROTECT, verbose_name="Cliente",
+        help_text="Cliente para quem o orçamento será enviado"
+    )
+    descricao = models.TextField(verbose_name="Descrição / Observação do Orçamento",
+                                 help_text="Descreva o serviço proposto")
+    data = models.DateField(verbose_name="Data do Orçamento")
+    data_validade = models.DateField(verbose_name="Validade do Orçamento", null=True, blank=True)
+
+    forma_pagamento = models.CharField(
+        max_length=10, choices=FORMA_PGTO_CHOICES, null=True, blank=True,
+        verbose_name="Forma de Pagamento"
+    )
+
+    observacoes = models.TextField(blank=True, verbose_name="Observações")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def valor_total(self):
+        return self.servicos.aggregate(total=models.Sum('valor'))['total'] or 0
+
+    def save(self, *args, **kwargs):
+        if not self.numero:
+            self.numero = self._gerar_numero()
+        super().save(*args, **kwargs)
+
+    def _gerar_numero(self):
+        """Gera número sequencial: ORC-2026-0001"""
+        from django.utils import timezone
+        ano = timezone.now().year
+        ultimo = Orcamento.objects.filter(
+            empresa=self.empresa, numero__startswith=f'ORC-{ano}'
+        ).order_by('-numero').first()
+
+        if ultimo:
+            seq = int(ultimo.numero.split('-')[-1]) + 1
+        else:
+            seq = 1
+        return f'ORC-{ano}-{seq:04d}'
+
+    def __str__(self):
+        return f"{self.numero} — {self.cadastro.nome}"
+
+    class Meta:
+        verbose_name = "Orçamento"
+        verbose_name_plural = "Orçamentos"
+        ordering = ['-data', '-numero']
+
+
+class ServicoOrcamento(models.Model):
+    """Itens de serviço dentro de um Orçamento"""
+    orcamento = models.ForeignKey(Orcamento, on_delete=models.CASCADE,
+                                  related_name='servicos', verbose_name="Orçamento")
+    descricao = models.CharField(max_length=255, verbose_name="Descrição do Serviço")
+    valor = models.DecimalField(max_digits=12, decimal_places=2, verbose_name="Valor (R$)")
+
+    def __str__(self):
+        return f"{self.descricao} — R$ {self.valor:.2f}"
+
+    class Meta:
+        verbose_name = "Serviço do Orçamento"
+        verbose_name_plural = "Serviços do Orçamento"
+        ordering = ['id']

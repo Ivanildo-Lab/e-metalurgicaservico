@@ -1,101 +1,136 @@
 {% extends 'base.html' %}
+{% load servicos_filters %}
 
 {% block titulo_cabecalho %}{% if editar %}Editar OS {{ os.numero }}{% else %}Nova Ordem de Serviço{% endif %}{% endblock %}
 {% block subtitulo_cabecalho %}{% if editar %}Atualize os dados da OS{% else %}Registre uma nova Ordem de Serviço{% endif %}{% endblock %}
 {% block breadcrumb %}Serviços / Ordens de Serviço / {% if editar %}Editar{% else %}Nova{% endif %}{% endblock %}
 
 {% block content %}
-<div class="max-w-3xl mx-auto">
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 border-t-4 border-indigo-500">
-        <div class="p-6">
-            <h2 class="text-lg font-bold text-gray-800 mb-4">
-                <i class="fa fa-file-medical mr-2 text-indigo-500"></i>
-                {% if editar %}Editando: {{ os.numero }}{% else %}Dados da Ordem de Serviço{% endif %}
-            </h2>
+<div class="space-y-6">
 
-            {% if form.errors %}
-            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
-                <i class="fa fa-exclamation-triangle mr-2"></i>
-                {% for field, errors in form.errors.items %}
-                    <p><strong>{{ field }}:</strong> {{ errors.0 }}</p>
-                {% endfor %}
+    <!-- Botão Voltar -->
+    <div class="flex items-center justify-between">
+        <a href="{% if editar %}{% url 'servicos:detalhe_os' os.id %}{% else %}{% url 'servicos:lista_ordens' %}{% endif %}"
+           class="inline-flex items-center text-sm text-gray-600 hover:text-gray-800 font-medium transition">
+            <i class="fa fa-arrow-left mr-2"></i> {% if editar %}Voltar para OS {{ os.numero }}{% else %}Voltar para Ordens de Serviço{% endif %}
+        </a>
+    </div>
+
+    <!-- CABEÇALHO -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 border-t-4 border-indigo-500 p-6">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                <i class="fa fa-file-medical text-indigo-600 text-lg"></i>
             </div>
-            {% endif %}
+            <div>
+                <h2 class="text-lg font-bold text-gray-800">
+                    {% if editar %}Editando: {{ os.numero }}{% else %}Dados da Ordem de Serviço{% endif %}
+                </h2>
+                <p class="text-xs text-gray-500">
+                    {% if editar %}Atualize as informações da OS{% else %}Preencha os dados para criar uma nova OS{% endif %}
+                </p>
+            </div>
+        </div>
 
-            <form method="POST" class="space-y-5">
-                {% csrf_token %}
+        {% if form.errors %}
+        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
+            <i class="fa fa-exclamation-triangle mr-2"></i>
+            {% for field, errors in form.errors.items %}
+                <p><strong>{{ field }}:</strong> {{ errors.0 }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
 
-                <!-- Cliente -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Cliente *</label>
-                    {{ form.cadastro }}
-                    <p class="text-xs text-gray-500 mt-1">Selecione o cliente que enviou a peça / encomenda</p>
-                </div>
+        <form method="POST" class="space-y-5">
+            {% csrf_token %}
 
-                <!-- Descrição -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Descrição do Objeto / Peça *</label>
-                    {{ form.descricao_geral }}
-                    <p class="text-xs text-gray-500 mt-1">Descreva o que foi recebido e o trabalho a ser realizado</p>
-                </div>
+            <!-- Cliente -->
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <label class="block text-sm font-bold text-gray-700 mb-2">
+                    <i class="fa fa-user mr-1 text-indigo-500"></i> Cliente *
+                </label>
+                {{ form.cadastro }}
+                <p class="text-xs text-gray-500 mt-1">Selecione o cliente que enviou a peça / encomenda</p>
+            </div>
 
-                <!-- Datas -->
+            <!-- Descrição -->
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <label class="block text-sm font-bold text-gray-700 mb-2">
+                    <i class="fa fa-align-left mr-1 text-indigo-500"></i> Descrição do Objeto / Peça *
+                </label>
+                {{ form.descricao_geral }}
+                <p class="text-xs text-gray-500 mt-1">Descreva o que foi recebido e o trabalho a ser realizado</p>
+            </div>
+
+            <!-- Datas -->
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Data de Entrada *</label>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fa fa-calendar mr-1 text-indigo-500"></i> Data de Entrada *
+                        </label>
                         {{ form.data_entrada }}
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Previsão de Conclusão</label>
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fa fa-calendar-check mr-1 text-indigo-500"></i> Previsão de Conclusão
+                        </label>
                         {{ form.data_prevista }}
                     </div>
                 </div>
+            </div>
 
-                <!-- Observações -->
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Observações</label>
-                    {{ form.observacoes }}
-                </div>
+            <!-- Observações -->
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <label class="block text-sm font-bold text-gray-700 mb-2">
+                    <i class="fa fa-sticky-note mr-1 text-indigo-500"></i> Observações
+                </label>
+                {{ form.observacoes }}
+            </div>
 
-                {% if editar %}
-                <!-- Resumo da OS (só aparece na edição) -->
-                <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <h3 class="text-sm font-bold text-gray-700 mb-2"><i class="fa fa-info-circle mr-1"></i> Resumo da OS</h3>
-                    <div class="grid grid-cols-3 gap-4 text-sm">
-                        <div>
-                            <span class="text-gray-500">Status:</span>
-                            <span class="font-semibold ml-1">
-                                {% if os.status == 'ABERTA' %}Aberta
-                                {% elif os.status == 'CONCLUIDA' %}Concluída
-                                {% elif os.status == 'FECHADA' %}Fechada
-                                {% elif os.status == 'CANCELADA' %}Cancelada
-                                {% endif %}
-                            </span>
-                        </div>
-                        <div>
-                            <span class="text-gray-500">Valor Total:</span>
-                            <span class="font-semibold ml-1 font-mono">R$ {{ os.valor_total|floatformat:2 }}</span>
-                        </div>
-                        <div>
-                            <span class="text-gray-500">Serviços:</span>
-                            <span class="font-semibold ml-1">{{ os.servicos.count }}</span>
-                        </div>
+            {% if editar %}
+            <!-- Resumo da OS (só aparece na edição) -->
+            <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                <h3 class="text-sm font-bold text-blue-700 mb-2"><i class="fa fa-info-circle mr-1"></i> Resumo da OS</h3>
+                <div class="grid grid-cols-3 gap-4 text-sm">
+                    <div>
+                        <span class="text-gray-500">Status:</span>
+                        <span class="font-semibold ml-1">
+                            {% if os.status == 'ABERTA' %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">Aberta</span>
+                            {% elif os.status == 'CONCLUIDA' %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800">Concluída</span>
+                            {% elif os.status == 'FECHADA' %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">Fechada</span>
+                            {% elif os.status == 'CANCELADA' %}
+                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800">Cancelada</span>
+                            {% endif %}
+                        </span>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">Valor Total:</span>
+                        <span class="font-semibold ml-1 font-mono">{{ os.valor_total|moeda_br }}</span>
+                    </div>
+                    <div>
+                        <span class="text-gray-500">Serviços:</span>
+                        <span class="font-semibold ml-1">{{ os.servicos.count }}</span>
                     </div>
                 </div>
-                {% endif %}
+            </div>
+            {% endif %}
 
-                <div class="flex items-center justify-end space-x-3 pt-4 border-t border-gray-200">
-                    <a href="{% if editar %}{% url 'servicos:detalhe_os' os.id %}{% else %}{% url 'servicos:lista_ordens' %}{% endif %}"
-                       class="px-4 py-2 text-sm text-gray-600 hover:text-gray-800 font-medium transition">
-                        Cancelar
-                    </a>
-                    <button type="submit"
-                            class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2 rounded-lg text-sm font-medium transition shadow-sm">
-                        <i class="fa fa-save mr-1"></i> {% if editar %}Salvar Alterações{% else %}Criar OS{% endif %}
-                    </button>
-                </div>
-            </form>
-        </div>
+            <!-- Botões -->
+            <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+                <a href="{% if editar %}{% url 'servicos:detalhe_os' os.id %}{% else %}{% url 'servicos:lista_ordens' %}{% endif %}"
+                   class="inline-flex items-center px-4 py-2 text-sm text-gray-600 hover:text-gray-800 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                    <i class="fa fa-arrow-left mr-1"></i> Cancelar
+                </a>
+                <button type="submit"
+                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold transition shadow-md inline-flex items-center">
+                    <i class="fa fa-save mr-1"></i> {% if editar %}Salvar Alterações{% else %}Criar OS{% endif %}
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}

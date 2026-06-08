@@ -1,0 +1,255 @@
+{% extends 'base.html' %}
+{% load servicos_filters %}
+
+{% block titulo_cabecalho %}{{ orcamento.numero }}{% endblock %}
+{% block subtitulo_cabecalho %}Detalhe do Orçamento{% endblock %}
+{% block breadcrumb %}Serviços / Orçamentos / {{ orcamento.numero }}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Botão Voltar -->
+    <div class="flex items-center justify-between">
+        <a href="{% url 'servicos:lista_orcamentos' %}"
+           class="inline-flex items-center text-sm text-gray-600 hover:text-gray-800 font-medium transition">
+            <i class="fa fa-arrow-left mr-2"></i> Voltar para Orçamentos
+        </a>
+    </div>
+
+    <!-- CABEÇALHO DO ORÇAMENTO -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 border-t-4 border-teal-500 p-6">
+        <div class="flex flex-col md:flex-row justify-between items-start gap-4">
+            <div>
+                <div class="flex items-center gap-3 mb-2">
+                    <h2 class="text-2xl font-bold text-gray-800 font-mono">{{ orcamento.numero }}</h2>
+                </div>
+                <p class="text-gray-600"><strong>Cliente:</strong> {{ orcamento.cadastro.nome }}</p>
+                <p class="text-gray-600 mt-1"><strong>Descrição:</strong> {{ orcamento.descricao }}</p>
+                {% if orcamento.observacoes %}
+                <p class="text-gray-500 text-sm mt-1"><i class="fa fa-sticky-note mr-1"></i> {{ orcamento.observacoes }}</p>
+                {% endif %}
+            </div>
+            <div class="text-right flex-shrink-0">
+                <p class="text-xs text-gray-500">Data: <strong>{{ orcamento.data|date:"d/m/Y" }}</strong></p>
+                {% if orcamento.data_validade %}
+                <p class="text-xs text-gray-500">Validade: <strong>{{ orcamento.data_validade|date:"d/m/Y" }}</strong></p>
+                {% endif %}
+                <div class="mt-3 space-x-2">
+                    <a href="{% url 'servicos:editar_orcamento' orcamento.id %}"
+                       class="bg-blue-500 hover:bg-blue-600 text-white px-5 py-2 rounded-lg text-sm font-bold transition shadow-md inline-flex items-center">
+                        <i class="fa fa-edit mr-1"></i> Editar
+                    </a>
+                    <a href="{% url 'servicos:imprimir_orcamento' orcamento.id %}" target="_blank"
+                       class="bg-gray-600 hover:bg-gray-700 text-white px-5 py-2 rounded-lg text-sm font-bold transition shadow-md inline-flex items-center">
+                        <i class="fa fa-print mr-1"></i> Imprimir
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- SERVIÇOS DO ORÇAMENTO -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 border-t-4 border-purple-500">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-800"><i class="fa fa-cogs mr-2 text-purple-500"></i>Serviços</h3>
+                <button onclick="document.getElementById('modal-servico').classList.remove('hidden')"
+                        class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                    <i class="fa fa-plus mr-1"></i> Adicionar Serviço
+                </button>
+            </div>
+
+            {% if servicos %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                            <th class="text-left px-4 py-3 font-semibold text-gray-600">#</th>
+                            <th class="text-left px-4 py-3 font-semibold text-gray-600">Descrição</th>
+                            <th class="text-right px-4 py-3 font-semibold text-gray-600">Valor (R$)</th>
+                            <th class="text-center px-4 py-3 font-semibold text-gray-600">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tabela-servicos" class="divide-y divide-gray-100">
+                        {% for s in servicos %}
+                        <tr class="servico-row hover:bg-gray-50 transition" data-id="{{ s.id }}" data-valor="{{ s.valor }}">
+                            <td class="px-4 py-3 text-gray-500">{{ forloop.counter }}</td>
+                            <td class="px-4 py-3 text-gray-800">{{ s.descricao }}</td>
+                            <td class="px-4 py-3 text-right font-mono font-semibold text-gray-800 valor-servico">{{ s.valor|moeda_br }}</td>
+                            <td class="px-4 py-3 text-center">
+                                <button onclick="editarServico({{ s.id }}, '{{ s.descricao|escapejs }}', {{ s.valor }})"
+                                        class="text-blue-500 hover:text-blue-700 p-1" title="Editar">
+                                    <i class="fa fa-edit"></i>
+                                </button>
+                                <button onclick="excluirServico({{ s.id }})"
+                                        class="text-red-500 hover:text-red-700 p-1" title="Excluir">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                    <tfoot class="bg-gray-50 border-t border-gray-200">
+                        <tr>
+                            <td colspan="2" class="px-4 py-3 text-right">
+                                <span class="text-xs text-gray-500">Serviços: <strong id="qtd-servicos">{{ servicos|length }}</strong></span>
+                            </td>
+                            <td class="px-4 py-3 text-right font-mono font-bold text-lg text-gray-800" id="total-geral">
+                                {{ valor_total|moeda_br }}
+                            </td>
+                            <td></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+            {% else %}
+            <div class="p-8 text-center">
+                <i class="fa fa-cogs text-3xl text-gray-300 mb-3"></i>
+                <p class="text-gray-500 font-medium">Nenhum serviço adicionado</p>
+                <button onclick="document.getElementById('modal-servico').classList.remove('hidden')"
+                        class="text-purple-600 hover:underline text-sm mt-2">
+                    + Adicionar primeiro serviço
+                </button>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- TOTAIS -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 border-t-4 border-green-500">
+            <p class="text-xs text-gray-500 font-medium uppercase">Valor Total</p>
+            <p id="valor-total-os" class="text-2xl font-bold text-green-600 font-mono">{{ valor_total|moeda_br }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 border-t-4 border-teal-500">
+            <p class="text-xs text-gray-500 font-medium uppercase">Serviços</p>
+            <p class="text-2xl font-bold text-teal-600 font-mono">{{ servicos|length }}</p>
+        </div>
+    </div>
+
+    <!-- AÇÕES INFERIORES -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <div class="flex items-center justify-between">
+            <a href="{% url 'servicos:lista_orcamentos' %}"
+               class="inline-flex items-center px-4 py-2 text-sm text-gray-600 hover:text-gray-800 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                <i class="fa fa-arrow-left mr-1"></i> Voltar
+            </a>
+            <div class="space-x-2">
+                <button onclick="if(confirm('Excluir este orçamento?')) document.getElementById('form-excluir').submit()"
+                        class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+                    <i class="fa fa-trash mr-1"></i> Excluir
+                </button>
+                <form id="form-excluir" method="POST" action="{% url 'servicos:excluir_orcamento' orcamento.id %}" class="hidden">
+                    {% csrf_token %}
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL: Adicionar / Editar Serviço -->
+<div id="modal-servico" class="hidden fixed inset-0 bg-black/40 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md">
+        <div class="p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-lg font-bold text-gray-800" id="modal-servico-titulo">Adicionar Serviço</h3>
+                <button onclick="fecharModalServico()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <form id="form-servico" onsubmit="return salvarServico(event)">
+                {% csrf_token %}
+                <input type="hidden" id="servico-edit-id" value="">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Descrição do Serviço *</label>
+                        <input type="text" id="servico-descricao" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                               placeholder="Ex: Usinagem de cardan">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Valor (R$) *</label>
+                        <input type="number" id="servico-valor" step="0.01" min="0.01" required
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500"
+                               placeholder="0,00">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-2 mt-6">
+                    <button type="button" onclick="fecharModalServico()"
+                            class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                            class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition">
+                        <i class="fa fa-save mr-1"></i> Salvar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+const URL_ADICIONAR = "{% url 'servicos:adicionar_servico_orcamento' orcamento.id %}";
+const URL_EDITAR_SERVICO = "{% url 'servicos:editar_servico_orcamento' 0 %}".replace('/0/', '/');
+const URL_EXCLUIR_SERVICO = "{% url 'servicos:excluir_servico_orcamento' 0 %}".replace('/0/', '/');
+
+function getCookie(name) {
+    let v = null;
+    document.cookie.split(';').forEach(c => {
+        c = c.trim();
+        if (c.startsWith(name + '=')) v = decodeURIComponent(c.substring(name.length + 1));
+    });
+    return v;
+}
+
+function fecharModalServico() {
+    document.getElementById('modal-servico').classList.add('hidden');
+    document.getElementById('servico-edit-id').value = '';
+    document.getElementById('servico-descricao').value = '';
+    document.getElementById('servico-valor').value = '';
+    document.getElementById('modal-servico-titulo').textContent = 'Adicionar Serviço';
+}
+
+function editarServico(id, descricao, valor) {
+    document.getElementById('servico-edit-id').value = id;
+    document.getElementById('servico-descricao').value = descricao;
+    document.getElementById('servico-valor').value = valor;
+    document.getElementById('modal-servico-titulo').textContent = 'Editar Serviço';
+    document.getElementById('modal-servico').classList.remove('hidden');
+}
+
+async function salvarServico(e) {
+    e.preventDefault();
+    const id = document.getElementById('servico-edit-id').value;
+    const descricao = document.getElementById('servico-descricao').value;
+    const valor = document.getElementById('servico-valor').value;
+    const url = id ? URL_EXCLUIR_SERVICO.replace('/' + id + '/', '/' + id + '/') : URL_ADICIONAR;
+    const editUrl = id ? URL_EDITAR_SERVICO.replace('/' + id + '/', '/' + id + '/') : null;
+
+    const fetchUrl = id ? editUrl : URL_ADICIONAR;
+    const resp = await fetch(fetchUrl, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': getCookie('csrftoken'),
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: `descricao=${encodeURIComponent(descricao)}&valor=${valor}`
+    });
+    const data = await resp.json();
+    if (data.sucesso) { location.reload(); }
+    return false;
+}
+
+async function excluirServico(id) {
+    if (!confirm('Excluir este serviço?')) return;
+    const resp = await fetch(URL_EXCLUIR_SERVICO.replace('/' + id + '/', '/' + id + '/'), {
+        method: 'POST',
+        headers: {'X-CSRFToken': getCookie('csrftoken')},
+    });
+    const data = await resp.json();
+    if (data.sucesso) { location.reload(); }
+}
+</script>
+{% endblock %}

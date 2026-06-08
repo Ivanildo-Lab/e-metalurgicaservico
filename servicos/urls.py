@@ -14,8 +14,10 @@ urlpatterns = [
     path('ordens/', views.lista_ordens, name='lista_ordens'),
     path('ordens/nova/', views.nova_os, name='nova_os'),
     path('ordens/<int:id>/', views.detalhe_os, name='detalhe_os'),
+    path('ordens/<int:id>/salvar/', views.salvar_os, name='salvar_os'),
     path('ordens/editar/<int:id>/', views.editar_os, name='editar_os'),
     path('ordens/excluir/<int:id>/', views.excluir_os, name='excluir_os'),
+    path('ordens/<int:id>/imprimir/', views.imprimir_os, name='imprimir_os'),
 
     # Ações de status
     path('ordens/<int:id>/concluir/', views.concluir_os, name='concluir_os'),
@@ -41,4 +43,15 @@ urlpatterns = [
     # Relatórios
     path('relatorios/mensal/<int:ano>/<int:mes>/', views.relatorio_mensal, name='relatorio_mensal'),
     path('relatorios/anual/<int:ano>/', views.relatorio_anual, name='relatorio_anual'),
+
+    # Orçamentos
+    path('orcamentos/', views.lista_orcamentos, name='lista_orcamentos'),
+    path('orcamentos/novo/', views.novo_orcamento, name='novo_orcamento'),
+    path('orcamentos/<int:id>/', views.detalhe_orcamento, name='detalhe_orcamento'),
+    path('orcamentos/editar/<int:id>/', views.editar_orcamento, name='editar_orcamento'),
+    path('orcamentos/excluir/<int:id>/', views.excluir_orcamento, name='excluir_orcamento'),
+    path('orcamentos/<int:id>/imprimir/', views.imprimir_orcamento, name='imprimir_orcamento'),
+    path('orcamentos/<int:os_id>/servico/adicionar/', views.adicionar_servico_orcamento, name='adicionar_servico_orcamento'),
+    path('orcamentos/servico/editar/<int:id>/', views.editar_servico_orcamento, name='editar_servico_orcamento'),
+    path('orcamentos/servico/excluir/<int:id>/', views.excluir_servico_orcamento, name='excluir_servico_orcamento'),
 ]
