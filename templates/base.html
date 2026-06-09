@@ -46,7 +46,6 @@
             </div>
             <div class="overflow-hidden">
                 <p class="font-semibold text-sm truncate text-gray-200">{{ user.first_name|default:user.username }}</p>
-                <div class="text-xs text-green-400 flex items-center mt-0.5"><i class="fa fa-circle text-[8px] mr-1.5"></i> Online</div>
             </div>
         </div>
 
@@ -215,10 +214,15 @@
 
             <!-- Lado Direito Header -->
             <div class="flex items-center space-x-6">
-                <!-- Nome da Empresa -->
-                <div class="hidden md:flex flex-col items-end">
-                    <span class="font-bold text-sm tracking-wide">{{ user.empresa.nome|default:"Sem Empresa" }}</span>
-                    <span class="text-[10px] text-blue-100 opacity-80 font-mono">CNPJ: {{ user.empresa.cnpj }}</span>
+                <!-- Logo + Nome da Empresa -->
+                <div class="hidden md:flex items-center space-x-3">
+                    {% if user.empresa.logo %}
+                    <img src="{{ user.empresa.logo.url }}" alt="Logo" class="h-8 w-auto object-contain bg-white rounded px-1">
+                    {% endif %}
+                    <div class="flex flex-col items-end">
+                        <span class="font-bold text-sm tracking-wide">{{ user.empresa.nome|default:"Sem Empresa" }}</span>
+                        <span class="text-[10px] text-blue-100 opacity-80 font-mono">CNPJ: {{ user.empresa.cnpj }}</span>
+                    </div>
                 </div>
 
                 <!-- MENU DO PERFIL / LOGOUT (COM JS ONCLICK) -->
@@ -311,7 +315,7 @@
             
             <!-- Footer -->
             <footer class="mt-12 border-t border-gray-300/60 pt-6 text-center text-xs text-gray-500 relative z-10">
-                &copy; {% now "Y" %} <strong>e-Financeiro SaaS</strong>. Todos os direitos reservados.
+                &copy; {% now "Y" %} <strong>e-Metalurgiaca Serviços SaaS</strong>. Todos os direitos reservados.
             </footer>
         </main>
     </div>
