@@ -12,24 +12,19 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 import os
 from pathlib import Path
+from dotenv import load_dotenv
 
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
+load_dotenv()
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-print(f"O Django está rodando em: {BASE_DIR}")
-print(f"A pasta templates deve ser: {os.path.join(BASE_DIR, 'templates')}")
-
-
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
-
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-4nr#4er14x58awmm1a^6di@_+%z#p2elug3y=ub(@1ow=%r&at'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-4nr#4er14x58awmm1a^6di@_+%z#p2elug3y=ub(@1ow=%r&at')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if os.environ.get('DJANGO_ALLOWED_HOSTS') else []
 
 AUTH_USER_MODEL = 'core.Usuario'
 
@@ -97,11 +92,11 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
-        'NAME': 'efinanceiro_db',  # O banco que combinamos
-        'USER': 'root',            # Seu usuário do MySQL (geralmente root)
-        'PASSWORD': '7895123',            # Sua senha do MySQL (preencha aqui)
-        'HOST': 'localhost',
-        'PORT': '3306',
+        'NAME': os.environ.get('DB_NAME', 'emetalurgicaservico_db'),
+        'USER': os.environ.get('DB_USER', 'root'),
+        'PASSWORD': os.environ.get('DB_PASSWORD', '7895123'),
+        'HOST': os.environ.get('DB_HOST', 'localhost'),
+        'PORT': os.environ.get('DB_PORT', '3306'),
     }
 }
 
@@ -141,7 +136,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
-
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 # Adicione esta lista se ela não existir ou estiver vazia:
 STATICFILES_DIRS = [
