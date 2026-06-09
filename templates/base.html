@@ -39,16 +39,6 @@
             <span class="mr-2"><i class="fa fa-tools"></i></span> e-Serviços.
         </div>
 
-        <!-- Painel do Usuário -->
-        <div class="p-4 flex items-center space-x-3 border-b border-gray-700 bg-black/10">
-            <div class="w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center text-white font-bold border-2 border-gray-500 shadow-sm">
-                {{ user.username|slice:":1"|upper }}
-            </div>
-            <div class="overflow-hidden">
-                <p class="font-semibold text-sm truncate text-gray-200">{{ user.first_name|default:user.username }}</p>
-            </div>
-        </div>
-
         <!-- Navegação -->
         <nav class="flex-1 overflow-y-auto py-4 text-sm custom-scrollbar">
             <p class="px-4 text-xs text-gray-500 uppercase font-semibold mb-2 tracking-wider">Principal</p>
