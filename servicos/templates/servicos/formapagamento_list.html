@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% load servicos_filters %}
+
+{% block titulo_cabecalho %}Formas de Pagamento{% endblock %}
+{% block subtitulo_cabecalho %}Gerenciar formas de pagamento da empresa{% endblock %}
+{% block breadcrumb %}Serviços / Formas de Pagamento{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Filtros + Tabela -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 border-t-4 border-cyan-500">
+        <div class="p-6">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-4">
+                <h2 class="text-lg font-bold text-gray-800"><i class="fa fa-credit-card mr-2 text-cyan-500"></i>Formas de Pagamento</h2>
+                <a href="{% url 'servicos:nova_forma_pagamento' %}" class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+                    <i class="fa fa-plus mr-1"></i> Nova Forma
+                </a>
+            </div>
+
+            {% if messages %}
+            {% for msg in messages %}
+            <div class="bg-green-50 border border-green-200 text-green-700 px-4 py-3 rounded-lg mb-4 text-sm">
+                <i class="fa fa-check-circle mr-2"></i> {{ msg }}
+            </div>
+            {% endfor %}
+            {% endif %}
+
+            <!-- Tabela -->
+            {% if formas %}
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                            <th class="text-left px-4 py-3 font-semibold text-gray-600">#</th>
+                            <th class="text-left px-4 py-3 font-semibold text-gray-600">Nome</th>
+                            <th class="text-center px-4 py-3 font-semibold text-gray-600">Afeta Caixa</th>
+                            <th class="text-center px-4 py-3 font-semibold text-gray-600">Ativo</th>
+                            <th class="text-center px-4 py-3 font-semibold text-gray-600">Ações</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for fp in formas %}
+                        <tr class="hover:bg-gray-50 transition">
+                            <td class="px-4 py-3 text-gray-500">{{ forloop.counter }}</td>
+                            <td class="px-4 py-3 text-gray-800 font-medium">{{ fp.nome }}</td>
+                            <td class="px-4 py-3 text-center">
+                                {% if fp.afeta_caixa %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">
+                                    <i class="fa fa-check text-[8px] mr-1"></i> Sim
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600">
+                                    <i class="fa fa-times text-[8px] mr-1"></i> Não
+                                </span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                {% if fp.ativo %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">Ativo</span>
+                                {% else %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800">Inativo</span>
+                                {% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                <a href="{% url 'servicos:editar_forma_pagamento' fp.id %}"
+                                   class="text-blue-500 hover:text-blue-700 p-1" title="Editar">
+                                    <i class="fa fa-edit"></i>
+                                </a>
+                                <button onclick="if(confirm('Excluir esta forma de pagamento?')) document.getElementById('form-excluir-{{ fp.id }}').submit()"
+                                        class="text-red-500 hover:text-red-700 p-1" title="Excluir">
+                                    <i class="fa fa-trash"></i>
+                                </button>
+                                <form id="form-excluir-{{ fp.id }}" method="POST" action="{% url 'servicos:excluir_forma_pagamento' fp.id %}" class="hidden">
+                                    {% csrf_token %}
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Info -->
+            <div class="mt-4 p-3 bg-blue-50 rounded-lg border border-blue-200 text-xs text-blue-700">
+                <i class="fa fa-info-circle mr-1"></i>
+                <strong>Afeta Caixa:</strong> Marque apenas formas que movimentam o caixa físico (ex: Dinheiro).
+                Formas como PIX, Débito, Crédito e Transferência <strong>não</strong> devem marcar esta opção,
+                pois o valor não entra fisicamente no caixa.
+            </div>
+            {% else %}
+            <div class="p-12 text-center">
+                <i class="fa fa-credit-card text-4xl text-gray-300 mb-3"></i>
+                <p class="text-gray-500 font-medium">Nenhuma forma de pagamento cadastrada</p>
+                <a href="{% url 'servicos:nova_forma_pagamento' %}" class="text-cyan-600 hover:underline text-sm mt-2 inline-block">
+                    + Cadastrar primeira forma de pagamento
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

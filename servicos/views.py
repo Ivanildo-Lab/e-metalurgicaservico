@@ -11,11 +11,12 @@ from financeiro.models import Conta, Lancamento, Caixa, PlanoDeContas
 
 from .models import (
     Funcionario, OrdemServico, ServicoOS, FuncionarioOS,
-    MetaFuncionario, Orcamento, ServicoOrcamento
+    MetaFuncionario, Orcamento, ServicoOrcamento, FormaPagamento
 )
 from .forms import (
     FuncionarioForm, OrdemServicoForm, ServicoOSForm, FuncionarioOSForm,
     FecharOSForm, MetaFuncionarioForm, OrcamentoForm, ServicoOrcamentoForm,
+    FormaPagamentoForm,
 )
 
 
@@ -240,6 +241,11 @@ def detalhe_os(request, id):
     except (ParametroSistema.DoesNotExist, ValueError):
         pass
 
+    # Formas de pagamento ativas
+    formas_pagamento = FormaPagamento.objects.filter(
+        empresa=request.user.empresa, ativo=True
+    ) if pode_fechar else []
+
     # Clientes para o select de edição inline
     from cadastros.models import Cadastro
     clientes = Cadastro.objects.filter(
@@ -259,6 +265,7 @@ def detalhe_os(request, id):
         'pode_fechar': pode_fechar,
         'caixas': caixas,
         'caixa_padrao_id': caixa_padrao_id,
+        'formas_pagamento': formas_pagamento,
         'clientes': clientes,
     })
 
@@ -429,8 +436,19 @@ def fechar_os(request, id):
         return redirect('servicos:detalhe_os', id=os_obj.id)
 
     forma = request.POST.get('forma_pagamento', 'A_VISTA')
+    forma_pagamento_id = request.POST.get('forma_pagamento_id', None)
     qtd_parcelas = int(request.POST.get('qtd_parcelas', 1))
     caixa_id = request.POST.get('caixa_id', None)
+
+    # Buscar a forma de pagamento selecionada
+    forma_pagamento_obj = None
+    if forma_pagamento_id:
+        try:
+            forma_pagamento_obj = FormaPagamento.objects.get(
+                id=int(forma_pagamento_id), empresa=request.user.empresa
+            )
+        except (FormaPagamento.DoesNotExist, ValueError):
+            pass
 
     if forma == 'A_PRAZO' and qtd_parcelas < 1:
         messages.error(request, "Para pagamento a prazo, informe pelo menos 1 parcela.")
@@ -465,29 +483,35 @@ def fechar_os(request, id):
             status='PENDENTE',
             documento=os_obj.numero,
         )
-        # Buscar caixa
-        if caixa_id:
-            caixa = get_object_or_404(Caixa, id=caixa_id, empresa=request.user.empresa)
-        else:
-            caixa = Caixa.objects.filter(empresa=request.user.empresa).first()
-            if not caixa:
-                messages.error(request, "Nenhum caixa/banco encontrado. Cadastre um em Financeiro > Caixas.")
-                return redirect('servicos:detalhe_os', id=os_obj.id)
 
-        # Baixa automática
-        Lancamento.objects.create(
-            empresa=request.user.empresa,
-            caixa=caixa,
-            plano_de_contas=plano_de_contas,
-            conta_origem=conta,
-            data_lancamento=date.today(),
-            descricao=f"Recebimento OS {os_obj.numero}",
-            valor=valor_total,
-            tipo='C',
-        )
-        conta.status = 'PAGA'
-        conta.save()
-        messages.success(request, f"OS {os_obj.numero} FECHADA! Pagamento à vista registrado no caixa '{caixa.nome}'.")
+        # Só gera lançamento no caixa se a forma afeta_caixa (ex: Dinheiro)
+        if forma_pagamento_obj and forma_pagamento_obj.afeta_caixa:
+            if caixa_id:
+                caixa = get_object_or_404(Caixa, id=caixa_id, empresa=request.user.empresa)
+            else:
+                caixa = Caixa.objects.filter(empresa=request.user.empresa).first()
+                if not caixa:
+                    messages.error(request, "Nenhum caixa/banco encontrado. Cadastre um em Financeiro > Caixas.")
+                    return redirect('servicos:detalhe_os', id=os_obj.id)
+
+            Lancamento.objects.create(
+                empresa=request.user.empresa,
+                caixa=caixa,
+                plano_de_contas=plano_de_contas,
+                conta_origem=conta,
+                data_lancamento=date.today(),
+                descricao=f"Recebimento OS {os_obj.numero} — {forma_pagamento_obj.nome}",
+                valor=valor_total,
+                tipo='C',
+            )
+            conta.status = 'PAGA'
+            conta.save()
+            messages.success(request, f"OS {os_obj.numero} FECHADA! Pagamento ({forma_pagamento_obj.nome}) registrado no caixa '{caixa.nome}'.")
+        else:
+            conta.status = 'PAGA'
+            conta.save()
+            nome_forma = forma_pagamento_obj.nome if forma_pagamento_obj else 'A Vista'
+            messages.success(request, f"OS {os_obj.numero} FECHADA! Pagamento via {nome_forma} (sem movimentação de caixa).")
 
     elif forma == 'A_PRAZO':
         # Gera N Contas pendentes
@@ -858,3 +882,54 @@ def imprimir_orcamento(request, id):
         'servicos': servicos,
         'valor_total': valor_total,
     })
+
+
+# ==========================================================
+# 10. CRUD DE FORMAS DE PAGAMENTO
+# ==========================================================
+@login_required
+def lista_formas_pagamento(request):
+    formas = FormaPagamento.objects.filter(empresa=request.user.empresa)
+    return render(request, 'servicos/formapagamento_list.html', {'formas': formas})
+
+
+@login_required
+def nova_forma_pagamento(request):
+    if request.method == 'POST':
+        form = FormaPagamentoForm(request.POST)
+        if form.is_valid():
+            fp = form.save(commit=False)
+            fp.empresa = request.user.empresa
+            fp.save()
+            messages.success(request, f'Forma de pagamento "{fp.nome}" criada com sucesso!')
+            return redirect('servicos:lista_formas_pagamento')
+    else:
+        form = FormaPagamentoForm()
+    return render(request, 'servicos/formapagamento_form.html', {'form': form, 'titulo': 'Nova Forma de Pagamento'})
+
+
+@login_required
+def editar_forma_pagamento(request, id):
+    fp = get_object_or_404(FormaPagamento, id=id, empresa=request.user.empresa)
+    if request.method == 'POST':
+        form = FormaPagamentoForm(request.POST, instance=fp)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Forma de pagamento "{fp.nome}" atualizada com sucesso!')
+            return redirect('servicos:lista_formas_pagamento')
+    else:
+        form = FormaPagamentoForm(instance=fp)
+    return render(request, 'servicos/formapagamento_form.html', {
+        'form': form, 'titulo': f'Editar {fp.nome}', 'forma': fp
+    })
+
+
+@login_required
+def excluir_forma_pagamento(request, id):
+    fp = get_object_or_404(FormaPagamento, id=id, empresa=request.user.empresa)
+    if request.method == 'POST':
+        nome = fp.nome
+        fp.delete()
+        messages.success(request, f'Forma de pagamento "{nome}" excluída com sucesso!')
+        return redirect('servicos:lista_formas_pagamento')
+    return redirect('servicos:lista_formas_pagamento')

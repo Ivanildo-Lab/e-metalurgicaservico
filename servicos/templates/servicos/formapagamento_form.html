@@ -1,0 +1,92 @@
+{% extends 'base.html' %}
+
+{% block titulo_cabecalho %}{% if forma %}Editar {{ forma.nome }}{% else %}Nova Forma de Pagamento{% endif %}{% endblock %}
+{% block subtitulo_cabecalho %}{% if forma %}Atualize os dados{% else %}Cadastre uma nova forma de pagamento{% endif %}{% endblock %}
+{% block breadcrumb %}Serviços / Formas de Pagamento / {% if forma %}Editar{% else %}Nova{% endif %}{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Botão Voltar -->
+    <div class="flex items-center justify-between">
+        <a href="{% url 'servicos:lista_formas_pagamento' %}"
+           class="inline-flex items-center text-sm text-gray-600 hover:text-gray-800 font-medium transition">
+            <i class="fa fa-arrow-left mr-2"></i> Voltar para Formas de Pagamento
+        </a>
+    </div>
+
+    <!-- CABEÇALHO -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 border-t-4 border-cyan-500 p-6">
+        <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 bg-cyan-100 rounded-lg flex items-center justify-center">
+                <i class="fa fa-credit-card text-cyan-600 text-lg"></i>
+            </div>
+            <div>
+                <h2 class="text-lg font-bold text-gray-800">
+                    {% if forma %}Editando: {{ forma.nome }}{% else %}Dados da Forma de Pagamento{% endif %}
+                </h2>
+                <p class="text-xs text-gray-500">
+                    {% if forma %}Atualize as informações{% else %}Preencha os dados para criar uma nova forma{% endif %}
+                </p>
+            </div>
+        </div>
+
+        {% if form.errors %}
+        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
+            <i class="fa fa-exclamation-triangle mr-2"></i>
+            {% for field, errors in form.errors.items %}
+                <p><strong>{{ field }}:</strong> {{ errors.0 }}</p>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="POST" class="space-y-5">
+            {% csrf_token %}
+
+            <!-- Nome -->
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <label class="block text-sm font-bold text-gray-700 mb-2">
+                    <i class="fa fa-tag mr-1 text-cyan-500"></i> Nome *
+                </label>
+                {{ form.nome }}
+                <p class="text-xs text-gray-500 mt-1">Ex: Dinheiro, PIX, Cartão de Crédito, Boleto...</p>
+            </div>
+
+            <!-- Configurações -->
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="flex items-center space-x-3">
+                        {{ form.afeta_caixa }}
+                        <label class="text-sm font-bold text-gray-700">Afeta o Caixa?</label>
+                    </div>
+                    <div class="flex items-center space-x-3">
+                        {{ form.ativo }}
+                        <label class="text-sm font-bold text-gray-700">Ativo</label>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Ordem de Exibição</label>
+                        {{ form.ordem }}
+                    </div>
+                </div>
+                <p class="text-xs text-gray-500 mt-2">
+                    <i class="fa fa-info-circle mr-1"></i>
+                    <strong>Afeta Caixa:</strong> Marque apenas para formas que movimentam o caixa físico (ex: Dinheiro).
+                    PIX, Débito, Crédito e Transferência <strong>não</strong> devem marcar.
+                </p>
+            </div>
+
+            <!-- Botões -->
+            <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+                <a href="{% url 'servicos:lista_formas_pagamento' %}"
+                   class="inline-flex items-center px-4 py-2 text-sm text-gray-600 hover:text-gray-800 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                    <i class="fa fa-arrow-left mr-1"></i> Cancelar
+                </a>
+                <button type="submit"
+                        class="bg-cyan-600 hover:bg-cyan-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold transition shadow-md inline-flex items-center">
+                    <i class="fa fa-save mr-1"></i> {% if forma %}Salvar Alterações{% else %}Criar Forma{% endif %}
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

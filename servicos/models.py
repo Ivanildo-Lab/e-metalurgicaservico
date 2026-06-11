@@ -270,3 +270,23 @@ class ServicoOrcamento(models.Model):
         verbose_name = "Serviço do Orçamento"
         verbose_name_plural = "Serviços do Orçamento"
         ordering = ['id']
+
+
+class FormaPagamento(ModeloSaaS):
+    """Formas de pagamento cadastradas pela empresa"""
+    nome = models.CharField(max_length=100, verbose_name="Nome")
+    afeta_caixa = models.BooleanField(
+        default=False,
+        verbose_name="Afeta o Caixa?",
+        help_text="Marque apenas para formas que movimentam o caixa físico (ex: Dinheiro)"
+    )
+    ativo = models.BooleanField(default=True, verbose_name="Ativo")
+    ordem = models.IntegerField(default=0, verbose_name="Ordem de Exibição")
+
+    def __str__(self):
+        return self.nome
+
+    class Meta:
+        verbose_name = "Forma de Pagamento"
+        verbose_name_plural = "Formas de Pagamento"
+        ordering = ['ordem', 'nome']

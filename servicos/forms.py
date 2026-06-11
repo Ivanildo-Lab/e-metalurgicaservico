@@ -1,7 +1,7 @@
 from django import forms
 from .models import (
     Funcionario, OrdemServico, ServicoOS, FuncionarioOS,
-    MetaFuncionario, Orcamento, ServicoOrcamento
+    MetaFuncionario, Orcamento, ServicoOrcamento, FormaPagamento
 )
 from cadastros.models import Cadastro
 
@@ -168,6 +168,21 @@ class ServicoOrcamentoForm(forms.ModelForm):
     class Meta:
         model = ServicoOrcamento
         fields = ['descricao', 'valor']
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            field.widget.attrs['class'] = (
+                'w-full px-3 py-2 border border-gray-300 rounded-lg '
+                'focus:ring-2 focus:ring-blue-500 focus:border-blue-500 '
+                'text-sm transition duration-150'
+            )
+
+
+class FormaPagamentoForm(forms.ModelForm):
+    class Meta:
+        model = FormaPagamento
+        fields = ['nome', 'afeta_caixa', 'ativo', 'ordem']
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
