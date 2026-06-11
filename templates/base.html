@@ -114,6 +114,11 @@
                                 <i class="fa fa-list-ol mr-2 w-3"></i> Plano de Contas
                             </a>
                         </li>
+                        <li>
+                            <a href="{% url 'servicos:lista_formas_pagamento' %}" class="flex items-center py-2 pl-12 pr-4 text-gray-400 hover:text-white text-xs hover:bg-white/5 border-l-2 border-transparent hover:border-cyan-400 {% if 'formas-pagamento' in request.path %}text-white font-bold{% endif %}">
+                                <i class="fa fa-credit-card mr-2 w-3"></i> Formas de Pagamento
+                            </a>
+                        </li>
                     </ul>
                 </li>
 <!-- 4. RELATÓRIOS (NOVO MENU) -->
@@ -179,11 +184,6 @@
                         <li>
                             <a href="{% url 'servicos:relatorio_anual' ano=current_year %}" target="_blank" class="flex items-center py-2 pl-12 pr-4 text-gray-400 hover:text-white text-xs hover:bg-white/5 border-l-2 border-transparent hover:border-red-400">
                                 <i class="fa fa-calendar-alt mr-2 w-3"></i> Relatório Anual
-                            </a>
-                        </li>
-                        <li>
-                            <a href="{% url 'servicos:lista_formas_pagamento' %}" class="flex items-center py-2 pl-12 pr-4 text-gray-400 hover:text-white text-xs hover:bg-white/5 border-l-2 border-transparent hover:border-cyan-400 {% if 'formas-pagamento' in request.path %}text-white font-bold{% endif %}">
-                                <i class="fa fa-credit-card mr-2 w-3"></i> Formas de Pagamento
                             </a>
                         </li>
                     </ul>

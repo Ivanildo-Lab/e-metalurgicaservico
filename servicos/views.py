@@ -140,7 +140,7 @@ def nova_os(request):
             messages.success(request, f"OS {obj.numero} criada com sucesso! Agora adicione os serviços.")
             return redirect('servicos:detalhe_os', id=obj.id)
     else:
-        form = OrdemServicoForm(user=request.user)
+        form = OrdemServicoForm(user=request.user, initial={'data_entrada': date.today()})
     return render(request, 'servicos/os_form.html', {'form': form, 'editar': False})
 
 
@@ -469,6 +469,21 @@ def fechar_os(request, id):
             "(chave: PLANO_CONTAS_SERVICOS_ID)."
         )
         return redirect('servicos:detalhe_os', id=os_obj.id)
+
+    # Ajustar data_conclusao: se conclusão no mês seguinte ao de entrada, usar último dia do mês de entrada
+    hoje = date.today()
+    data_entrada = os_obj.data_entrada
+    if hoje.month != data_entrada.month or hoje.year != data_entrada.year:
+        # Conclusão em mês diferente da entrada - usar último dia do mês de entrada
+        import calendar
+        ultimo_dia = calendar.monthrange(data_entrada.year, data_entrada.month)[1]
+        data_conclusao_ref = date(data_entrada.year, data_entrada.month, ultimo_dia)
+    else:
+        data_conclusao_ref = hoje
+
+    # Atualizar data de conclusão
+    os_obj.data_conclusao = data_conclusao_ref
+    os_obj.save(update_fields=['data_conclusao'])
 
     # Gerar financeiro
     if forma == 'A_VISTA':
