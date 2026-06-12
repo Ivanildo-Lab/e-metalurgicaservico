@@ -1,0 +1,52 @@
+[
+  {
+    "model": "core.parametrosistema",
+    "pk": null,
+    "fields": {
+      "empresa": 2,
+      "chave": "CAIXA_PADRAO_ID",
+      "valor": "1",
+      "descricao": "Caixa Padrão do sistema"
+    }
+  },
+  {
+    "model": "core.parametrosistema",
+    "pk": null,
+    "fields": {
+      "empresa": 2,
+      "chave": "TAXA_JUROS_MENSAL",
+      "valor": "0,16",
+      "descricao": "Configuração automática"
+    }
+  },
+  {
+    "model": "core.parametrosistema",
+    "pk": null,
+    "fields": {
+      "empresa": 2,
+      "chave": "PLANO_CONTAS_MENSALIDADE_ID",
+      "valor": "2",
+      "descricao": "Configuração automática"
+    }
+  },
+  {
+    "model": "core.parametrosistema",
+    "pk": null,
+    "fields": {
+      "empresa": 2,
+      "chave": "PLANO_CONTAS_JUROS_ID",
+      "valor": "7",
+      "descricao": "Configuração automática"
+    }
+  },
+  {
+    "model": "core.parametrosistema",
+    "pk": null,
+    "fields": {
+      "empresa": 2,
+      "chave": "PLANO_CONTAS_SERVICOS_ID",
+      "valor": "13",
+      "descricao": ""
+    }
+  }
+]

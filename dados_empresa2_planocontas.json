@@ -1,0 +1,122 @@
+[
+  {
+    "model": "financeiro.planodecontas",
+    "pk": null,
+    "fields": {
+      "empresa": 2,
+      "nome": "RECEITAS",
+      "tipo": "R",
+      "codigo": "01.000.000"
+    }
+  },
+  {
+    "model": "financeiro.planodecontas",
+    "pk": null,
+    "fields": {
+      "empresa": 2,
+      "nome": "RECEITA COM RECEBIMENTOS",
+      "tipo": "R",
+      "codigo": "01.100.000"
+    }
+  },
+  {
+    "model": "financeiro.planodecontas",
+    "pk": null,
+    "fields": {
+      "empresa": 2,
+      "nome": "DESPESAS",
+      "tipo": "D",
+      "codigo": "02.000.000"
+    }
+  },
+  {
+    "model": "financeiro.planodecontas",
+    "pk": null,
+    "fields": {
+      "empresa": 2,
+      "nome": "PAGAMENTOS",
+      "tipo": "D",
+      "codigo": "02.200.000"
+    }
+  },
+  {
+    "model": "financeiro.planodecontas",
+    "pk": null,
+    "fields": {
+      "empresa": 2,
+      "nome": "PAGAMENTOS A FORNECEDORES",
+      "tipo": "D",
+      "codigo": "02.200.001"
+    }
+  },
+  {
+    "model": "financeiro.planodecontas",
+    "pk": null,
+    "fields": {
+      "empresa": 2,
+      "nome": "RECEBIMENTO DE PARCELAS",
+      "tipo": "R",
+      "codigo": "01.100.001"
+    }
+  },
+  {
+    "model": "financeiro.planodecontas",
+    "pk": null,
+    "fields": {
+      "empresa": 2,
+      "nome": "COBRANCA DE JUROS E MULAS",
+      "tipo": "R",
+      "codigo": "01.100.002"
+    }
+  },
+  {
+    "model": "financeiro.planodecontas",
+    "pk": null,
+    "fields": {
+      "empresa": 2,
+      "nome": "TAXAS",
+      "tipo": "D",
+      "codigo": "02.300.000"
+    }
+  },
+  {
+    "model": "financeiro.planodecontas",
+    "pk": null,
+    "fields": {
+      "empresa": 2,
+      "nome": "PAGAMENTOS DE JUROS E MULTAS",
+      "tipo": "D",
+      "codigo": "02.300.001"
+    }
+  },
+  {
+    "model": "financeiro.planodecontas",
+    "pk": null,
+    "fields": {
+      "empresa": 2,
+      "nome": "EMPRESTIMOS",
+      "tipo": "D",
+      "codigo": "02.400.000"
+    }
+  },
+  {
+    "model": "financeiro.planodecontas",
+    "pk": null,
+    "fields": {
+      "empresa": 2,
+      "nome": "EMPRESTIMOS BANCARIOS",
+      "tipo": "D",
+      "codigo": "02.400.001"
+    }
+  },
+  {
+    "model": "financeiro.planodecontas",
+    "pk": null,
+    "fields": {
+      "empresa": 2,
+      "nome": "RECEBIMENTO DE SERVIÇO",
+      "tipo": "R",
+      "codigo": "01.100.003"
+    }
+  }
+]

@@ -1,5 +1,8 @@
 from django.contrib import admin
-from .models import Funcionario, OrdemServico, ServicoOS, FuncionarioOS, MetaFuncionario
+from .models import (
+    Funcionario, OrdemServico, ServicoOS, FuncionarioOS,
+    MetaFuncionario, Orcamento, ServicoOrcamento, FormaPagamento
+)
 
 
 class ServicoOSInline(admin.TabularInline):
@@ -63,3 +66,47 @@ class MetaFuncionarioAdmin(admin.ModelAdmin):
         if request.user.is_superuser:
             return qs
         return qs.filter(empresa=request.user.empresa)
+
+
+class ServicoOrcamentoInline(admin.TabularInline):
+    model = ServicoOrcamento
+    extra = 1
+    fields = ['descricao', 'valor']
+
+
+@admin.register(Orcamento)
+class OrcamentoAdmin(admin.ModelAdmin):
+    list_display = ['numero', 'cadastro', 'status', 'data_criacao', 'empresa']
+    list_filter = ['status', 'empresa']
+    search_fields = ['numero', 'cadastro__nome', 'descricao_geral']
+    readonly_fields = ['numero']
+    inlines = [ServicoOrcamentoInline]
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(empresa=request.user.empresa)
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.empresa = request.user.empresa
+        super().save_model(request, obj, form, change)
+
+
+@admin.register(FormaPagamento)
+class FormaPagamentoAdmin(admin.ModelAdmin):
+    list_display = ['nome', 'afeta_caixa', 'parcelas', 'ativo', 'empresa']
+    list_filter = ['afeta_caixa', 'ativo', 'empresa']
+    search_fields = ['nome']
+
+    def get_queryset(self, request):
+        qs = super().get_queryset(request)
+        if request.user.is_superuser:
+            return qs
+        return qs.filter(empresa=request.user.empresa)
+
+    def save_model(self, request, obj, form, change):
+        if not change:
+            obj.empresa = request.user.empresa
+        super().save_model(request, obj, form, change)

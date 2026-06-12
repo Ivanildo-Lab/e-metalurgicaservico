@@ -1,0 +1,122 @@
+﻿[
+{
+  "model": "financeiro.planodecontas",
+  "pk": 1,
+  "fields": {
+    "empresa": 1,
+    "nome": "RECEITAS",
+    "tipo": "R",
+    "codigo": "01.000.000"
+  }
+},
+{
+  "model": "financeiro.planodecontas",
+  "pk": 2,
+  "fields": {
+    "empresa": 1,
+    "nome": "RECEITA COM RECEBIMENTOS",
+    "tipo": "R",
+    "codigo": "01.100.000"
+  }
+},
+{
+  "model": "financeiro.planodecontas",
+  "pk": 3,
+  "fields": {
+    "empresa": 1,
+    "nome": "DESPESAS",
+    "tipo": "D",
+    "codigo": "02.000.000"
+  }
+},
+{
+  "model": "financeiro.planodecontas",
+  "pk": 4,
+  "fields": {
+    "empresa": 1,
+    "nome": "PAGAMENTOS",
+    "tipo": "D",
+    "codigo": "02.200.000"
+  }
+},
+{
+  "model": "financeiro.planodecontas",
+  "pk": 5,
+  "fields": {
+    "empresa": 1,
+    "nome": "PAGAMENTOS A FORNECEDORES",
+    "tipo": "D",
+    "codigo": "02.200.001"
+  }
+},
+{
+  "model": "financeiro.planodecontas",
+  "pk": 6,
+  "fields": {
+    "empresa": 1,
+    "nome": "RECEBIMENTO DE PARCELAS",
+    "tipo": "R",
+    "codigo": "01.100.001"
+  }
+},
+{
+  "model": "financeiro.planodecontas",
+  "pk": 7,
+  "fields": {
+    "empresa": 1,
+    "nome": "COBRANCA DE JUROS E MULAS",
+    "tipo": "R",
+    "codigo": "01.100.002"
+  }
+},
+{
+  "model": "financeiro.planodecontas",
+  "pk": 8,
+  "fields": {
+    "empresa": 1,
+    "nome": "TAXAS",
+    "tipo": "D",
+    "codigo": "02.300.000"
+  }
+},
+{
+  "model": "financeiro.planodecontas",
+  "pk": 9,
+  "fields": {
+    "empresa": 1,
+    "nome": "PAGAMENTOS DE JUROS E MULTAS",
+    "tipo": "D",
+    "codigo": "02.300.001"
+  }
+},
+{
+  "model": "financeiro.planodecontas",
+  "pk": 10,
+  "fields": {
+    "empresa": 1,
+    "nome": "EMPRESTIMOS",
+    "tipo": "D",
+    "codigo": "02.400.000"
+  }
+},
+{
+  "model": "financeiro.planodecontas",
+  "pk": 11,
+  "fields": {
+    "empresa": 1,
+    "nome": "EMPRESTIMOS BANCARIOS",
+    "tipo": "D",
+    "codigo": "02.400.001"
+  }
+},
+{
+  "model": "financeiro.planodecontas",
+  "pk": 13,
+  "fields": {
+    "empresa": 1,
+    "nome": "RECEBIMENTO DE SERVIÇO",
+    "tipo": "R",
+    "codigo": "01.100.003"
+  }
+}
+]

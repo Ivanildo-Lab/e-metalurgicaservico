@@ -1,0 +1,46 @@
+[
+  {
+    "model": "servicos.formapagamento",
+    "pk": null,
+    "fields": {
+      "empresa": 2,
+      "nome": "DINHEIRO",
+      "afeta_caixa": true,
+      "ativo": true,
+      "ordem": 0
+    }
+  },
+  {
+    "model": "servicos.formapagamento",
+    "pk": null,
+    "fields": {
+      "empresa": 2,
+      "nome": "PIX",
+      "afeta_caixa": false,
+      "ativo": true,
+      "ordem": 1
+    }
+  },
+  {
+    "model": "servicos.formapagamento",
+    "pk": null,
+    "fields": {
+      "empresa": 2,
+      "nome": "CARTAO DE CREDITO",
+      "afeta_caixa": false,
+      "ativo": true,
+      "ordem": 3
+    }
+  },
+  {
+    "model": "servicos.formapagamento",
+    "pk": null,
+    "fields": {
+      "empresa": 2,
+      "nome": "CARTAO DE DEBITO",
+      "afeta_caixa": false,
+      "ativo": true,
+      "ordem": 3
+    }
+  }
+]
