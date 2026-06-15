@@ -76,9 +76,9 @@ class ServicoOrcamentoInline(admin.TabularInline):
 
 @admin.register(Orcamento)
 class OrcamentoAdmin(admin.ModelAdmin):
-    list_display = ['numero', 'cadastro', 'status', 'data_criacao', 'empresa']
-    list_filter = ['status', 'empresa']
-    search_fields = ['numero', 'cadastro__nome', 'descricao_geral']
+    list_display = ['numero', 'cadastro', 'forma_pagamento', 'data', 'empresa']
+    list_filter = ['forma_pagamento', 'empresa']
+    search_fields = ['numero', 'cadastro__nome', 'descricao']
     readonly_fields = ['numero']
     inlines = [ServicoOrcamentoInline]
 
@@ -96,7 +96,7 @@ class OrcamentoAdmin(admin.ModelAdmin):
 
 @admin.register(FormaPagamento)
 class FormaPagamentoAdmin(admin.ModelAdmin):
-    list_display = ['nome', 'afeta_caixa', 'parcelas', 'ativo', 'empresa']
+    list_display = ['nome', 'afeta_caixa', 'ativo', 'ordem', 'empresa']
     list_filter = ['afeta_caixa', 'ativo', 'empresa']
     search_fields = ['nome']
 
