@@ -95,15 +95,23 @@ class OrdemServico(ModeloSaaS):
         """Gera número sequencial: OS-2026-0001"""
         from django.utils import timezone
         ano = timezone.now().year
+        prefixo = f'OS-{ano}-'
         ultimo = OrdemServico.objects.filter(
-            empresa=self.empresa, numero__startswith=f'OS-{ano}'
+            empresa=self.empresa, numero__startswith=prefixo
         ).order_by('-numero').first()
 
         if ultimo:
             seq = int(ultimo.numero.split('-')[-1]) + 1
         else:
             seq = 1
-        return f'OS-{ano}-{seq:04d}'
+
+        # Garante que o número não existe
+        while OrdemServico.objects.filter(
+            empresa=self.empresa, numero=f'{prefixo}{seq:04d}'
+        ).exists():
+            seq += 1
+
+        return f'{prefixo}{seq:04d}'
 
     def __str__(self):
         return f"{self.numero} — {self.cadastro.nome}"
@@ -237,15 +245,23 @@ class Orcamento(ModeloSaaS):
         """Gera número sequencial: ORC-2026-0001"""
         from django.utils import timezone
         ano = timezone.now().year
+        prefixo = f'ORC-{ano}-'
         ultimo = Orcamento.objects.filter(
-            empresa=self.empresa, numero__startswith=f'ORC-{ano}'
+            empresa=self.empresa, numero__startswith=prefixo
         ).order_by('-numero').first()
 
         if ultimo:
             seq = int(ultimo.numero.split('-')[-1]) + 1
         else:
             seq = 1
-        return f'ORC-{ano}-{seq:04d}'
+
+        # Garante que o número não existe
+        while Orcamento.objects.filter(
+            empresa=self.empresa, numero=f'{prefixo}{seq:04d}'
+        ).exists():
+            seq += 1
+
+        return f'{prefixo}{seq:04d}'
 
     def __str__(self):
         return f"{self.numero} — {self.cadastro.nome}"
