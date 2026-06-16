@@ -19,6 +19,7 @@ class Funcionario(ModeloSaaS):
         verbose_name = "Funcionário"
         verbose_name_plural = "Funcionários"
         ordering = ['nome']
+        unique_together = [['empresa', 'nome']]
 
 
 class OrdemServico(ModeloSaaS):
@@ -35,7 +36,7 @@ class OrdemServico(ModeloSaaS):
         ('A_PRAZO', 'A Prazo'),
     ]
 
-    numero = models.CharField(max_length=20, unique=True, verbose_name="Nº OS", editable=False)
+    numero = models.CharField(max_length=20, verbose_name="Nº OS", editable=False)
     cadastro = models.ForeignKey(
         Cadastro, on_delete=models.PROTECT, verbose_name="Cliente",
         help_text="Cliente que enviou a peça / encomenda"
@@ -120,6 +121,7 @@ class OrdemServico(ModeloSaaS):
         verbose_name = "Ordem de Serviço"
         verbose_name_plural = "Ordens de Serviço"
         ordering = ['-data_entrada', '-numero']
+        unique_together = [['empresa', 'numero']]
 
 
 class ServicoOS(models.Model):
@@ -214,7 +216,7 @@ class Orcamento(ModeloSaaS):
         ('A_PRAZO', 'A Prazo'),
     ]
 
-    numero = models.CharField(max_length=20, unique=True, verbose_name="Nº Orçamento", editable=False)
+    numero = models.CharField(max_length=20, verbose_name="Nº Orçamento", editable=False)
     cadastro = models.ForeignKey(
         Cadastro, on_delete=models.PROTECT, verbose_name="Cliente",
         help_text="Cliente para quem o orçamento será enviado"
@@ -270,6 +272,7 @@ class Orcamento(ModeloSaaS):
         verbose_name = "Orçamento"
         verbose_name_plural = "Orçamentos"
         ordering = ['-data', '-numero']
+        unique_together = [['empresa', 'numero']]
 
 
 class ServicoOrcamento(models.Model):
@@ -306,3 +309,4 @@ class FormaPagamento(ModeloSaaS):
         verbose_name = "Forma de Pagamento"
         verbose_name_plural = "Formas de Pagamento"
         ordering = ['ordem', 'nome']
+        unique_together = [['empresa', 'nome']]
