@@ -49,8 +49,18 @@
                 <label class="block text-sm font-bold text-gray-700 mb-2">
                     <i class="fa fa-user mr-1 text-indigo-500"></i> Cliente *
                 </label>
-                {{ form.cadastro }}
-                <p class="text-xs text-gray-500 mt-1">Selecione o cliente que enviou a peça / encomenda</p>
+                <input type="hidden" name="cadastro" id="cadastro_id" value="{{ form.cadastro.value|default:'' }}">
+                <div class="relative" id="busca-cliente-container">
+                    <input type="text" id="busca-cliente" placeholder="Digite nome, CPF/CNPJ ou telefone..."
+                           autocomplete="off"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition duration-150">
+                    <div id="cliente-selecionado" class="hidden mt-2 p-2 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
+                        <span class="text-sm text-green-800 font-medium" id="cliente-selecionado-texto"></span>
+                        <button type="button" onclick="limparCliente()" class="text-red-500 hover:text-red-700 text-xs font-bold">✕ Limpar</button>
+                    </div>
+                    <div id="resultado-busca" class="hidden absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"></div>
+                </div>
+                <p class="text-xs text-gray-500 mt-1">Digite pelo menos 2 letras para buscar</p>
             </div>
 
             <!-- Descrição -->
@@ -133,4 +143,79 @@
         </form>
     </div>
 </div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+    const input = document.getElementById('busca-cliente');
+    const hidden = document.getElementById('cadastro_id');
+    const resultado = document.getElementById('resultado-busca');
+    const selecionado = document.getElementById('cliente-selecionado');
+    const textoSelecionado = document.getElementById('cliente-selecionado-texto');
+    let timeout = null;
+
+    if (hidden.value) {
+        fetch(`/servicos/api/buscar-clientes/?q=${encodeURIComponent(input.value || '__init__')}`)
+            .then(r => r.json())
+            .then(data => {
+                if (data.resultados && data.resultados.length > 0) {
+                    const c = data.resultados[0];
+                    input.value = c.nome;
+                    textoSelecionado.textContent = c.nome + ' — ' + (c.documento || 'sem doc');
+                    selecionado.classList.remove('hidden');
+                }
+            }).catch(() => {});
+    }
+
+    input.addEventListener('input', function() {
+        clearTimeout(timeout);
+        const q = this.value.trim();
+        if (q.length < 2) { resultado.classList.add('hidden'); return; }
+        timeout = setTimeout(() => {
+            fetch('/servicos/api/buscar-clientes/?q=' + encodeURIComponent(q))
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.resultados || data.resultados.length === 0) {
+                        resultado.innerHTML = '<div class="px-4 py-3 text-sm text-gray-500">Nenhum cliente encontrado</div>';
+                        resultado.classList.remove('hidden');
+                        return;
+                    }
+                    let html = '';
+                    data.resultados.forEach(c => {
+                        const doc = c.documento ? ' — ' + c.documento : '';
+                        const tel = c.telefone ? ' ' + c.telefone : '';
+                        const cid = c.cidade ? ' — ' + c.cidade : '';
+                        html += '<div class="px-4 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-0" data-id="' + c.id + '" data-nome="' + c.nome + '" data-doc="' + (c.documento || '') + '">'
+                            + '<div class="text-sm font-medium text-gray-800">' + c.nome + '</div>'
+                            + '<div class="text-xs text-gray-500">' + doc + tel + cid + '</div>'
+                            + '</div>';
+                    });
+                    resultado.innerHTML = html;
+                    resultado.classList.remove('hidden');
+                    resultado.querySelectorAll('[data-id]').forEach(el => {
+                        el.addEventListener('click', function() {
+                            hidden.value = this.dataset.id;
+                            input.value = this.dataset.nome;
+                            textoSelecionado.textContent = this.dataset.nome + ' — ' + (this.dataset.doc || 'sem doc');
+                            selecionado.classList.remove('hidden');
+                            resultado.classList.add('hidden');
+                        });
+                    });
+                });
+        }, 300);
+    });
+
+    input.addEventListener('blur', () => setTimeout(() => resultado.classList.add('hidden'), 200));
+    input.addEventListener('focus', function() {
+        if (this.value.trim().length >= 2 && resultado.innerHTML) resultado.classList.remove('hidden');
+    });
+
+    window.limparCliente = function() {
+        hidden.value = '';
+        input.value = '';
+        selecionado.classList.add('hidden');
+    };
+})();
+</script>
 {% endblock %}

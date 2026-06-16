@@ -5,6 +5,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Sum, Q
 from django.http import JsonResponse
+from cadastros.models import Cadastro
 
 from core.models import ParametroSistema
 from financeiro.models import Conta, Lancamento, Caixa, PlanoDeContas
@@ -948,3 +949,53 @@ def excluir_forma_pagamento(request, id):
         messages.success(request, f'Forma de pagamento "{nome}" excluída com sucesso!')
         return redirect('servicos:lista_formas_pagamento')
     return redirect('servicos:lista_formas_pagamento')
+
+
+# ==========================================================
+# 11. API BUSCA DE CLIENTES (AJAX)
+# ==========================================================
+@login_required
+def buscar_clientes(request):
+    """Busca clientes por nome, CPF/CNPJ ou telefone — retorna JSON"""
+    q = request.GET.get('q', '').strip()
+    cliente_id = request.GET.get('id', None)
+
+    # Busca por ID (para campos com valor prévio)
+    if cliente_id:
+        try:
+            c = Cadastro.objects.get(id=int(cliente_id), empresa=request.user.empresa)
+            return JsonResponse({'resultados': [{
+                'id': c.id,
+                'nome': c.nome,
+                'documento': c.cpf_cnpj or '',
+                'telefone': c.celular or c.telefone_fixo or '',
+                'cidade': f'{c.cidade}/{c.uf}' if c.cidade else '',
+            }]})
+        except (Cadastro.DoesNotExist, ValueError):
+            return JsonResponse({'resultados': []})
+
+    if len(q) < 2:
+        return JsonResponse({'resultados': []})
+
+    clientes = Cadastro.objects.filter(
+        empresa=request.user.empresa,
+        papel__in=['CLI', 'AMB'],
+        situacao='ATIVO',
+    ).filter(
+        Q(nome__icontains=q) |
+        Q(cpf_cnpj__icontains=q) |
+        Q(celular__icontains=q) |
+        Q(telefone_fixo__icontains=q)
+    ).order_by('nome')[:20]
+
+    resultados = []
+    for c in clientes:
+        resultados.append({
+            'id': c.id,
+            'nome': c.nome,
+            'documento': c.cpf_cnpj or '',
+            'telefone': c.celular or c.telefone_fixo or '',
+            'cidade': f'{c.cidade}/{c.uf}' if c.cidade else '',
+        })
+
+    return JsonResponse({'resultados': resultados})

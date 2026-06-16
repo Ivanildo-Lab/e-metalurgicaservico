@@ -60,4 +60,7 @@ urlpatterns = [
     path('formas-pagamento/nova/', views.nova_forma_pagamento, name='nova_forma_pagamento'),
     path('formas-pagamento/editar/<int:id>/', views.editar_forma_pagamento, name='editar_forma_pagamento'),
     path('formas-pagamento/excluir/<int:id>/', views.excluir_forma_pagamento, name='excluir_forma_pagamento'),
+
+    # Busca de clientes (AJAX)
+    path('api/buscar-clientes/', views.buscar_clientes, name='buscar_clientes'),
 ]
