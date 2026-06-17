@@ -67,6 +67,7 @@
                             <th class="text-right px-4 py-3 font-semibold text-gray-600">Realizado (R$)</th>
                             <th class="text-center px-4 py-3 font-semibold text-gray-600">%</th>
                             <th class="text-center px-4 py-3 font-semibold text-gray-600">Avaliação</th>
+                            <th class="text-right px-4 py-3 font-semibold text-gray-600">Bônus (R$)</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
@@ -77,7 +78,11 @@
                             <td class="px-4 py-3 text-right font-mono font-semibold text-blue-700">{{ d.realizado|moeda_br }}</td>
                             <td class="px-4 py-3 text-center font-mono">{{ d.percentual|floatformat:1 }}%</td>
                             <td class="px-4 py-3 text-center">
-                                {% if d.avaliacao == 'OTIMO' %}
+                                {% if d.avaliacao == 'EXCELENTE' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-800">
+                                    <i class="fa fa-trophy mr-1"></i> Excelente
+                                </span>
+                                {% elif d.avaliacao == 'OTIMO' %}
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">
                                     <i class="fa fa-star mr-1"></i> Ótimo
                                 </span>
@@ -85,19 +90,22 @@
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
                                     <i class="fa fa-thumbs-up mr-1"></i> Bom
                                 </span>
-                                {% elif d.avaliacao == 'RUIM' %}
+                                {% elif d.avaliacao == 'REGULAR' %}
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800">
-                                    Ruim
+                                    Regular
                                 </span>
-                                {% elif d.avaliacao == 'MUITO_BAIXO' %}
-                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800">
-                                    Muito Baixo
+                                {% elif d.avaliacao == 'RUIM' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-100 text-orange-800">
+                                    Ruim
                                 </span>
                                 {% else %}
                                 <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600">
                                     Sem Meta
                                 </span>
                                 {% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-right font-mono font-semibold {% if d.bonus > 0 %}text-green-600{% else %}text-gray-400{% endif %}">
+                                {% if d.bonus > 0 %}R$ {{ d.bonus|floatformat:2 }}{% else %}—{% endif %}
                             </td>
                         </tr>
                         {% endfor %}
@@ -111,6 +119,7 @@
                                 {% if meta_empresa > 0 %}{% widthratio realizado_empresa meta_empresa 100 %}{% else %}0{% endif %}%
                             </td>
                             <td></td>
+                            <td class="px-4 py-3 text-right font-mono font-bold text-green-600">{{ total_bonus|moeda_br }}</td>
                         </tr>
                     </tfoot>
                 </table>

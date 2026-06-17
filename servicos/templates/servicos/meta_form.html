@@ -48,32 +48,66 @@
 
                 <!-- Limites de Avaliação -->
                 <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <h3 class="text-sm font-bold text-gray-700 mb-3"><i class="fa fa-sliders-h mr-1"></i> Limites de Avaliação (% do valor atingido)</h3>
-                    <div class="grid grid-cols-3 gap-4">
+                    <h3 class="text-sm font-bold text-gray-700 mb-3"><i class="fa fa-sliders-h mr-1"></i> Faixas de Avaliação (% do realizado / meta)</h3>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                         <div>
-                            <label class="block text-xs text-gray-500 mb-1">Mín. Ruim</label>
-                            {{ form.avaliacao_ruim }}
-                            <p class="text-xs text-red-500 mt-1">Abaixo deste % = Muito Baixo</p>
+                            <label class="block text-xs text-gray-500 mb-1">Limite Ruim (%)</label>
+                            {{ form.percentual_ruim }}
+                            <p class="text-xs text-orange-500 mt-1">Até este % = Ruim</p>
                         </div>
                         <div>
-                            <label class="block text-xs text-gray-500 mb-1">Mín. Bom</label>
-                            {{ form.avaliacao_bom }}
-                            <p class="text-xs text-yellow-600 mt-1">Entre Ruim e Bom = Ruim</p>
+                            <label class="block text-xs text-gray-500 mb-1">Limite Regular (%)</label>
+                            {{ form.percentual_regular }}
+                            <p class="text-xs text-yellow-600 mt-1">Até este % = Regular</p>
                         </div>
                         <div>
-                            <label class="block text-xs text-gray-500 mb-1">Mín. Ótimo</label>
-                            {{ form.avaliacao_otimo }}
-                            <p class="text-xs text-green-600 mt-1">Entre Bom e Ótimo = Bom</p>
+                            <label class="block text-xs text-gray-500 mb-1">Limite Bom (%)</label>
+                            {{ form.percentual_bom }}
+                            <p class="text-xs text-blue-600 mt-1">Até este % = Bom</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Limite Ótimo (%)</label>
+                            {{ form.percentual_otimo }}
+                            <p class="text-xs text-green-600 mt-1">Até este % = Ótimo</p>
                         </div>
                     </div>
                     <p class="text-xs text-gray-500 mt-3">
                         <i class="fa fa-info-circle mr-1"></i>
-                        Acima do mínimo de Ótimo = <strong>Ótimo</strong>.
-                        Ex: Se Mín. Ruim = 50, Mín. Bom = 80, Mín. Ótimo = 100:
-                        <span class="text-red-600">&lt;50% = Muito Baixo</span>,
-                        <span class="text-yellow-600">50-79% = Ruim</span>,
-                        <span class="text-blue-600">80-99% = Bom</span>,
-                        <span class="text-green-600">&gt;100% = Ótimo</span>
+                        Acima do limite de Ótimo = <strong>Excelente</strong>.
+                        Ex: Ruim=90, Regular=100, Bom=120, Ótimo=140:
+                        <span class="text-orange-600">&lt;90% = Ruim</span>,
+                        <span class="text-yellow-600">90-100% = Regular</span>,
+                        <span class="text-blue-600">101-120% = Bom</span>,
+                        <span class="text-green-600">121-140% = Ótimo</span>,
+                        <span class="text-purple-600">&gt;140% = Excelente</span>
+                    </p>
+                </div>
+
+                <!-- Bonificações -->
+                <div class="bg-green-50 rounded-lg p-4 border border-green-200">
+                    <h3 class="text-sm font-bold text-gray-700 mb-3"><i class="fa fa-coins mr-1"></i> Bonificações</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Bônus Bom (R$)</label>
+                            {{ form.bonus_bom }}
+                            <p class="text-xs text-blue-600 mt-1">Valor fixo para faixa Bom</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Bônus Ótimo (R$)</label>
+                            {{ form.bonus_otimo }}
+                            <p class="text-xs text-green-600 mt-1">Valor fixo para faixa Ótimo</p>
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-500 mb-1">Bônus Excelente (%)</label>
+                            {{ form.bonus_excelente_percentual }}
+                            <p class="text-xs text-purple-600 mt-1">% sobre valor acima da meta</p>
+                        </div>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-3">
+                        <i class="fa fa-info-circle mr-1"></i>
+                        <span class="text-blue-600">Bom:</span> R$ fixo,
+                        <span class="text-green-600">Ótimo:</span> R$ fixo,
+                        <span class="text-purple-600">Excelente:</span> % sobre o que exceder a meta
                     </p>
                 </div>
 

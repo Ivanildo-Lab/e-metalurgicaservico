@@ -62,11 +62,13 @@
                         <th class="text-right px-4 py-3 font-semibold text-gray-600">Realizado (R$)</th>
                         <th class="text-center px-4 py-3 font-semibold text-gray-600">%</th>
                         <th class="text-center px-4 py-3 font-semibold text-gray-600">Avaliação</th>
+                        <th class="text-right px-4 py-3 font-semibold text-gray-600">Bônus (R$)</th>
                         <th class="text-center px-4 py-3 font-semibold text-gray-600">Ações</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     {% for item in dados_metas %}
+                    {% with avaliacao=item.avaliacao.classificacao bonus=item.avaliacao.bonus %}
                     <tr class="hover:bg-gray-50 transition">
                         <td class="px-4 py-3">
                             <div class="flex items-center">
@@ -80,33 +82,40 @@
                         <td class="px-4 py-3 text-right font-mono font-semibold text-blue-700">{{ item.realizado|moeda_br }}</td>
                         <td class="px-4 py-3 text-center">
                             <div class="w-full bg-gray-200 rounded-full h-2.5">
-                                <div class="h-2.5 rounded-full {% if item.percentual >= 100 %}bg-green-500{% elif item.percentual >= 80 %}bg-blue-500{% elif item.percentual >= 50 %}bg-yellow-500{% else %}bg-red-500{% endif %}"
+                                <div class="h-2.5 rounded-full {% if avaliacao == 'EXCELENTE' %}bg-purple-500{% elif avaliacao == 'OTIMO' %}bg-green-500{% elif avaliacao == 'BOM' %}bg-blue-500{% elif avaliacao == 'REGULAR' %}bg-yellow-500{% elif avaliacao == 'RUIM' %}bg-orange-500{% else %}bg-red-500{% endif %}"
                                      style="width: {% if item.percentual > 100 %}100{% else %}{{ item.percentual|floatformat:0 }}{% endif %}%"></div>
                             </div>
                             <span class="text-xs text-gray-500 mt-1 block">{{ item.percentual|floatformat:1 }}%</span>
                         </td>
                         <td class="px-4 py-3 text-center">
-                            {% if item.avaliacao == 'OTIMO' %}
+                            {% if avaliacao == 'EXCELENTE' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-purple-100 text-purple-800">
+                                <i class="fa fa-trophy mr-1"></i> Excelente
+                            </span>
+                            {% elif avaliacao == 'OTIMO' %}
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">
                                 <i class="fa fa-star mr-1"></i> Ótimo
                             </span>
-                            {% elif item.avaliacao == 'BOM' %}
+                            {% elif avaliacao == 'BOM' %}
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
                                 <i class="fa fa-thumbs-up mr-1"></i> Bom
                             </span>
-                            {% elif item.avaliacao == 'RUIM' %}
+                            {% elif avaliacao == 'REGULAR' %}
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800">
-                                <i class="fa fa-exclamation mr-1"></i> Ruim
+                                <i class="fa fa-minus mr-1"></i> Regular
                             </span>
-                            {% elif item.avaliacao == 'MUITO_BAIXO' %}
-                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800">
-                                <i class="fa fa-arrow-down mr-1"></i> Muito Baixo
+                            {% elif avaliacao == 'RUIM' %}
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-orange-100 text-orange-800">
+                                <i class="fa fa-exclamation mr-1"></i> Ruim
                             </span>
                             {% else %}
                             <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-gray-100 text-gray-600">
                                 Sem Meta
                             </span>
                             {% endif %}
+                        </td>
+                        <td class="px-4 py-3 text-right font-mono font-semibold {% if bonus > 0 %}text-green-600{% else %}text-gray-400{% endif %}">
+                            {% if bonus > 0 %}R$ {{ bonus|floatformat:2 }}{% else %}—{% endif %}
                         </td>
                         <td class="px-4 py-3 text-center">
                             <a href="{% url 'servicos:editar_meta' item.meta.id %}"
@@ -120,6 +129,7 @@
                             </a>
                         </td>
                     </tr>
+                    {% endwith %}
                     {% endfor %}
                 </tbody>
             </table>

@@ -117,6 +117,16 @@ def lista_ordens(request):
         data_conclusao__year=date.today().year,
     ).count()
 
+    # Caixa padrão para modal rápido
+    caixa_padrao_id = None
+    try:
+        param_caixa = ParametroSistema.objects.get(
+            empresa=request.user.empresa, chave='CAIXA_PADRAO_ID'
+        )
+        caixa_padrao_id = int(param_caixa.valor)
+    except (ParametroSistema.DoesNotExist, ValueError):
+        pass
+
     return render(request, 'servicos/os_list.html', {
         'ordens': ordens,
         'q': q,
@@ -127,6 +137,9 @@ def lista_ordens(request):
         'abertas': abertas,
         'concluidas': concluidas,
         'fechadas_mes': fechadas_mes,
+        'formas_pagamento_rapido': FormaPagamento.objects.filter(empresa=request.user.empresa, ativo=True),
+        'caixas_rapido': Caixa.objects.filter(empresa=request.user.empresa),
+        'caixa_padrao_id_rapido': caixa_padrao_id,
     })
 
 
@@ -604,11 +617,27 @@ def nova_meta(request):
     if request.method == 'POST':
         form = MetaFuncionarioForm(request.POST, user=request.user)
         if form.is_valid():
-            obj = form.save(commit=False)
-            obj.empresa = request.user.empresa
-            obj.save()
-            messages.success(request, "Meta cadastrada com sucesso!")
-            return redirect('servicos:lista_metas')
+            funcionario = form.cleaned_data['funcionario']
+            mes = form.cleaned_data['mes']
+            ano = form.cleaned_data['ano']
+            # Verificar duplicidade
+            if MetaFuncionario.objects.filter(
+                empresa=request.user.empresa,
+                funcionario=funcionario,
+                mes=mes,
+                ano=ano
+            ).exists():
+                messages.error(
+                    request,
+                    f"Já existe uma meta para {funcionario.nome} em {mes}/{ano}. "
+                    f"Edite a meta existente ou exclua antes de criar uma nova."
+                )
+            else:
+                obj = form.save(commit=False)
+                obj.empresa = request.user.empresa
+                obj.save()
+                messages.success(request, "Meta cadastrada com sucesso!")
+                return redirect('servicos:lista_metas')
     else:
         form = MetaFuncionarioForm(user=request.user, initial={
             'mes': date.today().month,
@@ -644,9 +673,10 @@ def excluir_meta(request, id):
 # ==========================================================
 @login_required
 def relatorio_mensal(request, ano, mes):
-    """Relatório mensal: meta vs realizado por funcionário"""
+    """Relatório mensal: meta vs realizado por funcionário com bônus"""
     funcionarios = Funcionario.objects.filter(empresa=request.user.empresa, ativo=True)
     dados = []
+    total_bonus = 0
 
     for func in funcionarios:
         meta_obj = MetaFuncionario.objects.filter(
@@ -662,8 +692,17 @@ def relatorio_mensal(request, ano, mes):
         ).aggregate(total=Sum('valor_remuneracao'))['total'] or 0
 
         meta_valor = meta_obj.meta_valor if meta_obj else 0
-        percentual = (realizado / meta_valor * 100) if meta_valor > 0 else 0
-        avaliacao = meta_obj.calcular_avaliacao(realizado) if meta_obj else 'SEM_META'
+        if meta_obj:
+            resultado = meta_obj.calcular_avaliacao(realizado)
+            percentual = resultado['percentual']
+            avaliacao = resultado['classificacao']
+            bonus = resultado['bonus']
+        else:
+            percentual = 0
+            avaliacao = 'SEM_META'
+            bonus = 0
+
+        total_bonus += bonus
 
         dados.append({
             'funcionario': func,
@@ -671,6 +710,7 @@ def relatorio_mensal(request, ano, mes):
             'realizado': realizado,
             'percentual': percentual,
             'avaliacao': avaliacao,
+            'bonus': bonus,
         })
 
     # Dados para gráfico
@@ -691,6 +731,7 @@ def relatorio_mensal(request, ano, mes):
         'realizado_data': realizado_data,
         'meta_empresa': meta_empresa,
         'realizado_empresa': realizado_empresa,
+        'total_bonus': total_bonus,
     })
 
 

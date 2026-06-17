@@ -175,29 +175,61 @@ class MetaFuncionario(ModeloSaaS):
     meta_valor = models.DecimalField(max_digits=12, decimal_places=2,
                                       verbose_name="Meta (R$)")
 
-    # Limites de avaliação (em % do valor realizado / meta)
-    avaliacao_ruim = models.DecimalField(max_digits=5, decimal_places=1, default=50.0,
-                                          verbose_name="% Mínima para Ruim",
-                                          help_text="Ex: 50.0 = Ruim se atingir menos de 50% da meta")
-    avaliacao_bom = models.DecimalField(max_digits=5, decimal_places=1, default=80.0,
-                                         verbose_name="% Mínima para Bom",
-                                         help_text="Ex: 80.0 = Bom se atingir entre 50% e 80% da meta")
-    avaliacao_otimo = models.DecimalField(max_digits=5, decimal_places=1, default=100.0,
-                                           verbose_name="% Mínima para Ótimo",
-                                           help_text="Ex: 100.0 = Ótimo se atingir 100% ou mais da meta")
+    # Faixas de avaliação (em % do realizado / meta)
+    percentual_ruim = models.DecimalField(max_digits=6, decimal_places=1, default=90.0,
+                                           verbose_name="% Limite Superior Ruim",
+                                           help_text="Abaixo deste valor = Muito Baixo. Ex: 90.0 = Ruim até 90%")
+    percentual_regular = models.DecimalField(max_digits=6, decimal_places=1, default=100.0,
+                                              verbose_name="% Limite Superior Regular",
+                                              help_text="Ex: 100.0 = Regular de 91% até 100%")
+    percentual_bom = models.DecimalField(max_digits=6, decimal_places=1, default=120.0,
+                                          verbose_name="% Limite Superior Bom",
+                                          help_text="Ex: 120.0 = Bom de 101% até 120%")
+    percentual_otimo = models.DecimalField(max_digits=6, decimal_places=1, default=140.0,
+                                            verbose_name="% Limite Superior Ótimo",
+                                            help_text="Ex: 140.0 = Ótimo de 121% até 140%")
+
+    # Bonificações (em R$)
+    bonus_bom = models.DecimalField(max_digits=10, decimal_places=2, default=50.0,
+                                     verbose_name="Bônus Bom (R$)",
+                                     help_text="Valor fixo pago quando atingir faixa Bom")
+    bonus_otimo = models.DecimalField(max_digits=10, decimal_places=2, default=100.0,
+                                       verbose_name="Bônus Ótimo (R$)",
+                                       help_text="Valor fixo pago quando atingir faixa Ótimo")
+    bonus_excelente_percentual = models.DecimalField(max_digits=5, decimal_places=1, default=5.0,
+                                                      verbose_name="Bônus Excelente (%)",
+                                                      help_text="Percentual sobre o valor acima da meta. Ex: 5.0 = 5% sobre R$ acima da meta")
 
     def calcular_avaliacao(self, realizado):
-        """Retorna a classificação baseado no percentual atingido"""
+        """Retorna a classificação e bônus baseado no percentual atingido"""
         if self.meta_valor == 0:
-            return 'SEM_META'
+            return {'classificacao': 'SEM_META', 'bonus': 0, 'percentual': 0}
+
         percentual = (realizado / self.meta_valor) * 100
-        if percentual >= self.avaliacao_otimo:
-            return 'OTIMO'
-        elif percentual >= self.avaliacao_bom:
-            return 'BOM'
-        elif percentual >= self.avaliacao_ruim:
-            return 'RUIM'
-        return 'MUITO_BAIXO'
+
+        if percentual > self.percentual_otimo:
+            classificacao = 'EXCELENTE'
+            # Bônus = percentual sobre o valor acima da meta
+            valor_acima = float(realizado) - float(self.meta_valor)
+            bonus = valor_acima * (float(self.bonus_excelente_percentual) / 100)
+        elif percentual > self.percentual_bom:
+            classificacao = 'OTIMO'
+            bonus = float(self.bonus_otimo)
+        elif percentual > self.percentual_regular:
+            classificacao = 'BOM'
+            bonus = float(self.bonus_bom)
+        elif percentual >= self.percentual_ruim:
+            classificacao = 'REGULAR'
+            bonus = 0
+        else:
+            classificacao = 'RUIM'
+            bonus = 0
+
+        return {
+            'classificacao': classificacao,
+            'bonus': round(bonus, 2),
+            'percentual': round(percentual, 1),
+        }
 
     def __str__(self):
         return f"{self.funcionario.nome} — {self.get_mes_display()}/{self.ano} — R$ {self.meta_valor:.2f}"

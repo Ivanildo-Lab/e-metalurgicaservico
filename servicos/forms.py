@@ -115,7 +115,8 @@ class MetaFuncionarioForm(forms.ModelForm):
     class Meta:
         model = MetaFuncionario
         fields = ['funcionario', 'mes', 'ano', 'meta_valor',
-                  'avaliacao_ruim', 'avaliacao_bom', 'avaliacao_otimo']
+                  'percentual_ruim', 'percentual_regular', 'percentual_bom', 'percentual_otimo',
+                  'bonus_bom', 'bonus_otimo', 'bonus_excelente_percentual']
         widgets = {
             'mes': forms.Select(attrs={
                 'class': 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm'

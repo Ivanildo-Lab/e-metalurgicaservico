@@ -142,6 +142,12 @@
                                    class="text-blue-500 hover:text-blue-700 p-1" title="Editar">
                                     <i class="fa fa-edit"></i>
                                 </a>
+                                {% if os.status == 'CONCLUIDA' %}
+                                <button type="button" onclick="abrirModalFechar({{ os.id }}, '{{ os.numero }}', {{ os.valor_total }})"
+                                   class="text-green-500 hover:text-green-700 p-1" title="Finalizar OS">
+                                    <i class="fa fa-check-circle"></i>
+                                </button>
+                                {% endif %}
                             </td>
                         </tr>
                         {% endfor %}
@@ -160,4 +166,95 @@
         </div>
     </div>
 </div>
+
+<!-- Modal Fechar OS Rápido -->
+<div id="modalFecharOS" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
+        <div class="p-6">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-800">
+                    <i class="fa fa-check-circle text-green-500 mr-2"></i> Finalizar OS
+                </h3>
+                <button onclick="fecharModalFechar()" class="text-gray-400 hover:text-gray-600">
+                    <i class="fa fa-times text-xl"></i>
+                </button>
+            </div>
+
+            <form id="formFecharOS" method="POST">
+                {% csrf_token %}
+                <input type="hidden" name="forma" value="A_VISTA">
+
+                <div class="bg-gray-50 rounded-lg p-3 mb-4">
+                    <p class="text-sm text-gray-600">OS: <strong id="numeroOS"></strong></p>
+                    <p class="text-sm text-gray-600">Valor: <strong id="valorOS" class="text-green-600"></strong></p>
+                </div>
+
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Forma de Pagamento *</label>
+                        <select name="forma_pagamento_id" id="forma_pagamento_id" required
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            <option value="">Selecione...</option>
+                            {% for fp in formas_pagamento_rapido %}
+                            <option value="{{ fp.id }}" data-afeta="{{ fp.afeta_caixa|yesno:'true,false' }}">{{ fp.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div id="campoParcelas" class="hidden">
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Parcelas</label>
+                        <input type="number" name="qtd_parcelas" value="1" min="1"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                    </div>
+
+                    <div id="campoCaixa" class="hidden">
+                        <label class="block text-sm font-bold text-gray-700 mb-1">Caixa/Banco *</label>
+                        <select name="caixa_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
+                            {% for cx in caixas_rapido %}
+                            <option value="{{ cx.id }}" {% if cx.id == caixa_padrao_id_rapido %}selected{% endif %}>{{ cx.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="fecharModalFechar()"
+                            class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                        Cancelar
+                    </button>
+                    <button type="submit"
+                            class="px-4 py-2 text-sm text-white bg-green-600 rounded-lg hover:bg-green-700 font-medium">
+                        <i class="fa fa-check mr-1"></i> Finalizar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+function abrirModalFechar(osId, numero, valor) {
+    document.getElementById('formFecharOS').action = '/servicos/ordens/' + osId + '/fechar/';
+    document.getElementById('numeroOS').textContent = numero;
+    document.getElementById('valorOS').textContent = 'R$ ' + valor.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+    document.getElementById('modalFecharOS').classList.remove('hidden');
+}
+
+function fecharModalFechar() {
+    document.getElementById('modalFecharOS').classList.add('hidden');
+}
+
+document.getElementById('forma_pagamento_id').addEventListener('change', function() {
+    const opt = this.options[this.selectedIndex];
+    const afeta = opt.dataset.afeta === 'true';
+    const isPrazo = false;
+    document.getElementById('campoCaixa').classList.toggle('hidden', !afeta);
+});
+
+document.getElementById('modalFecharOS').addEventListener('click', function(e) {
+    if (e.target === this) fecharModalFechar();
+});
+</script>
 {% endblock %}
