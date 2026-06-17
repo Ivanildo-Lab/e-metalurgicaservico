@@ -37,9 +37,12 @@ class OrdemServicoForm(forms.ModelForm):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         if self.user and self.user.empresa:
-            self.fields['cadastro'].queryset = Cadastro.objects.filter(
+            qs = Cadastro.objects.filter(
                 empresa=self.user.empresa
             ).order_by('nome')
+            if self.instance and self.instance.pk and self.instance.cadastro_id:
+                qs = qs | Cadastro.objects.filter(id=self.instance.cadastro_id)
+            self.fields['cadastro'].queryset = qs
         for field in self.fields.values():
             field.widget.attrs['class'] = (
                 'w-full px-3 py-2 border border-gray-300 rounded-lg '
@@ -47,6 +50,19 @@ class OrdemServicoForm(forms.ModelForm):
                 'text-sm transition duration-150'
             )
         self.fields['observacoes'].widget.attrs['rows'] = 3
+
+    def clean_cadastro(self):
+        cadastro = self.cleaned_data.get('cadastro')
+        if cadastro is None:
+            cadastro_id = self.data.get('cadastro')
+            if cadastro_id:
+                try:
+                    cadastro = Cadastro.objects.get(id=int(cadastro_id))
+                except (Cadastro.DoesNotExist, ValueError):
+                    raise forms.ValidationError("Selecione um cliente válido.")
+            else:
+                raise forms.ValidationError("O campo Cliente é obrigatório.")
+        return cadastro
 
 
 class ServicoOSForm(forms.ModelForm):
@@ -153,9 +169,12 @@ class OrcamentoForm(forms.ModelForm):
         self.user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
         if self.user and self.user.empresa:
-            self.fields['cadastro'].queryset = Cadastro.objects.filter(
+            qs = Cadastro.objects.filter(
                 empresa=self.user.empresa
             ).order_by('nome')
+            if self.instance and self.instance.pk and self.instance.cadastro_id:
+                qs = qs | Cadastro.objects.filter(id=self.instance.cadastro_id)
+            self.fields['cadastro'].queryset = qs
         for field in self.fields.values():
             field.widget.attrs['class'] = (
                 'w-full px-3 py-2 border border-gray-300 rounded-lg '
@@ -163,6 +182,19 @@ class OrcamentoForm(forms.ModelForm):
                 'text-sm transition duration-150'
             )
         self.fields['observacoes'].widget.attrs['rows'] = 3
+
+    def clean_cadastro(self):
+        cadastro = self.cleaned_data.get('cadastro')
+        if cadastro is None:
+            cadastro_id = self.data.get('cadastro')
+            if cadastro_id:
+                try:
+                    cadastro = Cadastro.objects.get(id=int(cadastro_id))
+                except (Cadastro.DoesNotExist, ValueError):
+                    raise forms.ValidationError("Selecione um cliente válido.")
+            else:
+                raise forms.ValidationError("O campo Cliente é obrigatório.")
+        return cadastro
 
 
 class ServicoOrcamentoForm(forms.ModelForm):

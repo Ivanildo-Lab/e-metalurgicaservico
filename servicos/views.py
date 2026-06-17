@@ -345,7 +345,7 @@ def excluir_servico_os(request, id):
 @login_required
 def adicionar_funcionario_os(request, os_id):
     os_obj = get_object_or_404(OrdemServico, id=os_id, empresa=request.user.empresa)
-    if os_obj.status not in ('ABERTA', 'CONCLUIDA'):
+    if os_obj.status not in ('ABERTA', 'CONCLUIDA', 'FECHADA'):
         messages.error(request, "Não é possível adicionar funcionários nesta OS.")
         return redirect('servicos:detalhe_os', id=os_obj.id)
 
@@ -363,7 +363,7 @@ def adicionar_funcionario_os(request, os_id):
 def editar_funcionario_os(request, id):
     func_os = get_object_or_404(FuncionarioOS, id=id, ordem_servico__empresa=request.user.empresa)
     os_obj = func_os.ordem_servico
-    if os_obj.status not in ('ABERTA', 'CONCLUIDA'):
+    if os_obj.status not in ('ABERTA', 'CONCLUIDA', 'FECHADA'):
         messages.error(request, "Não é possível editar funcionários nesta OS.")
         return redirect('servicos:detalhe_os', id=os_obj.id)
 
@@ -379,7 +379,7 @@ def editar_funcionario_os(request, id):
 def excluir_funcionario_os(request, id):
     func_os = get_object_or_404(FuncionarioOS, id=id, ordem_servico__empresa=request.user.empresa)
     os_obj = func_os.ordem_servico
-    if os_obj.status not in ('ABERTA', 'CONCLUIDA'):
+    if os_obj.status not in ('ABERTA', 'CONCLUIDA', 'FECHADA'):
         messages.error(request, "Não é possível remover funcionários desta OS.")
         return redirect('servicos:detalhe_os', id=os_obj.id)
 
@@ -462,6 +462,16 @@ def fechar_os(request, id):
     forma_pagamento_id = request.POST.get('forma_pagamento_id', None)
     qtd_parcelas = int(request.POST.get('qtd_parcelas', 1))
     caixa_id = request.POST.get('caixa_id', None)
+    desconto = Decimal(request.POST.get('desconto', '0'))
+
+    # Aplicar desconto
+    if desconto > 0:
+        if desconto > valor_total:
+            messages.error(request, f"O desconto (R$ {desconto:.2f}) não pode ser maior que o valor total (R$ {valor_total:.2f}).")
+            return redirect('servicos:detalhe_os', id=os_obj.id)
+        os_obj.desconto = desconto
+        os_obj.save(update_fields=['desconto'])
+        valor_total = os_obj.valor_total  # Recalcular com desconto
 
     # Buscar a forma de pagamento selecionada
     forma_pagamento_obj = None
@@ -799,12 +809,14 @@ def imprimir_os(request, id):
     """Gera impressão da OS com dados do cliente, serviços e pagamento"""
     os_obj = get_object_or_404(OrdemServico, id=id, empresa=request.user.empresa)
     servicos = os_obj.servicos.all()
+    valor_bruto = os_obj.valor_bruto
     valor_total = os_obj.valor_total
     valor_parcela = valor_total / os_obj.qtd_parcelas if os_obj.qtd_parcelas else valor_total
 
     return render(request, 'servicos/os_impressao.html', {
         'os': os_obj,
         'servicos': servicos,
+        'valor_bruto': valor_bruto,
         'valor_total': valor_total,
         'valor_parcela': valor_parcela,
     })

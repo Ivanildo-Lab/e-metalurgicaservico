@@ -122,8 +122,18 @@
                     </tbody>
                     <tfoot class="bg-gray-100">
                         <tr>
-                            <td colspan="2" class="px-2 py-1 font-bold text-gray-700 text-right border-t border-gray-300">TOTAL:</td>
-                            <td class="px-2 py-1 text-right font-mono font-bold border-t border-gray-300">{{ valor_total|moeda_br }}</td>
+                            <td colspan="2" class="px-2 py-1 font-bold text-gray-700 text-right border-t border-gray-300">SUBTOTAL:</td>
+                            <td class="px-2 py-1 text-right font-mono font-bold border-t border-gray-300">{{ valor_bruto|moeda_br }}</td>
+                        </tr>
+                        {% if os.desconto > 0 %}
+                        <tr>
+                            <td colspan="2" class="px-2 py-1 font-bold text-orange-600 text-right border-t border-gray-200">DESCONTO:</td>
+                            <td class="px-2 py-1 text-right font-mono font-bold text-orange-600 border-t border-gray-200">- {{ os.desconto|moeda_br }}</td>
+                        </tr>
+                        {% endif %}
+                        <tr class="bg-gray-200">
+                            <td colspan="2" class="px-2 py-1.5 font-bold text-gray-800 text-right border-t-2 border-gray-400">TOTAL:</td>
+                            <td class="px-2 py-1.5 text-right font-mono font-bold text-lg border-t-2 border-gray-400">{{ valor_total|moeda_br }}</td>
                         </tr>
                     </tfoot>
                 </table>

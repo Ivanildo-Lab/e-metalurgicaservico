@@ -143,7 +143,7 @@
                                     <i class="fa fa-edit"></i>
                                 </a>
                                 {% if os.status == 'CONCLUIDA' %}
-                                <button type="button" onclick="abrirModalFechar({{ os.id }}, '{{ os.numero }}', {{ os.valor_total }})"
+                                <button type="button" onclick="abrirModalFechar({{ os.id }}, '{{ os.numero }}', {{ os.valor_bruto }})"
                                    class="text-green-500 hover:text-green-700 p-1" title="Finalizar OS">
                                     <i class="fa fa-check-circle"></i>
                                 </button>
@@ -169,62 +169,124 @@
 
 <!-- Modal Fechar OS Rápido -->
 <div id="modalFecharOS" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+        <div class="bg-green-600 text-white px-6 py-4 rounded-t-xl">
+            <h3 class="text-lg font-bold"><i class="fa fa-lock mr-2"></i>Fechar OS — Gerar Financeiro</h3>
+        </div>
         <div class="p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-bold text-gray-800">
-                    <i class="fa fa-check-circle text-green-500 mr-2"></i> Finalizar OS
-                </h3>
-                <button onclick="fecharModalFechar()" class="text-gray-400 hover:text-gray-600">
-                    <i class="fa fa-times text-xl"></i>
-                </button>
+            <p class="text-sm text-gray-600 mb-4">
+                A OS será fechada e o financeiro será gerado automaticamente.
+            </p>
+            <div class="bg-gray-50 rounded-lg p-3 mb-4 text-sm">
+                <p>OS: <strong id="numeroOS"></strong></p>
+                <p>Valor Bruto: <span id="valorBrutoOS" class="font-mono"></span></p>
+                <p>Desconto: <span id="descontoOS" class="font-mono text-orange-600">R$ 0,00</span></p>
+                <p>Valor Total: <span id="valorTotalOS" class="font-mono font-bold text-green-700"></span></p>
             </div>
 
             <form id="formFecharOS" method="POST">
                 {% csrf_token %}
-                <input type="hidden" name="forma" value="A_VISTA">
-
-                <div class="bg-gray-50 rounded-lg p-3 mb-4">
-                    <p class="text-sm text-gray-600">OS: <strong id="numeroOS"></strong></p>
-                    <p class="text-sm text-gray-600">Valor: <strong id="valorOS" class="text-green-600"></strong></p>
+            <div class="space-y-4">
+                <!-- Desconto -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Desconto (R$)</label>
+                    <input type="number" name="desconto" id="desconto-input" step="0.01" min="0" value="0"
+                           oninput="recalcularValorOS()"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500">
                 </div>
 
-                <div class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Forma de Pagamento *</label>
-                        <select name="forma_pagamento_id" id="forma_pagamento_id" required
-                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                            <option value="">Selecione...</option>
-                            {% for fp in formas_pagamento_rapido %}
-                            <option value="{{ fp.id }}" data-afeta="{{ fp.afeta_caixa|yesno:'true,false' }}">{{ fp.nome }}</option>
-                            {% endfor %}
-                        </select>
-                    </div>
-
-                    <div id="campoParcelas" class="hidden">
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Parcelas</label>
-                        <input type="number" name="qtd_parcelas" value="1" min="1"
-                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                    </div>
-
-                    <div id="campoCaixa" class="hidden">
-                        <label class="block text-sm font-bold text-gray-700 mb-1">Caixa/Banco *</label>
-                        <select name="caixa_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                            {% for cx in caixas_rapido %}
-                            <option value="{{ cx.id }}" {% if cx.id == caixa_padrao_id_rapido %}selected{% endif %}>{{ cx.nome }}</option>
-                            {% endfor %}
-                        </select>
+                <!-- Tipo de Pagamento -->
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-3">Tipo de Pagamento *</label>
+                    <div class="space-y-3">
+                        <label class="flex items-start space-x-3 cursor-pointer p-3 rounded-lg border-2 border-green-300 bg-green-50 transition hover:border-green-500">
+                            <input type="radio" name="forma_pagamento" value="A_VISTA" checked
+                                   onclick="alternarFormaLista(this.value)"
+                                   class="text-green-600 focus:ring-green-500 mt-0.5">
+                            <div>
+                                <span class="text-sm font-bold text-gray-700">À Vista</span>
+                                <p class="text-xs text-gray-500 mt-0.5">Pagamento imediato.</p>
+                            </div>
+                        </label>
+                        <label class="flex items-start space-x-3 cursor-pointer p-3 rounded-lg border-2 border-gray-200 hover:border-blue-400 transition">
+                            <input type="radio" name="forma_pagamento" value="A_PRAZO"
+                                   onclick="alternarFormaLista(this.value)"
+                                   class="text-blue-600 focus:ring-blue-500 mt-0.5">
+                            <div>
+                                <span class="text-sm font-bold text-gray-700">A Prazo</span>
+                                <p class="text-xs text-gray-500 mt-0.5">Gera parcelas no Contas a Receber.</p>
+                            </div>
+                        </label>
                     </div>
                 </div>
 
-                <div class="flex justify-end gap-3 mt-6">
+                <!-- Forma de Pagamento (Dropdown) -->
+                <div id="div-forma-lista">
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Forma de Pagamento *</label>
+                    <select name="forma_pagamento_id" id="forma_pagamento_id_lista"
+                            onchange="verificarAfetaCaixaLista()"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500" required>
+                        <option value="">Selecione a forma...</option>
+                        {% for fp in formas_pagamento_rapido %}
+                        <option value="{{ fp.id }}" data-afeta="{{ fp.afeta_caixa|yesno:'true,false' }}">{{ fp.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Parcelas (A Prazo) -->
+                <div id="div-parcelas-lista" style="display:none;">
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Quantidade de Parcelas</label>
+                    <input type="number" name="qtd_parcelas" id="qtd-parcelas-lista" value="1" min="1" max="60"
+                           oninput="calcularParcelaLista()"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                    <p class="text-xs text-gray-500 mt-1">
+                        Valor de cada parcela: <span id="valor-parcela-lista" class="font-mono font-semibold">R$ 0,00</span>
+                    </p>
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
+                        <p class="text-xs text-blue-700">
+                            <i class="fa fa-info-circle mr-1"></i>
+                            Serão geradas <strong id="qtd-parcelas-lista-texto">1</strong> parcela(s) no Contas a Receber.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Caixa (se afeta_caixa) -->
+                <div id="div-caixa-lista" style="display:none;">
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Caixa/Banco para Recebimento *</label>
+                    <select name="caixa_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500">
+                        <option value="">Selecione o caixa...</option>
+                        {% for cx in caixas_rapido %}
+                        <option value="{{ cx.id }}" {% if cx.id == caixa_padrao_id_rapido %}selected{% endif %}>{{ cx.nome }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
+                        <p class="text-xs text-green-700">
+                            <i class="fa fa-info-circle mr-1"></i>
+                            O pagamento será registrado imediatamente no caixa selecionado.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Info: sem movimentação -->
+                <div id="div-sem-caixa-lista" style="display:none;">
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                        <p class="text-xs text-yellow-700">
+                            <i class="fa fa-info-circle mr-1"></i>
+                            Esta forma de pagamento <strong>não</strong> movimenta o caixa físico.
+                            A conta será registrada como paga sem lançamento no caixa.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+                <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
                     <button type="button" onclick="fecharModalFechar()"
-                            class="px-4 py-2 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50">
+                            class="px-4 py-2.5 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium">
                         Cancelar
                     </button>
-                    <button type="submit"
-                            class="px-4 py-2 text-sm text-white bg-green-600 rounded-lg hover:bg-green-700 font-medium">
-                        <i class="fa fa-check mr-1"></i> Finalizar
+                    <button type="submit" onclick="return confirm('Confirmar fechamento da OS e geração do financeiro?')"
+                            class="px-6 py-2.5 text-sm text-white bg-green-600 rounded-lg hover:bg-green-700 font-bold transition shadow-md">
+                        <i class="fa fa-check mr-1"></i> Confirmar Fechamento
                     </button>
                 </div>
             </form>
@@ -235,23 +297,82 @@
 
 {% block scripts %}
 <script>
-function abrirModalFechar(osId, numero, valor) {
+let osValorBruto = 0;
+
+function abrirModalFechar(osId, numero, valorBruto) {
     document.getElementById('formFecharOS').action = '/servicos/ordens/' + osId + '/fechar/';
     document.getElementById('numeroOS').textContent = numero;
-    document.getElementById('valorOS').textContent = 'R$ ' + valor.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+    osValorBruto = valorBruto;
+    document.getElementById('desconto-input').value = '0';
+    document.getElementById('valorBrutoOS').textContent = 'R$ ' + valorBruto.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+    document.getElementById('descontoOS').textContent = 'R$ 0,00';
+    document.getElementById('valorTotalOS').textContent = 'R$ ' + valorBruto.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+    // Reset form state
+    document.getElementById('div-parcelas-lista').style.display = 'none';
+    document.getElementById('div-caixa-lista').style.display = 'none';
+    document.getElementById('div-sem-caixa-lista').style.display = 'none';
+    document.getElementById('forma_pagamento_id_lista').value = '';
     document.getElementById('modalFecharOS').classList.remove('hidden');
+    calcularParcelaLista();
 }
 
 function fecharModalFechar() {
     document.getElementById('modalFecharOS').classList.add('hidden');
 }
 
-document.getElementById('forma_pagamento_id').addEventListener('change', function() {
-    const opt = this.options[this.selectedIndex];
-    const afeta = opt.dataset.afeta === 'true';
-    const isPrazo = false;
-    document.getElementById('campoCaixa').classList.toggle('hidden', !afeta);
-});
+function recalcularValorOS() {
+    var desconto = parseFloat(document.getElementById('desconto-input').value) || 0;
+    var valorTotal = osValorBruto - desconto;
+    if (valorTotal < 0) valorTotal = 0;
+    document.getElementById('descontoOS').textContent = 'R$ ' + desconto.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+    document.getElementById('valorTotalOS').textContent = 'R$ ' + valorTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+    osValorTotal = valorTotal;
+    calcularParcelaLista();
+}
+
+function alternarFormaLista(valor) {
+    var divParcelas = document.getElementById('div-parcelas-lista');
+    if (valor === 'A_PRAZO') {
+        divParcelas.style.display = 'block';
+    } else {
+        divParcelas.style.display = 'none';
+    }
+    verificarAfetaCaixaLista();
+    calcularParcelaLista();
+}
+
+function verificarAfetaCaixaLista() {
+    var select = document.getElementById('forma_pagamento_id_lista');
+    var divCaixa = document.getElementById('div-caixa-lista');
+    var divSemCaixa = document.getElementById('div-sem-caixa-lista');
+    var selectCaixa = document.querySelector('#div-caixa-lista select');
+
+    if (!select || !select.options[select.selectedIndex]) return;
+
+    var option = select.options[select.selectedIndex];
+    var afetaCaixa = option.getAttribute('data-afeta') === 'true';
+
+    if (afetaCaixa) {
+        divCaixa.style.display = 'block';
+        divSemCaixa.style.display = 'none';
+    } else {
+        divCaixa.style.display = 'none';
+        divSemCaixa.style.display = 'block';
+    }
+}
+
+function calcularParcelaLista() {
+    var inputParcelas = document.getElementById('qtd-parcelas-lista');
+    var spanParcela = document.getElementById('valor-parcela-lista');
+    var spanTexto = document.getElementById('qtd-parcelas-lista-texto');
+    if (!inputParcelas || !spanParcela) return;
+    var qtd = parseInt(inputParcelas.value) || 1;
+    var valorBase = osValorTotal || osValorBruto;
+    var valorParcela = valorBase / qtd;
+    var parcelaFormatada = valorParcela.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    spanParcela.textContent = 'R$ ' + parcelaFormatada;
+    if (spanTexto) spanTexto.textContent = qtd;
+}
 
 document.getElementById('modalFecharOS').addEventListener('click', function(e) {
     if (e.target === this) fecharModalFechar();

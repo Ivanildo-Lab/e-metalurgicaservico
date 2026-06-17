@@ -65,25 +65,63 @@
     </div>
 
     <!-- TOTAIS -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 border-t-4 border-gray-400">
+            <p class="text-xs text-gray-500 font-medium uppercase">Valor Bruto (Serviços)</p>
+            <p class="text-lg font-bold text-gray-600 font-mono">{{ os.valor_bruto|moeda_br }}</p>
+        </div>
+        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 border-t-4 {% if os.desconto > 0 %}border-orange-500{% else %}border-gray-300{% endif %}">
+            <p class="text-xs text-gray-500 font-medium uppercase">Desconto</p>
+            <p class="text-lg font-bold {% if os.desconto > 0 %}text-orange-600{% else %}text-gray-400{% endif %} font-mono">
+                {% if os.desconto > 0 %}- {{ os.desconto|moeda_br }}{% else %}R$ 0,00{% endif %}
+            </p>
+        </div>
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 border-t-4 border-green-500">
-            <p class="text-xs text-gray-500 font-medium uppercase">Valor Total dos Serviços</p>
+            <p class="text-xs text-gray-500 font-medium uppercase">Valor Total</p>
             <p id="valor-total-os" class="text-2xl font-bold text-green-600 font-mono">{{ valor_total|moeda_br }}</p>
         </div>
         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 border-t-4 border-blue-500">
             <p class="text-xs text-gray-500 font-medium uppercase">Remuneração Funcionários</p>
             <p class="text-2xl font-bold text-blue-600 font-mono">{{ remuneracao_total|moeda_br }}</p>
         </div>
-        <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 border-t-4 {% if diferenca == 0 %}border-green-500{% else %}border-red-500{% endif %}">
-            <p class="text-xs text-gray-500 font-medium uppercase">Diferença</p>
-            <p class="text-2xl font-bold {% if diferenca == 0 %}text-green-600{% else %}text-red-600{% endif %} font-mono">
-                {{ diferenca|moeda_br }}
-            </p>
+    </div>
+
+    <!-- DIFERENÇA -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 border-t-4 {% if diferenca == 0 %}border-green-500{% else %}border-red-500{% endif %}">
+        <div class="flex items-center justify-between">
+            <div>
+                <p class="text-xs text-gray-500 font-medium uppercase">Diferença (Valor Total − Remuneração)</p>
+                <p class="text-2xl font-bold {% if diferenca == 0 %}text-green-600{% else %}text-red-600{% endif %} font-mono">
+                    {{ diferenca|moeda_br }}
+                </p>
+            </div>
             {% if diferenca != 0 %}
-            <p class="text-xs text-red-500 mt-1"><i class="fa fa-exclamation-triangle mr-1"></i> A remuneração deve fechar com o valor total</p>
+            <p class="text-xs text-red-500"><i class="fa fa-exclamation-triangle mr-1"></i> A remuneração deve fechar com o valor total</p>
             {% endif %}
         </div>
     </div>
+
+    <!-- DESCONTO (edição inline) -->
+    {% if os.status != 'FECHADA' and os.status != 'CANCELADA' %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+        <form method="POST" action="{% url 'servicos:salvar_os' os.id %}" class="flex items-end gap-3">
+            {% csrf_token %}
+            <div class="flex-1">
+                <label class="block text-xs text-gray-500 font-medium mb-1"><i class="fa fa-tag mr-1"></i> Desconto (R$)</label>
+                <input type="number" name="desconto" step="0.01" min="0" value="{{ os.desconto|default:'0' }}"
+                       class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500">
+            </div>
+            <button type="submit"
+                    class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                <i class="fa fa-save mr-1"></i> Aplicar Desconto
+            </button>
+        </form>
+    </div>
+    {% elif os.desconto > 0 %}
+    <div class="bg-orange-50 rounded-xl border border-orange-200 p-4">
+        <p class="text-sm text-orange-700"><i class="fa fa-tag mr-1"></i> <strong>Desconto aplicado:</strong> {{ os.desconto|moeda_br }}</p>
+    </div>
+    {% endif %}
 
     <!-- SERVIÇOS DA OS -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 border-t-4 border-purple-500">

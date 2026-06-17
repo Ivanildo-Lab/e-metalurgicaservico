@@ -53,6 +53,9 @@ class OrdemServico(ModeloSaaS):
         verbose_name="Forma de Pagamento"
     )
     qtd_parcelas = models.IntegerField(default=1, verbose_name="Quantidade de Parcelas")
+    desconto = models.DecimalField(max_digits=12, decimal_places=2, default=0,
+                                    verbose_name="Desconto (R$)",
+                                    help_text="Desconto aplicado ao valor total dos serviços")
 
     observacoes = models.TextField(blank=True, verbose_name="Observações")
     created_at = models.DateTimeField(auto_now_add=True)
@@ -60,6 +63,11 @@ class OrdemServico(ModeloSaaS):
     # ---- Propriedades ----
     @property
     def valor_total(self):
+        soma = self.servicos.aggregate(total=models.Sum('valor'))['total'] or 0
+        return soma - (self.desconto or 0)
+
+    @property
+    def valor_bruto(self):
         return self.servicos.aggregate(total=models.Sum('valor'))['total'] or 0
 
     @property
