@@ -154,7 +154,10 @@ def nova_os(request):
             messages.success(request, f"OS {obj.numero} criada com sucesso! Agora adicione os serviços.")
             return redirect('servicos:detalhe_os', id=obj.id)
     else:
-        form = OrdemServicoForm(user=request.user, initial={'data_entrada': date.today()})
+        form = OrdemServicoForm(user=request.user, initial={
+            'data_entrada': date.today(),
+            'data_prevista': date.today(),
+        })
     return render(request, 'servicos/os_form.html', {'form': form, 'editar': False})
 
 

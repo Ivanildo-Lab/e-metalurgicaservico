@@ -124,16 +124,14 @@
     let timeout = null;
 
     if (hidden.value) {
-        fetch('/servicos/api/buscar-clientes/?q=__init__')
+        fetch('/servicos/api/buscar-clientes/?id=' + hidden.value)
             .then(r => r.json())
             .then(data => {
                 if (data.resultados && data.resultados.length > 0) {
-                    const c = data.resultados.find(x => x.id == hidden.value);
-                    if (c) {
-                        input.value = c.nome;
-                        textoSelecionado.textContent = c.nome + ' — ' + (c.documento || 'sem doc');
-                        selecionado.classList.remove('hidden');
-                    }
+                    const c = data.resultados[0];
+                    input.value = c.nome;
+                    textoSelecionado.textContent = c.nome + ' — ' + (c.documento || 'sem doc');
+                    selecionado.classList.remove('hidden');
                 }
             }).catch(() => {});
     }

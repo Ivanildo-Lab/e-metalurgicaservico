@@ -156,7 +156,7 @@
     let timeout = null;
 
     if (hidden.value) {
-        fetch(`/servicos/api/buscar-clientes/?q=${encodeURIComponent(input.value || '__init__')}`)
+        fetch(`/servicos/api/buscar-clientes/?id=${hidden.value}`)
             .then(r => r.json())
             .then(data => {
                 if (data.resultados && data.resultados.length > 0) {
