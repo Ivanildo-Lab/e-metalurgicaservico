@@ -172,7 +172,13 @@ def editar_os(request, id):
             return redirect('servicos:detalhe_os', id=obj.id)
     else:
         form = OrdemServicoForm(instance=obj, user=request.user)
-    return render(request, 'servicos/os_form.html', {'form': form, 'editar': True, 'os': obj})
+    return render(request, 'servicos/os_form.html', {
+        'form': form,
+        'editar': True,
+        'os': obj,
+        'cadastro_nome': obj.cadastro.nome if obj.cadastro else '',
+        'cadastro_doc': obj.cadastro.cpf_cnpj if obj.cadastro else '',
+    })
 
 
 @login_required
@@ -851,7 +857,11 @@ def editar_orcamento(request, id):
     else:
         form = OrcamentoForm(instance=orcamento, user=request.user)
     return render(request, 'servicos/orcamento_form.html', {
-        'form': form, 'titulo': f'Editar {orcamento.numero}', 'orcamento': orcamento
+        'form': form,
+        'titulo': f'Editar {orcamento.numero}',
+        'orcamento': orcamento,
+        'cadastro_nome': orcamento.cadastro.nome if orcamento.cadastro else '',
+        'cadastro_doc': orcamento.cadastro.cpf_cnpj if orcamento.cadastro else '',
     })
 
 
