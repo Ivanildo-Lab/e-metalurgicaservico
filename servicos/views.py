@@ -209,6 +209,7 @@ def salvar_os(request, id):
     data_entrada = request.POST.get('data_entrada')
     data_prevista = request.POST.get('data_prevista') or None
     observacoes = request.POST.get('observacoes', '')
+    desconto = request.POST.get('desconto', '0')
 
     # Validação básica
     if not cadastro_id or not descricao_geral or not data_entrada:
@@ -216,15 +217,39 @@ def salvar_os(request, id):
         return redirect('servicos:detalhe_os', id=os_obj.id)
 
     from django.utils.dateparse import parse_date
-    os_obj.cadastro_id = int(cadastro_id)
-    os_obj.descricao_geral = descricao_geral
-    os_obj.data_entrada = parse_date(data_entrada)
-    if data_prevista:
-        os_obj.data_prevista = parse_date(data_prevista)
-    os_obj.observacoes = observacoes
-    os_obj.save()
+    from decimal import Decimal, InvalidOperation
+    try:
+        os_obj.cadastro_id = int(cadastro_id)
+        os_obj.descricao_geral = descricao_geral
+        
+        # Parse data_entrada - deve ser sempre fornecida
+        parsed_entrada = parse_date(data_entrada)
+        if not parsed_entrada:
+            raise ValueError("Formato de data_entrada inválido")
+        os_obj.data_entrada = parsed_entrada
+        
+        # Parse data_prevista - opcional
+        if data_prevista:
+            parsed_prevista = parse_date(data_prevista)
+            if parsed_prevista:
+                os_obj.data_prevista = parsed_prevista
+        else:
+            os_obj.data_prevista = None
+            
+        os_obj.observacoes = observacoes
+        
+        # Parse desconto como Decimal
+        try:
+            os_obj.desconto = Decimal(desconto)
+        except (InvalidOperation, TypeError):
+            os_obj.desconto = Decimal('0')
+        
+        os_obj.save()
 
-    messages.success(request, f"OS {os_obj.numero} salva com sucesso!")
+        messages.success(request, f"OS {os_obj.numero} salva com sucesso!")
+    except (ValueError, TypeError) as e:
+        messages.error(request, f"Erro ao salvar: {str(e)}")
+    
     return redirect('servicos:detalhe_os', id=os_obj.id)
 
 
