@@ -1,0 +1,12 @@
+[
+  {
+    "model": "core.parametrosistema",
+    "pk": null,
+    "fields": {
+      "empresa": 3,
+      "chave": "PLANO_CONTAS_SERVICOS_ID",
+      "valor": "13",
+      "descricao": ""
+    }
+  }
+]

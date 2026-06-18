@@ -1,0 +1,29 @@
+[
+  {
+    "model": "financeiro.caixa",
+    "pk": null,
+    "fields": {
+      "empresa": 3,
+      "nome": "CAIXA PRINCIPAL",
+      "saldo_inicial": "0.00"
+    }
+  },
+  {
+    "model": "financeiro.caixa",
+    "pk": null,
+    "fields": {
+      "empresa": 3,
+      "nome": "BANCO SICOOB",
+      "saldo_inicial": "300.00"
+    }
+  },
+  {
+    "model": "financeiro.caixa",
+    "pk": null,
+    "fields": {
+      "empresa": 3,
+      "nome": "BANCO DO BRASIL",
+      "saldo_inicial": "500.00"
+    }
+  }
+]
