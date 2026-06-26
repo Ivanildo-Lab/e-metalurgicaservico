@@ -168,24 +168,25 @@
 </div>
 
 <!-- Modal Fechar OS Rápido -->
-<div id="modalFecharOS" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
-        <div class="bg-green-600 text-white px-6 py-4 rounded-t-xl">
-            <h3 class="text-lg font-bold"><i class="fa fa-lock mr-2"></i>Fechar OS — Gerar Financeiro</h3>
+<div id="modalFecharOS" class="hidden fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" style="z-index:9999">
+    <div style="background:white;border-radius:0.75rem;box-shadow:0 25px 50px -12px rgba(0,0,0,0.25);width:100%;max-width:32rem;max-height:min(90vh,calc(100vh - 2rem));display:flex;flex-direction:column">
+        <div style="background:#16a34a;color:white;padding:1rem 1.5rem;border-radius:0.75rem 0.75rem 0 0;flex-shrink:0">
+            <h3 style="font-size:1.1rem;font-weight:700"><i class="fa fa-lock mr-2"></i>Fechar OS — Gerar Financeiro</h3>
         </div>
-        <div class="p-6">
-            <p class="text-sm text-gray-600 mb-4">
-                A OS será fechada e o financeiro será gerado automaticamente.
-            </p>
-            <div class="bg-gray-50 rounded-lg p-3 mb-4 text-sm">
-                <p>OS: <strong id="numeroOS"></strong></p>
-                <p>Valor Bruto: <span id="valorBrutoOS" class="font-mono"></span></p>
-                <p>Desconto: <span id="descontoOS" class="font-mono text-orange-600">R$ 0,00</span></p>
-                <p>Valor Total: <span id="valorTotalOS" class="font-mono font-bold text-green-700"></span></p>
-            </div>
+        <form id="formFecharOS" method="POST" style="display:flex;flex-direction:column;flex:1;min-height:0;overflow:hidden">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'servicos:lista_ordens' %}">
+            <div style="flex:1;overflow-y:auto;padding:1.5rem;min-height:0">
+                <p style="font-size:0.875rem;color:#6b7280;margin-bottom:1rem">
+                    A OS será fechada e o financeiro será gerado automaticamente.
+                </p>
+                <div style="background:#f9fafb;border-radius:0.5rem;padding:0.75rem;margin-bottom:1rem;font-size:0.875rem">
+                    <p>OS: <strong id="numeroOS"></strong></p>
+                    <p>Valor Bruto: <span id="valorBrutoOS" style="font-family:monospace"></span></p>
+                    <p>Desconto: <span id="descontoOS" style="font-family:monospace;color:#c2410c">R$ 0,00</span></p>
+                    <p>Valor Total: <span id="valorTotalOS" style="font-family:monospace;font-weight:700;color:#15803d"></span></p>
+                </div>
 
-            <form id="formFecharOS" method="POST">
-                {% csrf_token %}
             <div class="space-y-4">
                 <!-- Desconto -->
                 <div>
@@ -278,19 +279,18 @@
                     </div>
                 </div>
             </div>
-
-                <div class="flex justify-end gap-3 mt-6 pt-4 border-t border-gray-200">
-                    <button type="button" onclick="fecharModalFechar()"
-                            class="px-4 py-2.5 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium">
-                        Cancelar
-                    </button>
-                    <button type="submit" onclick="return confirm('Confirmar fechamento da OS e geração do financeiro?')"
-                            class="px-6 py-2.5 text-sm text-white bg-green-600 rounded-lg hover:bg-green-700 font-bold transition shadow-md">
-                        <i class="fa fa-check mr-1"></i> Confirmar Fechamento
-                    </button>
-                </div>
-            </form>
-        </div>
+            </div>
+            <div style="display:flex;justify-content:flex-end;gap:0.75rem;padding:1rem 1.5rem;border-top:1px solid #e5e7eb;flex-shrink:0">
+                <button type="button" onclick="fecharModalFechar()"
+                        class="px-4 py-2.5 text-sm text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium">
+                    Cancelar
+                </button>
+                <button type="submit" onclick="return confirm('Confirmar fechamento da OS e geração do financeiro?')"
+                        class="px-6 py-2.5 text-sm text-white bg-green-600 rounded-lg hover:bg-green-700 font-bold transition shadow-md">
+                    <i class="fa fa-check mr-1"></i> Confirmar Fechamento
+                </button>
+            </div>
+        </form>
     </div>
 </div>
 {% endblock %}

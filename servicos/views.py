@@ -653,6 +653,9 @@ def fechar_os(request, id):
     os_obj.qtd_parcelas = qtd_parcelas
     os_obj.save()
 
+    next_url = request.POST.get('next', '')
+    if next_url:
+        return redirect(next_url)
     return redirect('servicos:editar_os', id=os_obj.id)
 
 
