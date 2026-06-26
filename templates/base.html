@@ -30,10 +30,13 @@
 </head>
 <body class="font-sans antialiased h-screen flex overflow-hidden bg-gray-100">
 
+    <!-- Overlay mobile (fecha o menu ao clicar fora) -->
+    <div id="sidebar-overlay" class="hidden fixed inset-0 bg-black/50 z-40 md:hidden" onclick="toggleSidebar()"></div>
+
     <!-- =============================================== -->
     <!-- SIDEBAR (MENU LATERAL ESQUERDO)                 -->
     <!-- =============================================== -->
-    <aside class="w-64 skin-blue-sidebar text-white flex flex-col shadow-xl transition-all duration-300 hidden md:flex flex-shrink-0">
+    <aside id="sidebar" class="w-64 skin-blue-sidebar text-white flex flex-col shadow-xl transition-all duration-300 hidden md:flex flex-shrink-0 fixed inset-y-0 left-0 z-50 md:relative md:z-auto">
         <!-- Logo -->
         <div class="h-14 skin-blue-logo flex items-center justify-center font-bold text-xl tracking-wider uppercase shadow-md z-20">
             <span class="mr-2"><i class="fa fa-tools"></i></span> e-Serviços.
@@ -200,7 +203,7 @@
         <!-- HEADER SUPERIOR (NAVBAR) -->
         <header class="skin-blue-header h-14 flex items-center justify-between px-4 shadow-md text-white z-20">
             <!-- Botão Menu Mobile -->
-            <button class="md:hidden text-white focus:outline-none hover:text-gray-200 p-1">
+            <button onclick="toggleSidebar()" class="md:hidden text-white focus:outline-none hover:text-gray-200 p-1">
                 <i class="fa fa-bars text-lg"></i>
             </button>
 
@@ -319,6 +322,19 @@
     <!-- SCRIPTS GLOBAIS                                 -->
     <!-- =============================================== -->
     <script>
+        // 0. Toggle Sidebar Mobile
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('sidebar-overlay');
+            if (sidebar.classList.contains('hidden')) {
+                sidebar.classList.remove('hidden');
+                overlay.classList.remove('hidden');
+            } else {
+                sidebar.classList.add('hidden');
+                overlay.classList.add('hidden');
+            }
+        }
+
         // 1. Toggle Menu Lateral (Submenus)
         function toggleMenu(menuId) {
             const menu = document.getElementById(menuId);
