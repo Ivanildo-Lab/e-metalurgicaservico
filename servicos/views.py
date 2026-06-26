@@ -152,7 +152,7 @@ def nova_os(request):
             obj.empresa = request.user.empresa
             obj.save()
             messages.success(request, f"OS {obj.numero} criada com sucesso! Agora adicione os serviços.")
-            return redirect('servicos:detalhe_os', id=obj.id)
+            return redirect('servicos:editar_os', id=obj.id)
     else:
         form = OrdemServicoForm(user=request.user, initial={
             'data_entrada': date.today(),
@@ -169,15 +169,55 @@ def editar_os(request, id):
         if form.is_valid():
             form.save()
             messages.success(request, "OS atualizada com sucesso!")
-            return redirect('servicos:detalhe_os', id=obj.id)
+            return redirect('servicos:editar_os', id=obj.id)
     else:
         form = OrdemServicoForm(instance=obj, user=request.user)
+
+    servicos = obj.servicos.all()
+    funcionarios_os = obj.funcionarios.all().select_related('funcionario')
+    form_servico = ServicoOSForm()
+    form_funcionario = FuncionarioOSForm(empresa=request.user.empresa)
+    valor_total = obj.valor_total
+    remuneracao_total = obj.remuneracao_total
+    diferenca = valor_total - remuneracao_total
+    pode_concluir = servicos.exists() and obj.status == 'ABERTA'
+    pode_fechar = (
+        obj.status == 'CONCLUIDA' and
+        servicos.exists() and
+        funcionarios_os.exists() and
+        diferenca == 0
+    )
+    caixas = Caixa.objects.filter(empresa=request.user.empresa) if pode_fechar else []
+    caixa_padrao_id = None
+    try:
+        param_caixa = ParametroSistema.objects.get(
+            empresa=request.user.empresa, chave='CAIXA_PADRAO_ID'
+        )
+        caixa_padrao_id = int(param_caixa.valor)
+    except (ParametroSistema.DoesNotExist, ValueError):
+        pass
+    formas_pagamento = FormaPagamento.objects.filter(
+        empresa=request.user.empresa, ativo=True
+    ) if pode_fechar else []
+
     return render(request, 'servicos/os_form.html', {
         'form': form,
         'editar': True,
         'os': obj,
         'cadastro_nome': obj.cadastro.nome if obj.cadastro else '',
         'cadastro_doc': obj.cadastro.cpf_cnpj if obj.cadastro else '',
+        'servicos': servicos,
+        'funcionarios_os': funcionarios_os,
+        'form_servico': form_servico,
+        'form_funcionario': form_funcionario,
+        'valor_total': valor_total,
+        'remuneracao_total': remuneracao_total,
+        'diferenca': diferenca,
+        'pode_concluir': pode_concluir,
+        'pode_fechar': pode_fechar,
+        'caixas': caixas,
+        'caixa_padrao_id': caixa_padrao_id,
+        'formas_pagamento': formas_pagamento,
     })
 
 
@@ -198,11 +238,11 @@ def salvar_os(request, id):
     os_obj = get_object_or_404(OrdemServico, id=id, empresa=request.user.empresa)
 
     if request.method != 'POST':
-        return redirect('servicos:detalhe_os', id=os_obj.id)
+        return redirect('servicos:editar_os', id=os_obj.id)
 
     if os_obj.status == 'FECHADA' or os_obj.status == 'CANCELADA':
         messages.error(request, "Não é possível editar uma OS fechada ou cancelada.")
-        return redirect('servicos:detalhe_os', id=os_obj.id)
+        return redirect('servicos:editar_os', id=os_obj.id)
 
     cadastro_id = request.POST.get('cadastro_id')
     descricao_geral = request.POST.get('descricao_geral', '')
@@ -214,7 +254,7 @@ def salvar_os(request, id):
     # Validação básica
     if not cadastro_id or not descricao_geral or not data_entrada:
         messages.error(request, "Cliente, Descrição e Data de Entrada são obrigatórios.")
-        return redirect('servicos:detalhe_os', id=os_obj.id)
+        return redirect('servicos:editar_os', id=os_obj.id)
 
     from django.utils.dateparse import parse_date
     from decimal import Decimal, InvalidOperation
@@ -250,7 +290,7 @@ def salvar_os(request, id):
     except (ValueError, TypeError) as e:
         messages.error(request, f"Erro ao salvar: {str(e)}")
     
-    return redirect('servicos:detalhe_os', id=os_obj.id)
+    return redirect('servicos:editar_os', id=os_obj.id)
 
 
 @login_required
@@ -326,7 +366,7 @@ def adicionar_servico_os(request, os_id):
     os_obj = get_object_or_404(OrdemServico, id=os_id, empresa=request.user.empresa)
     if os_obj.status not in ('ABERTA', 'CONCLUIDA'):
         messages.error(request, "Não é possível adicionar serviços nesta OS.")
-        return redirect('servicos:detalhe_os', id=os_obj.id)
+        return redirect('servicos:editar_os', id=os_obj.id)
 
     if request.method == 'POST':
         form = ServicoOSForm(request.POST)
@@ -335,7 +375,7 @@ def adicionar_servico_os(request, os_id):
             servico.ordem_servico = os_obj
             servico.save()
             messages.success(request, "Serviço adicionado com sucesso!")
-    return redirect('servicos:detalhe_os', id=os_obj.id)
+    return redirect('servicos:editar_os', id=os_obj.id)
 
 
 @login_required
@@ -344,14 +384,14 @@ def editar_servico_os(request, id):
     os_obj = servico.ordem_servico
     if os_obj.status not in ('ABERTA', 'CONCLUIDA'):
         messages.error(request, "Não é possível editar serviços nesta OS.")
-        return redirect('servicos:detalhe_os', id=os_obj.id)
+        return redirect('servicos:editar_os', id=os_obj.id)
 
     if request.method == 'POST':
         form = ServicoOSForm(request.POST, instance=servico)
         if form.is_valid():
             form.save()
             messages.success(request, "Serviço atualizado!")
-    return redirect('servicos:detalhe_os', id=os_obj.id)
+    return redirect('servicos:editar_os', id=os_obj.id)
 
 
 @login_required
@@ -360,11 +400,11 @@ def excluir_servico_os(request, id):
     os_obj = servico.ordem_servico
     if os_obj.status not in ('ABERTA', 'CONCLUIDA'):
         messages.error(request, "Não é possível remover serviços desta OS.")
-        return redirect('servicos:detalhe_os', id=os_obj.id)
+        return redirect('servicos:editar_os', id=os_obj.id)
 
     servico.delete()
     messages.success(request, "Serviço removido.")
-    return redirect('servicos:detalhe_os', id=os_obj.id)
+    return redirect('servicos:editar_os', id=os_obj.id)
 
 
 @login_required
@@ -372,7 +412,7 @@ def adicionar_funcionario_os(request, os_id):
     os_obj = get_object_or_404(OrdemServico, id=os_id, empresa=request.user.empresa)
     if os_obj.status not in ('ABERTA', 'CONCLUIDA', 'FECHADA'):
         messages.error(request, "Não é possível adicionar funcionários nesta OS.")
-        return redirect('servicos:detalhe_os', id=os_obj.id)
+        return redirect('servicos:editar_os', id=os_obj.id)
 
     if request.method == 'POST':
         form = FuncionarioOSForm(request.POST, empresa=request.user.empresa)
@@ -381,7 +421,7 @@ def adicionar_funcionario_os(request, os_id):
             func_os.ordem_servico = os_obj
             func_os.save()
             messages.success(request, "Funcionário adicionado à OS!")
-    return redirect('servicos:detalhe_os', id=os_obj.id)
+    return redirect('servicos:editar_os', id=os_obj.id)
 
 
 @login_required
@@ -390,14 +430,14 @@ def editar_funcionario_os(request, id):
     os_obj = func_os.ordem_servico
     if os_obj.status not in ('ABERTA', 'CONCLUIDA', 'FECHADA'):
         messages.error(request, "Não é possível editar funcionários nesta OS.")
-        return redirect('servicos:detalhe_os', id=os_obj.id)
+        return redirect('servicos:editar_os', id=os_obj.id)
 
     if request.method == 'POST':
         form = FuncionarioOSForm(request.POST, instance=func_os, empresa=request.user.empresa)
         if form.is_valid():
             form.save()
             messages.success(request, "Participação atualizada!")
-    return redirect('servicos:detalhe_os', id=os_obj.id)
+    return redirect('servicos:editar_os', id=os_obj.id)
 
 
 @login_required
@@ -406,11 +446,11 @@ def excluir_funcionario_os(request, id):
     os_obj = func_os.ordem_servico
     if os_obj.status not in ('ABERTA', 'CONCLUIDA', 'FECHADA'):
         messages.error(request, "Não é possível remover funcionários desta OS.")
-        return redirect('servicos:detalhe_os', id=os_obj.id)
+        return redirect('servicos:editar_os', id=os_obj.id)
 
     func_os.delete()
     messages.success(request, "Funcionário removido da OS.")
-    return redirect('servicos:detalhe_os', id=os_obj.id)
+    return redirect('servicos:editar_os', id=os_obj.id)
 
 
 # ==========================================================
@@ -421,21 +461,21 @@ def concluir_os(request, id):
     """Marca OS como CONCLUIDA"""
     os_obj = get_object_or_404(OrdemServico, id=id, empresa=request.user.empresa)
     if request.method != 'POST':
-        return redirect('servicos:detalhe_os', id=os_obj.id)
+        return redirect('servicos:editar_os', id=os_obj.id)
 
     if os_obj.status != 'ABERTA':
         messages.error(request, "Somente OS em aberto podem ser concluídas.")
-        return redirect('servicos:detalhe_os', id=os_obj.id)
+        return redirect('servicos:editar_os', id=os_obj.id)
 
     if not os_obj.servicos.exists():
         messages.error(request, "Adicione pelo menos um serviço antes de concluir.")
-        return redirect('servicos:detalhe_os', id=os_obj.id)
+        return redirect('servicos:editar_os', id=os_obj.id)
 
     os_obj.status = 'CONCLUIDA'
     os_obj.data_conclusao = date.today()
     os_obj.save()
     messages.success(request, f"OS {os_obj.numero} marcada como CONCLUÍDA! Agora o financeiro pode fechar.")
-    return redirect('servicos:detalhe_os', id=os_obj.id)
+    return redirect('servicos:editar_os', id=os_obj.id)
 
 
 @login_required
@@ -443,16 +483,16 @@ def cancelar_os(request, id):
     """Cancela uma OS"""
     os_obj = get_object_or_404(OrdemServico, id=id, empresa=request.user.empresa)
     if request.method != 'POST':
-        return redirect('servicos:detalhe_os', id=os_obj.id)
+        return redirect('servicos:editar_os', id=os_obj.id)
 
     if os_obj.status == 'FECHADA':
         messages.error(request, "Não é possível cancelar uma OS já fechada.")
-        return redirect('servicos:detalhe_os', id=os_obj.id)
+        return redirect('servicos:editar_os', id=os_obj.id)
 
     os_obj.status = 'CANCELADA'
     os_obj.save()
     messages.warning(request, f"OS {os_obj.numero} CANCELADA.")
-    return redirect('servicos:detalhe_os', id=os_obj.id)
+    return redirect('servicos:editar_os', id=os_obj.id)
 
 
 @login_required
@@ -461,11 +501,11 @@ def fechar_os(request, id):
     os_obj = get_object_or_404(OrdemServico, id=id, empresa=request.user.empresa)
 
     if request.method != 'POST':
-        return redirect('servicos:detalhe_os', id=os_obj.id)
+        return redirect('servicos:editar_os', id=os_obj.id)
 
     if os_obj.status != 'CONCLUIDA':
         messages.error(request, "Somente OS CONCLUÍDAS podem ser fechadas.")
-        return redirect('servicos:detalhe_os', id=os_obj.id)
+        return redirect('servicos:editar_os', id=os_obj.id)
 
     # Validações
     valor_total = os_obj.valor_total
@@ -473,7 +513,7 @@ def fechar_os(request, id):
 
     if valor_total == 0:
         messages.error(request, "A OS não possui serviços com valor. Adicione serviços antes de fechar.")
-        return redirect('servicos:detalhe_os', id=os_obj.id)
+        return redirect('servicos:editar_os', id=os_obj.id)
 
     if remuneracao_total != valor_total:
         messages.error(
@@ -481,7 +521,7 @@ def fechar_os(request, id):
             f"A remuneração (R$ {remuneracao_total:.2f}) não confere com o valor total (R$ {valor_total:.2f}). "
             f"Ajuste antes de fechar."
         )
-        return redirect('servicos:detalhe_os', id=os_obj.id)
+        return redirect('servicos:editar_os', id=os_obj.id)
 
     forma = request.POST.get('forma_pagamento', 'A_VISTA')
     forma_pagamento_id = request.POST.get('forma_pagamento_id', None)
@@ -493,7 +533,7 @@ def fechar_os(request, id):
     if desconto > 0:
         if desconto > valor_total:
             messages.error(request, f"O desconto (R$ {desconto:.2f}) não pode ser maior que o valor total (R$ {valor_total:.2f}).")
-            return redirect('servicos:detalhe_os', id=os_obj.id)
+            return redirect('servicos:editar_os', id=os_obj.id)
         os_obj.desconto = desconto
         os_obj.save(update_fields=['desconto'])
         valor_total = os_obj.valor_total  # Recalcular com desconto
@@ -510,7 +550,7 @@ def fechar_os(request, id):
 
     if forma == 'A_PRAZO' and qtd_parcelas < 1:
         messages.error(request, "Para pagamento a prazo, informe pelo menos 1 parcela.")
-        return redirect('servicos:detalhe_os', id=os_obj.id)
+        return redirect('servicos:editar_os', id=os_obj.id)
 
     # Buscar Plano de Contas padrão para serviços
     try:
@@ -526,7 +566,7 @@ def fechar_os(request, id):
             "Configure o Plano de Contas padrão para Serviços em Configurações > Parâmetros do Sistema "
             "(chave: PLANO_CONTAS_SERVICOS_ID)."
         )
-        return redirect('servicos:detalhe_os', id=os_obj.id)
+        return redirect('servicos:editar_os', id=os_obj.id)
 
     # Ajustar data_conclusao: se conclusão no mês seguinte ao de entrada, usar último dia do mês de entrada
     hoje = date.today()
@@ -565,7 +605,7 @@ def fechar_os(request, id):
                 caixa = Caixa.objects.filter(empresa=request.user.empresa).first()
                 if not caixa:
                     messages.error(request, "Nenhum caixa/banco encontrado. Cadastre um em Financeiro > Caixas.")
-                    return redirect('servicos:detalhe_os', id=os_obj.id)
+                    return redirect('servicos:editar_os', id=os_obj.id)
 
             Lancamento.objects.create(
                 empresa=request.user.empresa,
@@ -613,7 +653,7 @@ def fechar_os(request, id):
     os_obj.qtd_parcelas = qtd_parcelas
     os_obj.save()
 
-    return redirect('servicos:detalhe_os', id=os_obj.id)
+    return redirect('servicos:editar_os', id=os_obj.id)
 
 
 # ==========================================================

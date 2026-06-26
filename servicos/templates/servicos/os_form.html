@@ -8,143 +8,620 @@
 {% block content %}
 <div class="space-y-6">
 
-    <!-- Botão Voltar -->
     <div class="flex items-center justify-between">
-        <a href="{% if editar %}{% url 'servicos:detalhe_os' os.id %}{% else %}{% url 'servicos:lista_ordens' %}{% endif %}"
+        <a href="{% url 'servicos:lista_ordens' %}"
            class="inline-flex items-center text-sm text-gray-600 hover:text-gray-800 font-medium transition">
-            <i class="fa fa-arrow-left mr-2"></i> {% if editar %}Voltar para OS {{ os.numero }}{% else %}Voltar para Ordens de Serviço{% endif %}
+            <i class="fa fa-arrow-left mr-2"></i> Voltar para Ordens de Serviço
         </a>
     </div>
 
-    <!-- CABEÇALHO -->
-    <div class="bg-white rounded-xl shadow-sm border border-gray-200 border-t-4 border-indigo-500 p-6">
-        <div class="flex items-center gap-3 mb-4">
-            <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                <i class="fa fa-file-medical text-indigo-600 text-lg"></i>
-            </div>
-            <div>
-                <h2 class="text-lg font-bold text-gray-800">
-                    {% if editar %}Editando: {{ os.numero }}{% else %}Dados da Ordem de Serviço{% endif %}
-                </h2>
-                <p class="text-xs text-gray-500">
-                    {% if editar %}Atualize as informações da OS{% else %}Preencha os dados para criar uma nova OS{% endif %}
-                </p>
-            </div>
-        </div>
-
-        {% if form.errors %}
-        <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
-            <i class="fa fa-exclamation-triangle mr-2"></i>
-            {% for field, errors in form.errors.items %}
-                <p><strong>{{ field }}:</strong> {{ errors.0 }}</p>
-            {% endfor %}
-        </div>
-        {% endif %}
-
-        <form method="POST" class="space-y-5">
-            {% csrf_token %}
-
-            <!-- Cliente -->
-            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <label class="block text-sm font-bold text-gray-700 mb-2">
-                    <i class="fa fa-user mr-1 text-indigo-500"></i> Cliente *
-                </label>
-                <input type="hidden" name="cadastro" id="cadastro_id" value="{{ form.instance.cadastro_id|default:'' }}">
-                <div class="relative" id="busca-cliente-container"
-                     data-cadastro-nome="{{ cadastro_nome }}"
-                     data-cadastro-doc="{{ cadastro_doc }}">
-                    <input type="text" id="busca-cliente" placeholder="Digite nome, CPF/CNPJ ou telefone..."
-                           autocomplete="off"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition duration-150">
-                    <div id="cliente-selecionado" class="hidden mt-2 p-2 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
-                        <span class="text-sm text-green-800 font-medium" id="cliente-selecionado-texto"></span>
-                        <button type="button" onclick="limparCliente()" class="text-red-500 hover:text-red-700 text-xs font-bold">✕ Limpar</button>
-                    </div>
-                    <div id="resultado-busca" class="hidden absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"></div>
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 border-t-4 border-indigo-500">
+        <div class="p-6 pb-0">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
+                    <i class="fa fa-file-medical text-indigo-600 text-lg"></i>
                 </div>
-                <p class="text-xs text-gray-500 mt-1">Digite pelo menos 2 letras para buscar</p>
-            </div>
-
-            <!-- Descrição -->
-            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <label class="block text-sm font-bold text-gray-700 mb-2">
-                    <i class="fa fa-align-left mr-1 text-indigo-500"></i> Descrição do Objeto / Peça *
-                </label>
-                {{ form.descricao_geral }}
-                <p class="text-xs text-gray-500 mt-1">Descreva o que foi recebido e o trabalho a ser realizado</p>
-            </div>
-
-            <!-- Datas -->
-            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">
-                            <i class="fa fa-calendar mr-1 text-indigo-500"></i> Data de Entrada *
-                        </label>
-                        {{ form.data_entrada }}
-                    </div>
-                    <div>
-                        <label class="block text-sm font-bold text-gray-700 mb-2">
-                            <i class="fa fa-calendar-check mr-1 text-indigo-500"></i> Previsão de Conclusão
-                        </label>
-                        {{ form.data_prevista }}
-                    </div>
+                <div>
+                    <h2 class="text-lg font-bold text-gray-800">
+                        {% if editar %}Editando: {{ os.numero }}{% else %}Dados da Ordem de Serviço{% endif %}
+                    </h2>
+                    <p class="text-xs text-gray-500">
+                        {% if editar %}Atualize as informações da OS{% else %}Preencha os dados para criar uma nova OS{% endif %}
+                    </p>
                 </div>
             </div>
 
-            <!-- Observações -->
-            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                <label class="block text-sm font-bold text-gray-700 mb-2">
-                    <i class="fa fa-sticky-note mr-1 text-indigo-500"></i> Observações
-                </label>
-                {{ form.observacoes }}
-            </div>
-
-            {% if editar %}
-            <!-- Resumo da OS (só aparece na edição) -->
-            <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                <h3 class="text-sm font-bold text-blue-700 mb-2"><i class="fa fa-info-circle mr-1"></i> Resumo da OS</h3>
-                <div class="grid grid-cols-3 gap-4 text-sm">
-                    <div>
-                        <span class="text-gray-500">Status:</span>
-                        <span class="font-semibold ml-1">
-                            {% if os.status == 'ABERTA' %}
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">Aberta</span>
-                            {% elif os.status == 'CONCLUIDA' %}
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800">Concluída</span>
-                            {% elif os.status == 'FECHADA' %}
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">Fechada</span>
-                            {% elif os.status == 'CANCELADA' %}
-                            <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800">Cancelada</span>
-                            {% endif %}
-                        </span>
-                    </div>
-                    <div>
-                        <span class="text-gray-500">Valor Total:</span>
-                        <span class="font-semibold ml-1 font-mono">{{ os.valor_total|moeda_br }}</span>
-                    </div>
-                    <div>
-                        <span class="text-gray-500">Serviços:</span>
-                        <span class="font-semibold ml-1">{{ os.servicos.count }}</span>
-                    </div>
-                </div>
+            {% if form.errors %}
+            <div class="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4 text-sm">
+                <i class="fa fa-exclamation-triangle mr-2"></i>
+                {% for field, errors in form.errors.items %}
+                    <p><strong>{{ field }}:</strong> {{ errors.0 }}</p>
+                {% endfor %}
             </div>
             {% endif %}
 
-            <!-- Botões -->
-            <div class="flex items-center justify-between pt-4 border-t border-gray-200">
-                <a href="{% if editar %}{% url 'servicos:detalhe_os' os.id %}{% else %}{% url 'servicos:lista_ordens' %}{% endif %}"
-                   class="inline-flex items-center px-4 py-2 text-sm text-gray-600 hover:text-gray-800 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition">
-                    <i class="fa fa-arrow-left mr-1"></i> Cancelar
-                </a>
-                <button type="submit"
-                        class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold transition shadow-md inline-flex items-center">
-                    <i class="fa fa-save mr-1"></i> {% if editar %}Salvar Alterações{% else %}Criar OS{% endif %}
+            <!-- TABS NAVIGATION -->
+            <div class="border-b border-gray-200 mb-0 -mx-6 px-6">
+                <nav class="flex space-x-1 overflow-x-auto" role="tablist">
+                    <button type="button" role="tab" onclick="switchTab('dados-gerais')"
+                            class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-indigo-600 hover:border-indigo-300 transition whitespace-nowrap active-tab"
+                            data-tab="dados-gerais">
+                        <i class="fa fa-info-circle mr-1.5 text-indigo-400"></i> Dados Gerais
+                    </button>
+                    {% if editar %}
+                    <button type="button" role="tab" onclick="switchTab('servicos')"
+                            class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-purple-600 hover:border-purple-300 transition whitespace-nowrap"
+                            data-tab="servicos">
+                        <i class="fa fa-cogs mr-1.5 text-purple-400"></i> Serviços
+                        {% if servicos %}<span class="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-purple-100 text-purple-700">{{ servicos|length }}</span>{% endif %}
+                    </button>
+                    <button type="button" role="tab" onclick="switchTab('funcionarios')"
+                            class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-teal-600 hover:border-teal-300 transition whitespace-nowrap"
+                            data-tab="funcionarios">
+                        <i class="fa fa-hard-hat mr-1.5 text-teal-400"></i> Funcionários
+                        {% if funcionarios_os %}<span class="ml-1.5 px-1.5 py-0.5 text-xs rounded-full bg-teal-100 text-teal-700">{{ funcionarios_os|length }}</span>{% endif %}
+                    </button>
+                    <button type="button" role="tab" onclick="switchTab('pagamento')"
+                            class="tab-btn px-5 py-3 text-sm font-medium border-b-2 border-transparent text-gray-500 hover:text-green-600 hover:border-green-300 transition whitespace-nowrap"
+                            data-tab="pagamento">
+                        <i class="fa fa-credit-card mr-1.5 text-green-400"></i> Pagamento
+                    </button>
+                    {% endif %}
+                </nav>
+            </div>
+        </div>
+
+        <div class="p-6">
+            <!-- ============================================ -->
+            <!-- TAB 1: DADOS GERAIS                          -->
+            <!-- ============================================ -->
+            <div id="tab-dados-gerais" class="tab-content">
+                <form method="POST" class="space-y-5">
+                    {% csrf_token %}
+
+                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fa fa-user mr-1 text-indigo-500"></i> Cliente *
+                        </label>
+                        <input type="hidden" name="cadastro" id="cadastro_id" value="{{ form.instance.cadastro_id|default:'' }}">
+                        <div class="relative" id="busca-cliente-container"
+                             data-cadastro-nome="{{ cadastro_nome }}"
+                             data-cadastro-doc="{{ cadastro_doc }}">
+                            <input type="text" id="busca-cliente" placeholder="Digite nome, CPF/CNPJ ou telefone..."
+                                   autocomplete="off"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition duration-150">
+                            <div id="cliente-selecionado" class="hidden mt-2 p-2 bg-green-50 border border-green-200 rounded-lg flex items-center justify-between">
+                                <span class="text-sm text-green-800 font-medium" id="cliente-selecionado-texto"></span>
+                                <button type="button" onclick="limparCliente()" class="text-red-500 hover:text-red-700 text-xs font-bold">✕ Limpar</button>
+                            </div>
+                            <div id="resultado-busca" class="hidden absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"></div>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Digite pelo menos 2 letras para buscar</p>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fa fa-align-left mr-1 text-indigo-500"></i> Descrição do Objeto / Peça *
+                        </label>
+                        {{ form.descricao_geral }}
+                        <p class="text-xs text-gray-500 mt-1">Descreva o que foi recebido e o trabalho a ser realizado</p>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">
+                                    <i class="fa fa-calendar mr-1 text-indigo-500"></i> Data de Entrada *
+                                </label>
+                                {{ form.data_entrada }}
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold text-gray-700 mb-2">
+                                    <i class="fa fa-calendar-check mr-1 text-indigo-500"></i> Previsão de Conclusão
+                                </label>
+                                {{ form.data_prevista }}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                        <label class="block text-sm font-bold text-gray-700 mb-2">
+                            <i class="fa fa-sticky-note mr-1 text-indigo-500"></i> Observações
+                        </label>
+                        {{ form.observacoes }}
+                    </div>
+
+                    {% if editar %}
+                    <div class="bg-blue-50 rounded-lg p-4 border border-blue-200">
+                        <h3 class="text-sm font-bold text-blue-700 mb-2"><i class="fa fa-info-circle mr-1"></i> Resumo da OS</h3>
+                        <div class="grid grid-cols-3 gap-4 text-sm">
+                            <div>
+                                <span class="text-gray-500">Status:</span>
+                                <span class="font-semibold ml-1">
+                                    {% if os.status == 'ABERTA' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">Aberta</span>
+                                    {% elif os.status == 'CONCLUIDA' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-yellow-100 text-yellow-800">Concluída</span>
+                                    {% elif os.status == 'FECHADA' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-green-100 text-green-800">Fechada</span>
+                                    {% elif os.status == 'CANCELADA' %}
+                                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800">Cancelada</span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Valor Total:</span>
+                                <span class="font-semibold ml-1 font-mono">{{ os.valor_total|moeda_br }}</span>
+                            </div>
+                            <div>
+                                <span class="text-gray-500">Serviços:</span>
+                                <span class="font-semibold ml-1">{{ os.servicos.count }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <div class="flex items-center justify-between pt-4 border-t border-gray-200">
+                        <a href="{% url 'servicos:lista_ordens' %}"
+                           class="inline-flex items-center px-4 py-2 text-sm text-gray-600 hover:text-gray-800 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                            <i class="fa fa-arrow-left mr-1"></i> Cancelar
+                        </a>
+                        <button type="submit"
+                                class="bg-indigo-600 hover:bg-indigo-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold transition shadow-md inline-flex items-center">
+                            <i class="fa fa-save mr-1"></i> {% if editar %}Salvar Alterações{% else %}Criar OS{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            {% if editar %}
+            <!-- ============================================ -->
+            <!-- TAB 2: SERVIÇOS                              -->
+            <!-- ============================================ -->
+            <div id="tab-servicos" class="tab-content space-y-5 hidden">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-bold text-gray-800"><i class="fa fa-cogs mr-2 text-purple-500"></i>Serviços</h3>
+                    {% if os.status == 'ABERTA' or os.status == 'CONCLUIDA' %}
+                    <button type="button" onclick="document.getElementById('modal-servico').classList.remove('hidden')"
+                            class="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                        <i class="fa fa-plus mr-1"></i> Adicionar Serviço
+                    </button>
+                    {% endif %}
+                </div>
+
+                {% if servicos %}
+                <div class="overflow-x-auto bg-white rounded-lg border border-gray-200">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th class="text-left px-4 py-2 font-semibold text-gray-600">#</th>
+                                <th class="text-left px-4 py-2 font-semibold text-gray-600">Descrição do Serviço</th>
+                                <th class="text-right px-4 py-2 font-semibold text-gray-600">Valor (R$)</th>
+                                {% if os.status != 'FECHADA' and os.status != 'CANCELADA' %}
+                                <th class="text-center px-4 py-2 font-semibold text-gray-600">Ações</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            {% for s in servicos %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-2 text-gray-500">{{ forloop.counter }}</td>
+                                <td class="px-4 py-2 font-medium text-gray-800">{{ s.descricao }}</td>
+                                <td class="px-4 py-2 text-right font-mono font-semibold text-green-700">{{ s.valor|moeda_br }}</td>
+                                {% if os.status != 'FECHADA' and os.status != 'CANCELADA' %}
+                                <td class="px-4 py-2 text-center">
+                                    <button type="button" onclick="editarServico({{ s.id }}, '{{ s.descricao|escapejs }}', {{ s.valor }})"
+                                            class="text-blue-500 hover:text-blue-700 p-1" title="Editar">
+                                        <i class="fa fa-edit"></i>
+                                    </button>
+                                    <a href="{% url 'servicos:excluir_servico_os' s.id %}"
+                                       class="text-red-500 hover:text-red-700 p-1" title="Remover"
+                                       onclick="return confirm('Remover este serviço?')">
+                                        <i class="fa fa-trash"></i>
+                                    </a>
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="bg-gray-50 border-t-2 border-gray-200">
+                            <tr>
+                                <td colspan="2" class="px-4 py-2 font-bold text-gray-700 text-right">TOTAL:</td>
+                                <td class="px-4 py-2 text-right font-mono font-bold text-green-700 text-lg">{{ valor_total|moeda_br }}</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-8 text-center bg-gray-50 rounded-lg border border-gray-200">
+                    <i class="fa fa-cogs text-3xl text-gray-300 mb-2"></i>
+                    <p class="text-gray-500 text-sm">Nenhum serviço registrado. Adicione serviços para esta OS.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- ============================================ -->
+            <!-- TAB 3: FUNCIONÁRIOS                          -->
+            <!-- ============================================ -->
+            <div id="tab-funcionarios" class="tab-content space-y-5 hidden">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-lg font-bold text-gray-800"><i class="fa fa-hard-hat mr-2 text-teal-500"></i>Funcionários Participantes</h3>
+                    {% if os.status == 'ABERTA' or os.status == 'CONCLUIDA' %}
+                    <button type="button" onclick="document.getElementById('modal-funcionario').classList.remove('hidden')"
+                            class="bg-teal-600 hover:bg-teal-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
+                        <i class="fa fa-plus mr-1"></i> Adicionar Funcionário
+                    </button>
+                    {% endif %}
+                </div>
+
+                {% if funcionarios_os %}
+                <div class="overflow-x-auto bg-white rounded-lg border border-gray-200">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th class="text-left px-4 py-2 font-semibold text-gray-600">#</th>
+                                <th class="text-left px-4 py-2 font-semibold text-gray-600">Funcionário</th>
+                                <th class="text-right px-4 py-2 font-semibold text-gray-600">Remuneração (R$)</th>
+                                {% if os.status != 'FECHADA' and os.status != 'CANCELADA' %}
+                                <th class="text-center px-4 py-2 font-semibold text-gray-600">Ações</th>
+                                {% endif %}
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            {% for fo in funcionarios_os %}
+                            <tr class="hover:bg-gray-50">
+                                <td class="px-4 py-2 text-gray-500">{{ forloop.counter }}</td>
+                                <td class="px-4 py-2">
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold text-xs mr-2">
+                                            {{ fo.funcionario.nome|slice:":1"|upper }}
+                                        </div>
+                                        <span class="font-medium text-gray-800">{{ fo.funcionario.nome }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-4 py-2 text-right font-mono font-semibold text-blue-700">{{ fo.valor_remuneracao|moeda_br }}</td>
+                                {% if os.status != 'FECHADA' and os.status != 'CANCELADA' %}
+                                <td class="px-4 py-2 text-center">
+                                    <button type="button" onclick="editarFuncionarioOS({{ fo.id }}, {{ fo.funcionario.id }}, {{ fo.valor_remuneracao }})"
+                                            class="text-blue-500 hover:text-blue-700 p-1" title="Editar">
+                                        <i class="fa fa-edit"></i>
+                                    </button>
+                                    <a href="{% url 'servicos:excluir_funcionario_os' fo.id %}"
+                                       class="text-red-500 hover:text-red-700 p-1" title="Remover"
+                                       onclick="return confirm('Remover este funcionário da OS?')">
+                                        <i class="fa fa-trash"></i>
+                                    </a>
+                                </td>
+                                {% endif %}
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="bg-gray-50 border-t-2 border-gray-200">
+                            <tr>
+                                <td colspan="2" class="px-4 py-2 font-bold text-gray-700 text-right">TOTAL REMUNERAÇÃO:</td>
+                                <td class="px-4 py-2 text-right font-mono font-bold text-blue-700 text-lg">{{ remuneracao_total|moeda_br }}</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+                {% else %}
+                <div class="p-8 text-center bg-gray-50 rounded-lg border border-gray-200">
+                    <i class="fa fa-hard-hat text-3xl text-gray-300 mb-2"></i>
+                    <p class="text-gray-500 text-sm">Nenhum funcionário vinculado. Adicione participantes.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- ============================================ -->
+            <!-- TAB 4: PAGAMENTO                             -->
+            <!-- ============================================ -->
+            <div id="tab-pagamento" class="tab-content space-y-5 hidden">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 border-t-4 border-gray-400">
+                        <p class="text-xs text-gray-500 font-medium uppercase">Valor Bruto (Serviços)</p>
+                        <p class="text-lg font-bold text-gray-600 font-mono">{{ os.valor_bruto|moeda_br }}</p>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 border-t-4 {% if os.desconto > 0 %}border-orange-500{% else %}border-gray-300{% endif %}">
+                        <p class="text-xs text-gray-500 font-medium uppercase">Desconto</p>
+                        <p class="text-lg font-bold {% if os.desconto > 0 %}text-orange-600{% else %}text-gray-400{% endif %} font-mono">
+                            {% if os.desconto > 0 %}- {{ os.desconto|moeda_br }}{% else %}R$ 0,00{% endif %}
+                        </p>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 border-t-4 border-green-500">
+                        <p class="text-xs text-gray-500 font-medium uppercase">Valor Total</p>
+                        <p id="valor-total-os" class="text-2xl font-bold text-green-600 font-mono">{{ valor_total|moeda_br }}</p>
+                    </div>
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 border-t-4 border-blue-500">
+                        <p class="text-xs text-gray-500 font-medium uppercase">Remuneração Funcionários</p>
+                        <p class="text-2xl font-bold text-blue-600 font-mono">{{ remuneracao_total|moeda_br }}</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 border-t-4 {% if diferenca == 0 %}border-green-500{% else %}border-red-500{% endif %}">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-gray-500 font-medium uppercase">Diferença (Valor Total − Remuneração)</p>
+                            <p class="text-2xl font-bold {% if diferenca == 0 %}text-green-600{% else %}text-red-600{% endif %} font-mono">
+                                {{ diferenca|moeda_br }}
+                            </p>
+                        </div>
+                        {% if diferenca != 0 %}
+                        <p class="text-xs text-red-500"><i class="fa fa-exclamation-triangle mr-1"></i> A remuneração deve fechar com o valor total</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if os.status != 'FECHADA' and os.status != 'CANCELADA' %}
+                <form method="POST" action="{% url 'servicos:salvar_os' os.id %}" class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                    {% csrf_token %}
+                    <input type="hidden" name="cadastro_id" value="{{ os.cadastro_id }}">
+                    <input type="hidden" name="descricao_geral" value="{{ os.descricao_geral|escape }}">
+                    <input type="hidden" name="data_entrada" value="{{ os.data_entrada|date:'Y-m-d' }}">
+                    <input type="hidden" name="data_prevista" value="{% if os.data_prevista %}{{ os.data_prevista|date:'Y-m-d' }}{% endif %}">
+                    <input type="hidden" name="observacoes" value="{{ os.observacoes|default_if_none:''|escape }}">
+                    <div class="flex items-end gap-3">
+                        <div class="flex-1">
+                            <label class="block text-xs text-gray-500 font-medium mb-1"><i class="fa fa-tag mr-1"></i> Desconto (R$)</label>
+                            <input type="number" name="desconto" step="0.01" min="0" value="{{ os.desconto|default:'0' }}"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500">
+                        </div>
+                        <button type="submit"
+                                class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
+                            <i class="fa fa-save mr-1"></i> Aplicar Desconto
+                        </button>
+                    </div>
+                </form>
+                {% elif os.desconto > 0 %}
+                <div class="bg-orange-50 rounded-xl border border-orange-200 p-4">
+                    <p class="text-sm text-orange-700"><i class="fa fa-tag mr-1"></i> <strong>Desconto aplicado:</strong> {{ os.desconto|moeda_br }}</p>
+                </div>
+                {% endif %}
+
+                {% if os.status != 'CANCELADA' and os.status != 'FECHADA' %}
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-gray-800"><i class="fa fa-play-circle mr-2 text-indigo-500"></i>Ações</h3>
+                        <button type="button" onclick="var el=document.getElementById('acoes-status'); el.classList.toggle('hidden'); this.innerHTML = el.classList.contains('hidden') ? '<i class=fa fa-chevron-down mr-1></i> Mostrar' : '<i class=fa fa-chevron-up mr-1></i> Ocultar';"
+                                class="text-sm text-indigo-600 hover:text-indigo-800 font-medium">
+                            <i class="fa fa-chevron-down mr-1"></i> Mostrar
+                        </button>
+                    </div>
+                    <div id="acoes-status" class="hidden">
+                        <div class="flex flex-wrap gap-3">
+                        {% if pode_concluir %}
+                        <form method="POST" action="{% url 'servicos:concluir_os' os.id %}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" onclick="return confirm('Marcar esta OS como CONCLUÍDA?')"
+                                    class="bg-yellow-500 hover:bg-yellow-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+                                <i class="fa fa-check mr-1"></i> Marcar como Concluída
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        {% if pode_fechar %}
+                        <button type="button" onclick="document.getElementById('modal-fechar').classList.remove('hidden')"
+                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-md">
+                            <i class="fa fa-lock mr-1"></i> Fechar OS (Gerar Financeiro)
+                        </button>
+                        {% endif %}
+
+                        {% if os.status != 'FECHADA' %}
+                        <form method="POST" action="{% url 'servicos:cancelar_os' os.id %}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" onclick="return confirm('Tem certeza que deseja CANCELAR esta OS?')"
+                                    class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+                                <i class="fa fa-ban mr-1"></i> Cancelar OS
+                            </button>
+                        </form>
+                        {% endif %}
+
+                        <a href="{% url 'servicos:imprimir_os' os.id %}" target="_blank"
+                           class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm inline-block">
+                            <i class="fa fa-print mr-1"></i> Imprimir OS
+                        </a>
+                    </div>
+                    {% if not pode_fechar and os.status == 'CONCLUIDA' %}
+                    <p class="text-xs text-orange-600 mt-3">
+                        <i class="fa fa-info-circle mr-1"></i>
+                        Para fechar: adicione serviços + funcionários e garanta que a remuneração feche com o valor total.
+                    </p>
+                    {% endif %}
+                    {% if not pode_fechar and os.status == 'ABERTA' %}
+                    <p class="text-xs text-blue-600 mt-3">
+                        <i class="fa fa-info-circle mr-1"></i>
+                        Adicione serviços e funcionários, depois marque como <strong>Concluída</strong> para poder fechar a OS.
+                    </p>
+                    {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ============================================ -->
+{% if editar %}
+<!-- MODALS                                       -->
+<!-- ============================================ -->
+
+<div id="modal-servico" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="bg-purple-600 text-white px-6 py-4">
+            <h3 class="text-lg font-bold"><i class="fa fa-cogs mr-2"></i>Adicionar Serviço</h3>
+        </div>
+        <form method="POST" action="{% url 'servicos:adicionar_servico_os' os.id %}" class="p-6">
+            {% csrf_token %}
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Descrição do Serviço *</label>
+                    <input type="text" name="descricao" required placeholder="Ex: Usinagem do Cardan"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Valor (R$) *</label>
+                    <input type="number" name="valor" step="0.01" min="0.01" required placeholder="0,00"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-purple-500 focus:border-purple-500">
+                </div>
+            </div>
+            <div class="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
+                <button type="button" onclick="document.getElementById('modal-servico').classList.add('hidden')"
+                        class="px-4 py-2.5 text-sm text-gray-600 hover:text-gray-800 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                    Cancelar
+                </button>
+                <button type="submit" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold transition shadow-md">
+                    <i class="fa fa-save mr-1"></i> Adicionar Serviço
                 </button>
             </div>
         </form>
     </div>
 </div>
+
+<div id="modal-funcionario" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-md overflow-hidden">
+        <div class="bg-teal-600 text-white px-6 py-4">
+            <h3 class="text-lg font-bold"><i class="fa fa-hard-hat mr-2"></i>Adicionar Funcionário</h3>
+        </div>
+        <form method="POST" action="{% url 'servicos:adicionar_funcionario_os' os.id %}" class="p-6">
+            {% csrf_token %}
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Funcionário *</label>
+                    {{ form_funcionario.funcionario }}
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Remuneração (R$) *</label>
+                    <input type="number" name="valor_remuneracao" step="0.01" min="0.01" required placeholder="0,00"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500 focus:border-teal-500">
+                </div>
+            </div>
+            <div class="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
+                <button type="button" onclick="document.getElementById('modal-funcionario').classList.add('hidden')"
+                        class="px-4 py-2.5 text-sm text-gray-600 hover:text-gray-800 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                    Cancelar
+                </button>
+                <button type="submit" class="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold transition shadow-md">
+                    <i class="fa fa-save mr-1"></i> Adicionar Funcionário
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% if pode_fechar %}
+<div id="modal-fechar" class="hidden fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+    <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg overflow-hidden">
+        <div class="bg-green-600 text-white px-6 py-4">
+            <h3 class="text-lg font-bold"><i class="fa fa-lock mr-2"></i>Fechar OS — Gerar Financeiro</h3>
+        </div>
+        <div class="p-6">
+            <p class="text-sm text-gray-600 mb-4">
+                A OS <strong>{{ os.numero }}</strong> será fechada e o financeiro será gerado automaticamente.
+            </p>
+            <div class="bg-gray-50 rounded-lg p-3 mb-4 text-sm">
+                <p><strong>Valor Total:</strong> <span class="font-mono text-green-700">{{ valor_total|moeda_br }}</span></p>
+            </div>
+
+            <form method="POST" action="{% url 'servicos:fechar_os' os.id %}" id="form-fechar">
+                {% csrf_token %}
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-bold text-gray-700 mb-3">Tipo de Pagamento *</label>
+                    <div class="space-y-3">
+                        <label class="flex items-start space-x-3 cursor-pointer p-3 rounded-lg border-2 border-green-300 bg-green-50 transition hover:border-green-500">
+                            <input type="radio" name="forma_pagamento" value="A_VISTA" checked
+                                   onclick="alternarFormaPagamento(this.value)"
+                                   class="text-green-600 focus:ring-green-500 mt-0.5">
+                            <div>
+                                <span class="text-sm font-bold text-gray-700">À Vista</span>
+                                <p class="text-xs text-gray-500 mt-0.5">Pagamento imediato.</p>
+                            </div>
+                        </label>
+                        <label class="flex items-start space-x-3 cursor-pointer p-3 rounded-lg border-2 border-gray-200 hover:border-blue-400 transition">
+                            <input type="radio" name="forma_pagamento" value="A_PRAZO"
+                                   onclick="alternarFormaPagamento(this.value)"
+                                   class="text-blue-600 focus:ring-blue-500 mt-0.5">
+                            <div>
+                                <span class="text-sm font-bold text-gray-700">A Prazo</span>
+                                <p class="text-xs text-gray-500 mt-0.5">Gera parcelas no Contas a Receber.</p>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="div-forma-pagamento">
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Forma de Pagamento *</label>
+                    <select name="forma_pagamento_id" id="select-forma-pagamento"
+                            onchange="verificarAfetaCaixa()"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500" required>
+                        <option value="">Selecione a forma...</option>
+                        {% for fp in formas_pagamento %}
+                        <option value="{{ fp.id }}" data-afeta-caixa="{{ fp.afeta_caixa|yesno:'true,false' }}">{{ fp.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div id="div-parcelas" style="display:none;">
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Quantidade de Parcelas</label>
+                    <input type="number" name="qtd_parcelas" id="qtd-parcelas" value="1" min="1" max="60"
+                           oninput="calcularParcela()"
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500">
+                    <p class="text-xs text-gray-500 mt-1">
+                        Valor de cada parcela: <span id="valor-parcela" class="font-mono font-semibold">R$ 0,00</span>
+                    </p>
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mt-3">
+                        <p class="text-xs text-blue-700">
+                            <i class="fa fa-info-circle mr-1"></i>
+                            Serão geradas <strong id="qtd-parcelas-texto">1</strong> parcela(s) no Contas a Receber.
+                        </p>
+                    </div>
+                </div>
+
+                <div id="div-caixa" style="display:none;">
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Caixa/Banco para Recebimento *</label>
+                    <select name="caixa_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500">
+                        <option value="">Selecione o caixa...</option>
+                        {% for caixa in caixas %}
+                        <option value="{{ caixa.id }}" {% if caixa.id == caixa_padrao_id %}selected{% endif %}>{{ caixa.nome }}</option>
+                        {% endfor %}
+                    </select>
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
+                        <p class="text-xs text-green-700">
+                            <i class="fa fa-info-circle mr-1"></i>
+                            O pagamento será registrado imediatamente no caixa selecionado.
+                        </p>
+                    </div>
+                </div>
+
+                <div id="div-sem-caixa" style="display:none;">
+                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+                        <p class="text-xs text-yellow-700">
+                            <i class="fa fa-info-circle mr-1"></i>
+                            Esta forma de pagamento <strong>não</strong> movimenta o caixa físico.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
+                <button type="button" onclick="document.getElementById('modal-fechar').classList.add('hidden')"
+                        class="px-4 py-2.5 text-sm text-gray-600 hover:text-gray-800 font-medium border border-gray-300 rounded-lg hover:bg-gray-50 transition">
+                    Cancelar
+                </button>
+                <button type="submit" onclick="return confirm('Confirmar fechamento da OS e geração do financeiro?')"
+                        class="bg-green-600 hover:bg-green-700 text-white px-6 py-2.5 rounded-lg text-sm font-bold transition shadow-md">
+                    <i class="fa fa-check mr-1"></i> Confirmar Fechamento
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+
 {% endblock %}
 
 {% block scripts %}
@@ -167,6 +644,17 @@
             selecionado.classList.remove('hidden');
         }
     }
+
+    resultado.addEventListener('mousedown', function(e) {
+        var el = e.target.closest('[data-id]');
+        if (!el) return;
+        e.preventDefault();
+        hidden.value = el.dataset.id;
+        input.value = el.dataset.nome;
+        textoSelecionado.textContent = el.dataset.nome + ' \u2014 ' + (el.dataset.doc || 'sem doc');
+        selecionado.classList.remove('hidden');
+        resultado.classList.add('hidden');
+    });
 
     input.addEventListener('input', function() {
         clearTimeout(timeout);
@@ -193,15 +681,6 @@
                     });
                     resultado.innerHTML = html;
                     resultado.classList.remove('hidden');
-                    resultado.querySelectorAll('[data-id]').forEach(el => {
-                        el.addEventListener('click', function() {
-                            hidden.value = this.dataset.id;
-                            input.value = this.dataset.nome;
-                            textoSelecionado.textContent = this.dataset.nome + ' — ' + (this.dataset.doc || 'sem doc');
-                            selecionado.classList.remove('hidden');
-                            resultado.classList.add('hidden');
-                        });
-                    });
                 });
         }, 300);
     });
@@ -217,5 +696,82 @@
         selecionado.classList.add('hidden');
     };
 })();
+
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('active-tab', 'text-indigo-600', 'border-indigo-500');
+        btn.classList.add('text-gray-500', 'border-transparent');
+    });
+    document.getElementById('tab-' + tabId).classList.remove('hidden');
+    const btn = document.querySelector('[data-tab="' + tabId + '"]');
+    btn.classList.add('active-tab', 'text-indigo-600', 'border-indigo-500');
+    btn.classList.remove('text-gray-500', 'border-transparent');
+}
+
+function alternarFormaPagamento(valor) {
+    var divParcelas = document.getElementById('div-parcelas');
+    var divFormaPagamento = document.getElementById('div-forma-pagamento');
+    if (valor === 'A_PRAZO') {
+        divParcelas.style.display = 'block';
+    } else {
+        divParcelas.style.display = 'none';
+    }
+    verificarAfetaCaixa();
+    calcularParcela();
+}
+
+function verificarAfetaCaixa() {
+    var select = document.getElementById('select-forma-pagamento');
+    var divCaixa = document.getElementById('div-caixa');
+    var divSemCaixa = document.getElementById('div-sem-caixa');
+    var selectCaixa = document.querySelector('#div-caixa select');
+    if (!select) return;
+    var option = select.options[select.selectedIndex];
+    var afetaCaixa = option.getAttribute('data-afeta-caixa') === 'true';
+    if (afetaCaixa) {
+        divCaixa.style.display = 'block';
+        divSemCaixa.style.display = 'none';
+        if (selectCaixa) selectCaixa.required = true;
+    } else {
+        divCaixa.style.display = 'none';
+        divSemCaixa.style.display = 'block';
+        if (selectCaixa) selectCaixa.required = false;
+    }
+}
+
+function calcularParcela() {
+    var inputParcelas = document.getElementById('qtd-parcelas');
+    var spanParcela = document.getElementById('valor-parcela');
+    var spanTexto = document.getElementById('qtd-parcelas-texto');
+    if (!inputParcelas || !spanParcela) return;
+    var qtd = parseInt(inputParcelas.value) || 1;
+    var totalText = document.getElementById('valor-total-os').textContent.replace('R$ ','').trim();
+    var total = parseFloat(totalText.replace(/\./g,'').replace(',','.')) || 0;
+    var valorParcela = total / qtd;
+    var parcelaFormatada = valorParcela.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    spanParcela.textContent = parcelaFormatada;
+    if (spanTexto) spanTexto.textContent = qtd;
+}
+
+function editarServico(id, descricao, valor) {
+    var modal = document.getElementById('modal-servico');
+    modal.querySelector('h3').innerHTML = '<i class="fa fa-cogs mr-2"></i>Editar Serviço';
+    modal.querySelector('form').action = '/servicos/ordens/servico/editar/' + id + '/';
+    modal.querySelector('input[name="descricao"]').value = descricao;
+    modal.querySelector('input[name="valor"]').value = valor;
+    modal.querySelector('button[type="submit"]').innerHTML = '<i class="fa fa-save mr-1"></i> Salvar Alterações';
+    modal.classList.remove('hidden');
+}
+
+function editarFuncionarioOS(id, funcionarioId, valor) {
+    var modal = document.getElementById('modal-funcionario');
+    modal.querySelector('h3').innerHTML = '<i class="fa fa-hard-hat mr-2"></i>Editar Funcionário';
+    modal.querySelector('form').action = '/servicos/ordens/funcionario/editar/' + id + '/';
+    modal.querySelector('select[name="funcionario"]').value = funcionarioId;
+    modal.querySelector('input[name="valor_remuneracao"]').value = valor;
+    modal.querySelector('button[type="submit"]').innerHTML = '<i class="fa fa-save mr-1"></i> Salvar Alterações';
+    modal.classList.remove('hidden');
+}
 </script>
 {% endblock %}
