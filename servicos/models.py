@@ -20,6 +20,7 @@ class Funcionario(ModeloSaaS):
         verbose_name_plural = "Funcionários"
         ordering = ['nome']
         unique_together = [['empresa', 'nome']]
+        permissions = [('acesso_modulo', 'Acesso ao módulo Serviços')]
 
 
 class OrdemServico(ModeloSaaS):

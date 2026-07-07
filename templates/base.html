@@ -48,14 +48,17 @@
             <ul class="space-y-1">
                 
                 <!-- 1. PAINEL -->
+                {% if perms.web.acesso_modulo or user.is_superuser %}
                 <li>
                     <a href="{% url 'dashboard' %}" class="flex items-center py-3 px-4 text-gray-300 hover:text-white sidebar-hover transition-all {% if request.resolver_match.url_name == 'dashboard' %}bg-black/20 border-l-4 border-blue-400 text-white{% endif %}">
                         <i class="fa fa-tachometer-alt w-6 text-center text-lg"></i>
                         <span class="ml-2 font-medium">Painel</span>
                     </a>
                 </li>
+                {% endif %}
                 
                 <!-- 2. CADASTROS (MENU DROP-DOWN) -->
+                {% if perms.cadastros.acesso_modulo %}
                 <li>
                     <button type="button" onclick="toggleMenu('cadastros-menu')" class="w-full flex items-center justify-between py-3 px-4 text-gray-300 hover:text-white sidebar-hover transition-all focus:outline-none {% if '/cadastros/' in request.path %}text-white bg-black/10{% endif %}">
                         <div class="flex items-center">
@@ -79,8 +82,10 @@
                         </li>
                     </ul>
                 </li>
+                {% endif %}
 
                 <!-- 3. FINANCEIRO (MENU DROP-DOWN) -->
+                {% if perms.financeiro.acesso_modulo %}
                 <li>
                     <button type="button" onclick="toggleMenu('financeiro-menu')" class="w-full flex items-center justify-between py-3 px-4 text-gray-300 hover:text-white sidebar-hover transition-all focus:outline-none {% if '/financeiro/' in request.path %}text-white bg-black/10{% endif %}">
                         <div class="flex items-center">
@@ -124,7 +129,9 @@
                         </li>
                     </ul>
                 </li>
+                {% endif %}
 <!-- 4. RELATÓRIOS (NOVO MENU) -->
+                {% if perms.financeiro.acesso_modulo %}
                 <li>
                     <button type="button" onclick="toggleMenu('relatorios-menu')" class="w-full flex items-center justify-between py-3 px-4 text-gray-300 hover:text-white sidebar-hover transition-all focus:outline-none {% if '/relatorios/' in request.path %}text-white bg-black/10{% endif %}">
                         <div class="flex items-center">
@@ -146,8 +153,10 @@
 
                     </ul>
                 </li>
+                {% endif %}
 
                 <!-- 5. SERVIÇOS (MENU DROP-DOWN) -->
+                {% if perms.servicos.acesso_modulo %}
                 <li>
                     <button type="button" onclick="toggleMenu('servicos-menu')" class="w-full flex items-center justify-between py-3 px-4 text-gray-300 hover:text-white sidebar-hover transition-all focus:outline-none {% if '/servicos/' in request.path %}text-white bg-black/10{% endif %}">
                         <div class="flex items-center">
@@ -191,6 +200,7 @@
                         </li>
                     </ul>
                 </li>
+                {% endif %}
             </ul>
         </nav>
     </aside>
@@ -241,9 +251,11 @@
                         </div>
 
                         <!-- Links -->
+                        {% if perms.core.acesso_modulo %}
                         <a href="{% url 'configuracoes' %}" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
                             <i class="fa fa-cogs mr-3 text-gray-400"></i> Configurações
                         </a>
+                        {% endif %}
                         <a href="#" class="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-600 transition">
                             <i class="fa fa-user-circle mr-3 text-gray-400"></i> Meu Perfil
                         </a>

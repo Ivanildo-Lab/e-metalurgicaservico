@@ -6,6 +6,7 @@ from datetime import timedelta
 from cadastros.models import Cadastro
 from financeiro.models import Lancamento, Conta
 from servicos.models import OrdemServico
+from core.decorators import permission_required_module
 
 # ==========================================
 # LANDING PAGE (Tela Inicial)
@@ -19,6 +20,7 @@ def home(request):
 # DASHBOARD (Painel Principal)
 # ==========================================
 @login_required
+@permission_required_module('web')
 def dashboard(request):
     empresa = request.user.empresa
     hoje = timezone.now().date()

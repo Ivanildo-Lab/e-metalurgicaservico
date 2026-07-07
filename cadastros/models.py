@@ -11,6 +11,7 @@ class CategoriaCliente(ModeloSaaS):
     class Meta:
         verbose_name = "Categoria de Cliente"
         verbose_name_plural = "Categorias de Clientes"
+        permissions = [('acesso_modulo', 'Acesso ao módulo Cadastros')]
 
 class Cadastro(ModeloSaaS):
     TIPO_PESSOA_CHOICES = [

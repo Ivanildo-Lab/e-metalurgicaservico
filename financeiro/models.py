@@ -20,6 +20,7 @@ class PlanoDeContas(ModeloSaaS):
         verbose_name_plural = "Planos de Contas"
         ordering = ['codigo', 'nome']
         unique_together = [['empresa', 'codigo']]
+        permissions = [('acesso_modulo', 'Acesso ao módulo Financeiro')]
 
 
 class Caixa(ModeloSaaS):

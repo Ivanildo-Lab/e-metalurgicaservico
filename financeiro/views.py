@@ -1,6 +1,7 @@
 from datetime import date
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.decorators import permission_required_module
 from django.contrib import messages
 from django.db.models import Sum
 from django.utils.dateparse import parse_date
@@ -26,11 +27,13 @@ def add_months(source_date, months):
 # 1. GESTÃO DE CAIXAS (BANCOS)
 # ==========================================================
 @login_required
+@permission_required_module('financeiro')
 def lista_caixas(request):
     caixas = Caixa.objects.filter(empresa=request.user.empresa)
     return render(request, 'financeiro/caixa_list.html', {'caixas': caixas})
 
 @login_required
+@permission_required_module('financeiro')
 def adicionar_caixa(request):
     if request.method == 'POST':
         form = CaixaForm(request.POST)
@@ -45,6 +48,7 @@ def adicionar_caixa(request):
     return render(request, 'financeiro/caixa_form.html', {'form': form})
 
 @login_required
+@permission_required_module('financeiro')
 def editar_caixa(request, id):
     caixa = get_object_or_404(Caixa, id=id, empresa=request.user.empresa)
     if request.method == 'POST':
@@ -58,6 +62,7 @@ def editar_caixa(request, id):
     return render(request, 'financeiro/caixa_form.html', {'form': form})
 
 @login_required
+@permission_required_module('financeiro')
 def excluir_caixa(request, id):
     caixa = get_object_or_404(Caixa, id=id, empresa=request.user.empresa)
     if caixa.lancamento_set.exists():
@@ -72,6 +77,7 @@ def excluir_caixa(request, id):
 # 2. GESTÃO DE PLANO DE CONTAS
 # ==========================================================
 @login_required
+@permission_required_module('financeiro')
 def lista_plano_de_contas(request):
     contas = PlanoDeContas.objects.filter(empresa=request.user.empresa).order_by('codigo')
     return render(request, 'financeiro/plano_de_contas_list.html', {'planos_de_contas': contas})
@@ -79,6 +85,7 @@ def lista_plano_de_contas(request):
 # financeiro/views.py
 
 @login_required
+@permission_required_module('financeiro')
 def adicionar_plano_de_contas(request):
     if request.method == 'POST':
         # PASSANDO O USER AQUI
@@ -95,6 +102,7 @@ def adicionar_plano_de_contas(request):
     return render(request, 'financeiro/plano_de_contas_form.html', {'form': form})
 
 @login_required
+@permission_required_module('financeiro')
 def editar_plano_de_contas(request, id):
     conta = get_object_or_404(PlanoDeContas, id=id, empresa=request.user.empresa)
     if request.method == 'POST':
@@ -110,6 +118,7 @@ def editar_plano_de_contas(request, id):
     return render(request, 'financeiro/plano_de_contas_form.html', {'form': form})
 
 @login_required
+@permission_required_module('financeiro')
 def excluir_plano_de_contas(request, id):
     conta = get_object_or_404(PlanoDeContas, id=id, empresa=request.user.empresa)
     if conta.lancamento_set.exists() or conta.conta_set.exists():
@@ -125,6 +134,7 @@ def excluir_plano_de_contas(request, id):
 # ==========================================================
 
 @login_required
+@permission_required_module('financeiro')
 def lista_contas_receber(request):
     """Lista apenas contas onde o Plano de Contas é TIPO RECEITA"""
     # Base Query
@@ -174,6 +184,7 @@ def lista_contas_receber(request):
     })
 
 @login_required
+@permission_required_module('financeiro')
 def lista_contas_pagar(request):
     """Lista apenas contas onde o Plano de Contas é TIPO DESPESA"""
     # Base Query
@@ -279,6 +290,7 @@ def processar_lancamento_conta(request, form, tipo_redirect):
 # ==========================================================
 
 @login_required
+@permission_required_module('financeiro')
 def nova_receita(request):
     """Cria conta pré-filtrando categorias de Receita e Clientes"""
     if request.method == 'POST':
@@ -290,6 +302,7 @@ def nova_receita(request):
     return render(request, 'financeiro/conta_form.html', {'form': form, 'titulo': 'Novo Recebimento'})
 
 @login_required
+@permission_required_module('financeiro')
 def nova_despesa(request):
     """Cria conta pré-filtrando categorias de Despesa e Fornecedores"""
     if request.method == 'POST':
@@ -301,6 +314,7 @@ def nova_despesa(request):
     return render(request, 'financeiro/conta_form.html', {'form': form, 'titulo': 'Nova Despesa'})
 
 @login_required
+@permission_required_module('financeiro')
 def editar_conta(request, id):
     conta = get_object_or_404(Conta, id=id, empresa=request.user.empresa)
     
@@ -318,6 +332,7 @@ def editar_conta(request, id):
     return render(request, 'financeiro/conta_form.html', {'form': form})
 
 @login_required
+@permission_required_module('financeiro')
 def excluir_conta(request, id):
     conta = get_object_or_404(Conta, id=id, empresa=request.user.empresa)
     tipo_redirect = 'financeiro:lista_receber' if conta.plano_de_contas.tipo == 'R' else 'financeiro:lista_pagar'
@@ -331,6 +346,7 @@ def excluir_conta(request, id):
     return redirect(tipo_redirect)
 
 @login_required
+@permission_required_module('financeiro')
 def baixar_conta(request, id):
     conta = get_object_or_404(Conta, id=id, empresa=request.user.empresa)
     
@@ -378,6 +394,7 @@ def baixar_conta(request, id):
 # ==========================================================
 
 @login_required
+@permission_required_module('financeiro')
 def fluxo_caixa(request):
     # 1. Definição das Datas
     hoje = date.today()
@@ -490,6 +507,7 @@ def fluxo_caixa(request):
     })
 
 @login_required
+@permission_required_module('financeiro')
 def novo_lancamento_manual(request):
     if request.method == 'POST':
         form = LancamentoManualForm(request.POST, user=request.user)
@@ -504,6 +522,7 @@ def novo_lancamento_manual(request):
     return render(request, 'financeiro/lancamento_form.html', {'form': form})
 
 @login_required
+@permission_required_module('financeiro')
 def editar_lancamento(request, id):
     lancamento = get_object_or_404(Lancamento, id=id, empresa=request.user.empresa)
     if request.method == 'POST':
@@ -517,6 +536,7 @@ def editar_lancamento(request, id):
     return render(request, 'financeiro/lancamento_form.html', {'form': form})
 
 @login_required
+@permission_required_module('financeiro')
 def excluir_lancamento(request, id):
     lancamento = get_object_or_404(Lancamento, id=id, empresa=request.user.empresa)
     
@@ -534,6 +554,7 @@ def excluir_lancamento(request, id):
     return redirect('financeiro:fluxo_caixa')
 
 @login_required
+@permission_required_module('financeiro')
 def relatorio_fluxo(request):
     # 1. Definição de Datas
     hoje = date.today()
@@ -643,6 +664,7 @@ def relatorio_fluxo(request):
     })
 
 @login_required
+@permission_required_module('financeiro')
 def relatorio_contas(request):
     """
     Gera relatório de Contas a Pagar ou Receber baseado nos filtros da URL
@@ -693,6 +715,7 @@ def relatorio_contas(request):
     })
 
 @login_required
+@permission_required_module('financeiro')
 def relatorio_dre(request):
     # 1. Filtros de Data
     hoje = date.today()
@@ -743,6 +766,7 @@ def relatorio_dre(request):
     })
 
 @login_required
+@permission_required_module('financeiro')
 def relatorio_dre_sintetico(request):
     # 1. Filtros
     hoje = date.today()

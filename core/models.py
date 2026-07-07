@@ -56,7 +56,7 @@ class ParametroSistema(ModeloSaaS):
     class Meta:
         verbose_name = "Parâmetro do Sistema"
         verbose_name_plural = "Parâmetros do Sistema"
-        # Garante que uma empresa não tenha duas configurações para a mesma chave
         unique_together = ['empresa', 'chave']
+        permissions = [('acesso_modulo', 'Acesso ao módulo Configurações')]
 
         

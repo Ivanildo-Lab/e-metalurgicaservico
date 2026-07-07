@@ -2,6 +2,7 @@ from datetime import date
 from decimal import Decimal
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.decorators import permission_required_module
 from django.contrib import messages
 from django.db.models import Sum, Q
 from django.http import JsonResponse
@@ -25,6 +26,7 @@ from .forms import (
 # 1. CRUD DE FUNCIONÁRIOS
 # ==========================================================
 @login_required
+@permission_required_module('servicos')
 def lista_funcionarios(request):
     q = request.GET.get('q', '')
     status_filtro = request.GET.get('status', '')
@@ -43,35 +45,46 @@ def lista_funcionarios(request):
 
 
 @login_required
+@permission_required_module('servicos')
 def novo_funcionario(request):
     if request.method == 'POST':
         form = FuncionarioForm(request.POST, user=request.user)
         if form.is_valid():
-            obj = form.save(commit=False)
-            obj.empresa = request.user.empresa
-            obj.save()
-            messages.success(request, "Funcionário cadastrado com sucesso!")
-            return redirect('servicos:lista_funcionarios')
+            nome = form.cleaned_data['nome'].strip()
+            if Funcionario.objects.filter(empresa=request.user.empresa, nome__iexact=nome).exists():
+                messages.error(request, f'Já existe um funcionário "{nome}" cadastrado para esta empresa.')
+            else:
+                obj = form.save(commit=False)
+                obj.empresa = request.user.empresa
+                obj.save()
+                messages.success(request, "Funcionário cadastrado com sucesso!")
+                return redirect('servicos:lista_funcionarios')
     else:
         form = FuncionarioForm(user=request.user)
     return render(request, 'servicos/funcionario_form.html', {'form': form, 'editar': False})
 
 
 @login_required
+@permission_required_module('servicos')
 def editar_funcionario(request, id):
     obj = get_object_or_404(Funcionario, id=id, empresa=request.user.empresa)
     if request.method == 'POST':
         form = FuncionarioForm(request.POST, instance=obj, user=request.user)
         if form.is_valid():
-            form.save()
-            messages.success(request, "Funcionário atualizado com sucesso!")
-            return redirect('servicos:lista_funcionarios')
+            nome = form.cleaned_data['nome'].strip()
+            if Funcionario.objects.filter(empresa=request.user.empresa, nome__iexact=nome).exclude(id=obj.id).exists():
+                messages.error(request, f'Já existe um funcionário "{nome}" cadastrado para esta empresa.')
+            else:
+                form.save()
+                messages.success(request, "Funcionário atualizado com sucesso!")
+                return redirect('servicos:lista_funcionarios')
     else:
         form = FuncionarioForm(instance=obj, user=request.user)
     return render(request, 'servicos/funcionario_form.html', {'form': form, 'editar': True})
 
 
 @login_required
+@permission_required_module('servicos')
 def excluir_funcionario(request, id):
     obj = get_object_or_404(Funcionario, id=id, empresa=request.user.empresa)
     if obj.funcionarioos_set.exists():
@@ -86,6 +99,7 @@ def excluir_funcionario(request, id):
 # 2. CRUD DE ORDENS DE SERVIÇO
 # ==========================================================
 @login_required
+@permission_required_module('servicos')
 def lista_ordens(request):
     q = request.GET.get('q', '')
     status_filtro = request.GET.get('status', '')
@@ -144,6 +158,7 @@ def lista_ordens(request):
 
 
 @login_required
+@permission_required_module('servicos')
 def nova_os(request):
     if request.method == 'POST':
         form = OrdemServicoForm(request.POST, user=request.user)
@@ -162,6 +177,7 @@ def nova_os(request):
 
 
 @login_required
+@permission_required_module('servicos')
 def editar_os(request, id):
     obj = get_object_or_404(OrdemServico, id=id, empresa=request.user.empresa)
     if request.method == 'POST':
@@ -222,6 +238,7 @@ def editar_os(request, id):
 
 
 @login_required
+@permission_required_module('servicos')
 def excluir_os(request, id):
     obj = get_object_or_404(OrdemServico, id=id, empresa=request.user.empresa)
     if obj.status == 'FECHADA':
@@ -233,6 +250,7 @@ def excluir_os(request, id):
 
 
 @login_required
+@permission_required_module('servicos')
 def salvar_os(request, id):
     """Salva os dados da OS diretamente da tela de detalhe"""
     os_obj = get_object_or_404(OrdemServico, id=id, empresa=request.user.empresa)
@@ -294,6 +312,7 @@ def salvar_os(request, id):
 
 
 @login_required
+@permission_required_module('servicos')
 def detalhe_os(request, id):
     """Tela principal da OS — exibe serviços, funcionários e permite ações"""
     os_obj = get_object_or_404(OrdemServico, id=id, empresa=request.user.empresa)
@@ -362,6 +381,7 @@ def detalhe_os(request, id):
 # 3. AÇÕES INLINE NA OS (Serviços e Funcionários)
 # ==========================================================
 @login_required
+@permission_required_module('servicos')
 def adicionar_servico_os(request, os_id):
     os_obj = get_object_or_404(OrdemServico, id=os_id, empresa=request.user.empresa)
     if os_obj.status not in ('ABERTA', 'CONCLUIDA'):
@@ -379,6 +399,7 @@ def adicionar_servico_os(request, os_id):
 
 
 @login_required
+@permission_required_module('servicos')
 def editar_servico_os(request, id):
     servico = get_object_or_404(ServicoOS, id=id, ordem_servico__empresa=request.user.empresa)
     os_obj = servico.ordem_servico
@@ -395,6 +416,7 @@ def editar_servico_os(request, id):
 
 
 @login_required
+@permission_required_module('servicos')
 def excluir_servico_os(request, id):
     servico = get_object_or_404(ServicoOS, id=id, ordem_servico__empresa=request.user.empresa)
     os_obj = servico.ordem_servico
@@ -408,6 +430,7 @@ def excluir_servico_os(request, id):
 
 
 @login_required
+@permission_required_module('servicos')
 def adicionar_funcionario_os(request, os_id):
     os_obj = get_object_or_404(OrdemServico, id=os_id, empresa=request.user.empresa)
     if os_obj.status not in ('ABERTA', 'CONCLUIDA', 'FECHADA'):
@@ -417,14 +440,19 @@ def adicionar_funcionario_os(request, os_id):
     if request.method == 'POST':
         form = FuncionarioOSForm(request.POST, empresa=request.user.empresa)
         if form.is_valid():
-            func_os = form.save(commit=False)
-            func_os.ordem_servico = os_obj
-            func_os.save()
-            messages.success(request, "Funcionário adicionado à OS!")
+            funcionario = form.cleaned_data['funcionario']
+            if FuncionarioOS.objects.filter(ordem_servico=os_obj, funcionario=funcionario).exists():
+                messages.error(request, f'O funcionário "{funcionario.nome}" já está vinculado a esta OS.')
+            else:
+                func_os = form.save(commit=False)
+                func_os.ordem_servico = os_obj
+                func_os.save()
+                messages.success(request, "Funcionário adicionado à OS!")
     return redirect('servicos:editar_os', id=os_obj.id)
 
 
 @login_required
+@permission_required_module('servicos')
 def editar_funcionario_os(request, id):
     func_os = get_object_or_404(FuncionarioOS, id=id, ordem_servico__empresa=request.user.empresa)
     os_obj = func_os.ordem_servico
@@ -435,12 +463,17 @@ def editar_funcionario_os(request, id):
     if request.method == 'POST':
         form = FuncionarioOSForm(request.POST, instance=func_os, empresa=request.user.empresa)
         if form.is_valid():
-            form.save()
-            messages.success(request, "Participação atualizada!")
+            funcionario = form.cleaned_data['funcionario']
+            if FuncionarioOS.objects.filter(ordem_servico=os_obj, funcionario=funcionario).exclude(id=func_os.id).exists():
+                messages.error(request, f'O funcionário "{funcionario.nome}" já está vinculado a esta OS.')
+            else:
+                form.save()
+                messages.success(request, "Participação atualizada!")
     return redirect('servicos:editar_os', id=os_obj.id)
 
 
 @login_required
+@permission_required_module('servicos')
 def excluir_funcionario_os(request, id):
     func_os = get_object_or_404(FuncionarioOS, id=id, ordem_servico__empresa=request.user.empresa)
     os_obj = func_os.ordem_servico
@@ -457,6 +490,7 @@ def excluir_funcionario_os(request, id):
 # 4. WORKFLOW DE STATUS
 # ==========================================================
 @login_required
+@permission_required_module('servicos')
 def concluir_os(request, id):
     """Marca OS como CONCLUIDA"""
     os_obj = get_object_or_404(OrdemServico, id=id, empresa=request.user.empresa)
@@ -479,6 +513,7 @@ def concluir_os(request, id):
 
 
 @login_required
+@permission_required_module('servicos')
 def cancelar_os(request, id):
     """Cancela uma OS"""
     os_obj = get_object_or_404(OrdemServico, id=id, empresa=request.user.empresa)
@@ -496,6 +531,7 @@ def cancelar_os(request, id):
 
 
 @login_required
+@permission_required_module('servicos')
 def fechar_os(request, id):
     """Fecha a OS e gera o financeiro (Contas a Receber ou Baixa no Caixa)"""
     os_obj = get_object_or_404(OrdemServico, id=id, empresa=request.user.empresa)
@@ -656,13 +692,14 @@ def fechar_os(request, id):
     next_url = request.POST.get('next', '')
     if next_url:
         return redirect(next_url)
-    return redirect('servicos:editar_os', id=os_obj.id)
+    return redirect('servicos:imprimir_os', id=os_obj.id)
 
 
 # ==========================================================
 # 5. CRUD DE METAS
 # ==========================================================
 @login_required
+@permission_required_module('servicos')
 def lista_metas(request):
     mes_atual = int(request.GET.get('mes', date.today().month))
     ano_atual = int(request.GET.get('ano', date.today().year))
@@ -700,6 +737,7 @@ def lista_metas(request):
 
 
 @login_required
+@permission_required_module('servicos')
 def nova_meta(request):
     if request.method == 'POST':
         form = MetaFuncionarioForm(request.POST, user=request.user)
@@ -734,20 +772,30 @@ def nova_meta(request):
 
 
 @login_required
+@permission_required_module('servicos')
 def editar_meta(request, id):
     obj = get_object_or_404(MetaFuncionario, id=id, empresa=request.user.empresa)
     if request.method == 'POST':
         form = MetaFuncionarioForm(request.POST, instance=obj, user=request.user)
         if form.is_valid():
-            form.save()
-            messages.success(request, "Meta atualizada com sucesso!")
-            return redirect('servicos:lista_metas')
+            funcionario = form.cleaned_data['funcionario']
+            mes = form.cleaned_data['mes']
+            ano = form.cleaned_data['ano']
+            if MetaFuncionario.objects.filter(
+                empresa=request.user.empresa, funcionario=funcionario, mes=mes, ano=ano
+            ).exclude(id=obj.id).exists():
+                messages.error(request, f'Já existe uma meta para o funcionário "{funcionario.nome}" no período {mes}/{ano}.')
+            else:
+                form.save()
+                messages.success(request, "Meta atualizada com sucesso!")
+                return redirect('servicos:lista_metas')
     else:
         form = MetaFuncionarioForm(instance=obj, user=request.user)
     return render(request, 'servicos/meta_form.html', {'form': form, 'editar': True})
 
 
 @login_required
+@permission_required_module('servicos')
 def excluir_meta(request, id):
     obj = get_object_or_404(MetaFuncionario, id=id, empresa=request.user.empresa)
     obj.delete()
@@ -759,6 +807,7 @@ def excluir_meta(request, id):
 # 6. RELATÓRIOS
 # ==========================================================
 @login_required
+@permission_required_module('servicos')
 def relatorio_mensal(request, ano, mes):
     """Relatório mensal: meta vs realizado por funcionário com bônus"""
     funcionarios = Funcionario.objects.filter(empresa=request.user.empresa, ativo=True)
@@ -823,6 +872,7 @@ def relatorio_mensal(request, ano, mes):
 
 
 @login_required
+@permission_required_module('servicos')
 def relatorio_anual(request, ano):
     """Relatório anual: evolução mês a mês da empresa"""
     meses_nomes = [
@@ -873,10 +923,12 @@ def relatorio_anual(request, ano):
 
 
 @login_required
+@permission_required_module('servicos')
 def imprimir_os(request, id):
     """Gera impressão da OS com dados do cliente, serviços e pagamento"""
     os_obj = get_object_or_404(OrdemServico, id=id, empresa=request.user.empresa)
     servicos = os_obj.servicos.all()
+    funcionarios = os_obj.funcionarios.all()
     valor_bruto = os_obj.valor_bruto
     valor_total = os_obj.valor_total
     valor_parcela = valor_total / os_obj.qtd_parcelas if os_obj.qtd_parcelas else valor_total
@@ -884,6 +936,7 @@ def imprimir_os(request, id):
     return render(request, 'servicos/os_impressao.html', {
         'os': os_obj,
         'servicos': servicos,
+        'funcionarios': funcionarios,
         'valor_bruto': valor_bruto,
         'valor_total': valor_total,
         'valor_parcela': valor_parcela,
@@ -894,6 +947,7 @@ def imprimir_os(request, id):
 # 9. CRUD DE ORÇAMENTOS
 # ==========================================================
 @login_required
+@permission_required_module('servicos')
 def lista_orcamentos(request):
     q = request.GET.get('q', '')
     orcamentos = Orcamento.objects.filter(empresa=request.user.empresa)
@@ -910,6 +964,7 @@ def lista_orcamentos(request):
 
 
 @login_required
+@permission_required_module('servicos')
 def novo_orcamento(request):
     if request.method == 'POST':
         form = OrcamentoForm(request.POST, user=request.user)
@@ -926,6 +981,7 @@ def novo_orcamento(request):
 
 
 @login_required
+@permission_required_module('servicos')
 def editar_orcamento(request, id):
     orcamento = get_object_or_404(Orcamento, id=id, empresa=request.user.empresa)
     if request.method == 'POST':
@@ -946,6 +1002,7 @@ def editar_orcamento(request, id):
 
 
 @login_required
+@permission_required_module('servicos')
 def detalhe_orcamento(request, id):
     orcamento = get_object_or_404(Orcamento, id=id, empresa=request.user.empresa)
     servicos = orcamento.servicos.all()
@@ -958,6 +1015,7 @@ def detalhe_orcamento(request, id):
 
 
 @login_required
+@permission_required_module('servicos')
 def excluir_orcamento(request, id):
     orcamento = get_object_or_404(Orcamento, id=id, empresa=request.user.empresa)
     if request.method == 'POST':
@@ -969,6 +1027,7 @@ def excluir_orcamento(request, id):
 
 
 @login_required
+@permission_required_module('servicos')
 def adicionar_servico_orcamento(request, os_id):
     """Adiciona serviço via AJAX"""
     orcamento = get_object_or_404(Orcamento, id=os_id, empresa=request.user.empresa)
@@ -989,6 +1048,7 @@ def adicionar_servico_orcamento(request, os_id):
 
 
 @login_required
+@permission_required_module('servicos')
 def editar_servico_orcamento(request, id):
     """Edita serviço via AJAX"""
     servico = get_object_or_404(ServicoOrcamento, id=id, orcamento__empresa=request.user.empresa)
@@ -1007,6 +1067,7 @@ def editar_servico_orcamento(request, id):
 
 
 @login_required
+@permission_required_module('servicos')
 def excluir_servico_orcamento(request, id):
     """Exclui serviço via AJAX"""
     servico = get_object_or_404(ServicoOrcamento, id=id, orcamento__empresa=request.user.empresa)
@@ -1021,6 +1082,7 @@ def excluir_servico_orcamento(request, id):
 
 
 @login_required
+@permission_required_module('servicos')
 def imprimir_orcamento(request, id):
     """Gera impressão do Orçamento"""
     orcamento = get_object_or_404(Orcamento, id=id, empresa=request.user.empresa)
@@ -1038,35 +1100,46 @@ def imprimir_orcamento(request, id):
 # 10. CRUD DE FORMAS DE PAGAMENTO
 # ==========================================================
 @login_required
+@permission_required_module('servicos')
 def lista_formas_pagamento(request):
     formas = FormaPagamento.objects.filter(empresa=request.user.empresa)
     return render(request, 'servicos/formapagamento_list.html', {'formas': formas})
 
 
 @login_required
+@permission_required_module('servicos')
 def nova_forma_pagamento(request):
     if request.method == 'POST':
         form = FormaPagamentoForm(request.POST)
         if form.is_valid():
-            fp = form.save(commit=False)
-            fp.empresa = request.user.empresa
-            fp.save()
-            messages.success(request, f'Forma de pagamento "{fp.nome}" criada com sucesso!')
-            return redirect('servicos:lista_formas_pagamento')
+            nome = form.cleaned_data['nome'].strip()
+            if FormaPagamento.objects.filter(empresa=request.user.empresa, nome__iexact=nome).exists():
+                messages.error(request, f'Já existe uma forma de pagamento "{nome}" cadastrada para esta empresa.')
+            else:
+                fp = form.save(commit=False)
+                fp.empresa = request.user.empresa
+                fp.save()
+                messages.success(request, f'Forma de pagamento "{fp.nome}" criada com sucesso!')
+                return redirect('servicos:lista_formas_pagamento')
     else:
         form = FormaPagamentoForm()
     return render(request, 'servicos/formapagamento_form.html', {'form': form, 'titulo': 'Nova Forma de Pagamento'})
 
 
 @login_required
+@permission_required_module('servicos')
 def editar_forma_pagamento(request, id):
     fp = get_object_or_404(FormaPagamento, id=id, empresa=request.user.empresa)
     if request.method == 'POST':
         form = FormaPagamentoForm(request.POST, instance=fp)
         if form.is_valid():
-            form.save()
-            messages.success(request, f'Forma de pagamento "{fp.nome}" atualizada com sucesso!')
-            return redirect('servicos:lista_formas_pagamento')
+            nome = form.cleaned_data['nome'].strip()
+            if FormaPagamento.objects.filter(empresa=request.user.empresa, nome__iexact=nome).exclude(id=fp.id).exists():
+                messages.error(request, f'Já existe uma forma de pagamento "{nome}" cadastrada para esta empresa.')
+            else:
+                form.save()
+                messages.success(request, f'Forma de pagamento "{fp.nome}" atualizada com sucesso!')
+                return redirect('servicos:lista_formas_pagamento')
     else:
         form = FormaPagamentoForm(instance=fp)
     return render(request, 'servicos/formapagamento_form.html', {
@@ -1075,6 +1148,7 @@ def editar_forma_pagamento(request, id):
 
 
 @login_required
+@permission_required_module('servicos')
 def excluir_forma_pagamento(request, id):
     fp = get_object_or_404(FormaPagamento, id=id, empresa=request.user.empresa)
     if request.method == 'POST':
@@ -1089,6 +1163,7 @@ def excluir_forma_pagamento(request, id):
 # 11. API BUSCA DE CLIENTES (AJAX)
 # ==========================================================
 @login_required
+@permission_required_module('servicos')
 def buscar_clientes(request):
     """Busca clientes por nome, CPF/CNPJ ou telefone — retorna JSON"""
     q = request.GET.get('q', '').strip()

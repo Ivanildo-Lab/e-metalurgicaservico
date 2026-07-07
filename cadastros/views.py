@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.decorators import permission_required_module
 from django.contrib import messages
 from django.db.models import Q
 from .models import Cadastro, CategoriaCliente
@@ -10,6 +11,7 @@ from .forms import CadastroForm
 # ==================================================
 
 @login_required
+@permission_required_module('cadastros')
 def lista_clientes(request):
     # Filtra apenas quem é Cliente ou Ambos (CLI + AMB)
     qs = Cadastro.objects.filter(empresa=request.user.empresa).filter(Q(papel='CLI') | Q(papel='AMB'))
@@ -41,6 +43,7 @@ def lista_clientes(request):
     })
 
 @login_required
+@permission_required_module('cadastros')
 def novo_cliente(request):
     if request.method == 'POST':
         # Passamos papel='CLI' para o form saber que deve manter o campo Categoria
@@ -68,6 +71,7 @@ def novo_cliente(request):
 # ==================================================
 
 @login_required
+@permission_required_module('cadastros')
 def lista_fornecedores(request):
     # Filtra apenas Fornecedores ou Ambos (FOR + AMB)
     qs = Cadastro.objects.filter(empresa=request.user.empresa).filter(Q(papel='FOR') | Q(papel='AMB'))
@@ -90,6 +94,7 @@ def lista_fornecedores(request):
     })
 
 @login_required
+@permission_required_module('cadastros')
 def novo_fornecedor(request):
     if request.method == 'POST':
         # Passamos papel='FOR' para o form remover o campo Categoria
@@ -117,6 +122,7 @@ def novo_fornecedor(request):
 # ==================================================
 
 @login_required
+@permission_required_module('cadastros')
 def editar_cadastro(request, id):
     cadastro = get_object_or_404(Cadastro, id=id, empresa=request.user.empresa)
     
@@ -140,6 +146,7 @@ def editar_cadastro(request, id):
     })
 
 @login_required
+@permission_required_module('cadastros')
 def excluir_cadastro(request, id):
     cadastro = get_object_or_404(Cadastro, id=id, empresa=request.user.empresa)
     tipo_redirect = 'lista_fornecedores' if cadastro.papel == 'FOR' else 'lista_clientes'

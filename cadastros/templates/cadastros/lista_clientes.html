@@ -52,10 +52,13 @@
         </div>
 
         <!-- Botão Filtrar -->
-        <div class="md:col-span-2">
-            <button type="submit" class="w-full bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800 transition shadow">
+        <div class="md:col-span-2 flex gap-2">
+            <button type="submit" class="flex-1 bg-gray-700 text-white px-4 py-2 rounded hover:bg-gray-800 transition shadow">
                 <i class="fa fa-search mr-1"></i> Filtrar
             </button>
+            <a href="{% url 'lista_clientes' %}" class="flex-1 bg-gray-200 text-gray-700 px-4 py-2 rounded hover:bg-gray-300 transition shadow text-center text-sm font-medium">
+                <i class="fa fa-times mr-1"></i> Limpar
+            </a>
         </div>
     </form>
 
