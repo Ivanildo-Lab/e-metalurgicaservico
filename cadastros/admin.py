@@ -27,7 +27,7 @@ class CadastroAdmin(admin.ModelAdmin):
     # CORREÇÃO DOS NOMES DOS CAMPOS AQUI:
     # cpf -> cpf_cnpj
     # estado -> uf
-    list_display = ('nome', 'papel', 'tipo_pessoa', 'cpf_cnpj', 'celular', 'uf', 'situacao')
+    list_display = ('nome', 'empresa', 'papel', 'tipo_pessoa', 'cpf_cnpj', 'celular', 'uf', 'situacao')
     
     list_filter = ('papel', 'tipo_pessoa', 'situacao', 'uf', 'empresa')
     
