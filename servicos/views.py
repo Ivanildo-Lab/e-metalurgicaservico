@@ -4,6 +4,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from core.decorators import permission_required_module
 from django.contrib import messages
+from django.db import transaction
 from django.db.models import Sum, Q
 from django.http import JsonResponse
 from cadastros.models import Cadastro
@@ -560,10 +561,81 @@ def fechar_os(request, id):
         return redirect('servicos:editar_os', id=os_obj.id)
 
     forma = request.POST.get('forma_pagamento', 'A_VISTA')
-    forma_pagamento_id = request.POST.get('forma_pagamento_id', None)
     qtd_parcelas = int(request.POST.get('qtd_parcelas', 1))
-    caixa_id = request.POST.get('caixa_id', None)
     desconto = Decimal(request.POST.get('desconto', '0'))
+
+    def _parse_decimal(valor):
+        if valor is None:
+            return Decimal('0')
+        texto = str(valor).strip()
+        if not texto:
+            return Decimal('0')
+        texto = texto.replace('R$', '').replace(' ', '')
+        if ',' in texto and '.' in texto:
+            if texto.rfind(',') > texto.rfind('.'):
+                texto = texto.replace('.', '').replace(',', '.')
+            else:
+                texto = texto.replace(',', '')
+        elif ',' in texto:
+            texto = texto.replace(',', '.')
+        return Decimal(texto)
+
+    pagamentos = []
+    forma_pagamento_ids = request.POST.getlist('pagamento_forma_id[]') or request.POST.getlist('pagamento_forma_id')
+    valores_pagamento = request.POST.getlist('pagamento_valor[]') or request.POST.getlist('pagamento_valor')
+    caixas_pagamento = request.POST.getlist('pagamento_caixa_id[]') or request.POST.getlist('pagamento_caixa_id')
+
+    if forma_pagamento_ids:
+        if forma != 'A_VISTA':
+            messages.error(request, "A divisão por formas de pagamento é permitida apenas para pagamento à vista.")
+            return redirect('servicos:editar_os', id=os_obj.id)
+
+        if len(forma_pagamento_ids) != len(valores_pagamento):
+            messages.error(request, "Há uma inconsistência nas formas de pagamento informadas.")
+            return redirect('servicos:editar_os', id=os_obj.id)
+
+        for idx, forma_id in enumerate(forma_pagamento_ids):
+            if not forma_id:
+                messages.error(request, "Selecione uma forma de pagamento para cada linha informada.")
+                return redirect('servicos:editar_os', id=os_obj.id)
+            try:
+                forma_pagamento_obj = FormaPagamento.objects.get(id=int(forma_id), empresa=request.user.empresa)
+            except (FormaPagamento.DoesNotExist, ValueError):
+                messages.error(request, f"Forma de pagamento inválida na linha {idx + 1}.")
+                return redirect('servicos:editar_os', id=os_obj.id)
+
+            valor = _parse_decimal(valores_pagamento[idx])
+            if valor <= 0:
+                messages.error(request, f"Informe um valor maior que zero para a forma {forma_pagamento_obj.nome}.")
+                return redirect('servicos:editar_os', id=os_obj.id)
+
+            caixa_id = caixas_pagamento[idx] if idx < len(caixas_pagamento) else None
+            pagamentos.append({
+                'forma_pagamento_obj': forma_pagamento_obj,
+                'valor': valor,
+                'caixa_id': caixa_id,
+            })
+
+        total_split = sum((p['valor'] for p in pagamentos), Decimal('0'))
+        if total_split.quantize(Decimal('0.01')) != valor_total.quantize(Decimal('0.01')):
+            messages.error(request, f"A soma das formas de pagamento ({total_split:.2f}) não bate com o valor total da OS ({valor_total:.2f}).")
+            return redirect('servicos:editar_os', id=os_obj.id)
+    else:
+        forma_pagamento_id = request.POST.get('forma_pagamento_id', None)
+        caixa_id = request.POST.get('caixa_id', None)
+        forma_pagamento_obj = None
+        if forma_pagamento_id:
+            try:
+                forma_pagamento_obj = FormaPagamento.objects.get(
+                    id=int(forma_pagamento_id), empresa=request.user.empresa
+                )
+            except (FormaPagamento.DoesNotExist, ValueError):
+                pass
+        pagamentos.append({
+            'forma_pagamento_obj': forma_pagamento_obj,
+            'valor': valor_total,
+            'caixa_id': caixa_id,
+        })
 
     # Aplicar desconto
     if desconto > 0:
@@ -573,16 +645,6 @@ def fechar_os(request, id):
         os_obj.desconto = desconto
         os_obj.save(update_fields=['desconto'])
         valor_total = os_obj.valor_total  # Recalcular com desconto
-
-    # Buscar a forma de pagamento selecionada
-    forma_pagamento_obj = None
-    if forma_pagamento_id:
-        try:
-            forma_pagamento_obj = FormaPagamento.objects.get(
-                id=int(forma_pagamento_id), empresa=request.user.empresa
-            )
-        except (FormaPagamento.DoesNotExist, ValueError):
-            pass
 
     if forma == 'A_PRAZO' and qtd_parcelas < 1:
         messages.error(request, "Para pagamento a prazo, informe pelo menos 1 parcela.")
@@ -621,46 +683,56 @@ def fechar_os(request, id):
 
     # Gerar financeiro
     if forma == 'A_VISTA':
-        # Gera 1 Conta e baixa imediatamente
-        conta = Conta.objects.create(
-            empresa=request.user.empresa,
-            descricao=f"OS {os_obj.numero} — {os_obj.descricao_geral[:100]}",
-            plano_de_contas=plano_de_contas,
-            cadastro=os_obj.cadastro,
-            valor=valor_total,
-            data_vencimento=date.today(),
-            status='PENDENTE',
-            documento=os_obj.numero,
-        )
+        with transaction.atomic():
+            created_accounts = []
+            for index, pagamento in enumerate(pagamentos, start=1):
+                forma_pagamento_obj = pagamento['forma_pagamento_obj']
+                valor_parcela = pagamento['valor']
+                caixa_id = pagamento['caixa_id']
 
-        # Só gera lançamento no caixa se a forma afeta_caixa (ex: Dinheiro)
-        if forma_pagamento_obj and forma_pagamento_obj.afeta_caixa:
-            if caixa_id:
-                caixa = get_object_or_404(Caixa, id=caixa_id, empresa=request.user.empresa)
+                conta = Conta.objects.create(
+                    empresa=request.user.empresa,
+                    descricao=f"OS {os_obj.numero} — {os_obj.descricao_geral[:100]}",
+                    plano_de_contas=plano_de_contas,
+                    cadastro=os_obj.cadastro,
+                    valor=valor_parcela,
+                    data_vencimento=date.today(),
+                    status='PENDENTE',
+                    documento=f"{os_obj.numero}-{index}",
+                )
+                created_accounts.append(conta)
+
+                if forma_pagamento_obj and forma_pagamento_obj.afeta_caixa:
+                    if caixa_id:
+                        caixa = get_object_or_404(Caixa, id=caixa_id, empresa=request.user.empresa)
+                    else:
+                        caixa = Caixa.objects.filter(empresa=request.user.empresa).first()
+                        if not caixa:
+                            messages.error(request, "Nenhum caixa/banco encontrado. Cadastre um em Financeiro > Caixas.")
+                            return redirect('servicos:editar_os', id=os_obj.id)
+
+                    Lancamento.objects.create(
+                        empresa=request.user.empresa,
+                        caixa=caixa,
+                        plano_de_contas=plano_de_contas,
+                        conta_origem=conta,
+                        data_lancamento=date.today(),
+                        descricao=f"Recebimento OS {os_obj.numero} — {forma_pagamento_obj.nome}",
+                        valor=valor_parcela,
+                        tipo='C',
+                    )
+
+                conta.status = 'PAGA'
+                conta.save(update_fields=['status'])
+
+            if len(pagamentos) == 1:
+                nome_forma = pagamentos[0]['forma_pagamento_obj'].nome if pagamentos[0]['forma_pagamento_obj'] else 'A Vista'
+                messages.success(request, f"OS {os_obj.numero} FECHADA! Pagamento via {nome_forma} registrado.")
             else:
-                caixa = Caixa.objects.filter(empresa=request.user.empresa).first()
-                if not caixa:
-                    messages.error(request, "Nenhum caixa/banco encontrado. Cadastre um em Financeiro > Caixas.")
-                    return redirect('servicos:editar_os', id=os_obj.id)
-
-            Lancamento.objects.create(
-                empresa=request.user.empresa,
-                caixa=caixa,
-                plano_de_contas=plano_de_contas,
-                conta_origem=conta,
-                data_lancamento=date.today(),
-                descricao=f"Recebimento OS {os_obj.numero} — {forma_pagamento_obj.nome}",
-                valor=valor_total,
-                tipo='C',
-            )
-            conta.status = 'PAGA'
-            conta.save()
-            messages.success(request, f"OS {os_obj.numero} FECHADA! Pagamento ({forma_pagamento_obj.nome}) registrado no caixa '{caixa.nome}'.")
-        else:
-            conta.status = 'PAGA'
-            conta.save()
-            nome_forma = forma_pagamento_obj.nome if forma_pagamento_obj else 'A Vista'
-            messages.success(request, f"OS {os_obj.numero} FECHADA! Pagamento via {nome_forma} (sem movimentação de caixa).")
+                nomes = ', '.join(
+                    p['forma_pagamento_obj'].nome if p['forma_pagamento_obj'] else 'Sem forma' for p in pagamentos
+                )
+                messages.success(request, f"OS {os_obj.numero} FECHADA! {len(pagamentos)} forma(s) de pagamento registradas: {nomes}.")
 
     elif forma == 'A_PRAZO':
         # Gera N Contas pendentes
@@ -933,6 +1005,13 @@ def imprimir_os(request, id):
     valor_total = os_obj.valor_total
     valor_parcela = valor_total / os_obj.qtd_parcelas if os_obj.qtd_parcelas else valor_total
 
+    historico_pagamentos = Lancamento.objects.filter(
+        empresa=request.user.empresa
+    ).filter(
+        Q(conta_origem__documento__startswith=os_obj.numero) |
+        Q(descricao__icontains=f'OS {os_obj.numero}')
+    ).select_related('caixa', 'conta_origem').order_by('data_lancamento', 'id')
+
     return render(request, 'servicos/os_impressao.html', {
         'os': os_obj,
         'servicos': servicos,
@@ -940,6 +1019,7 @@ def imprimir_os(request, id):
         'valor_bruto': valor_bruto,
         'valor_total': valor_total,
         'valor_parcela': valor_parcela,
+        'historico_pagamentos': historico_pagamentos,
     })
 
 

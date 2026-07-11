@@ -128,6 +128,36 @@
     </div>
     {% endif %}
 
+    {% if historico_pagamentos %}
+    <div class="bg-white rounded-xl shadow-sm border border-gray-200 border-t-4 border-green-500">
+        <div class="p-6">
+            <h3 class="text-lg font-bold text-gray-800 mb-4"><i class="fa fa-history mr-2 text-green-600"></i>Histórico de Pagamentos</h3>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 border-b border-gray-200">
+                        <tr>
+                            <th class="text-left px-4 py-2 font-semibold text-gray-600">Data</th>
+                            <th class="text-left px-4 py-2 font-semibold text-gray-600">Forma</th>
+                            <th class="text-left px-4 py-2 font-semibold text-gray-600">Caixa</th>
+                            <th class="text-right px-4 py-2 font-semibold text-gray-600">Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        {% for item in historico_pagamentos %}
+                        <tr class="hover:bg-gray-50">
+                            <td class="px-4 py-2 text-gray-600">{{ item.data_lancamento|date:"d/m/Y" }}</td>
+                            <td class="px-4 py-2 text-gray-800">{{ item.descricao|cut:"Recebimento OS "|cut:os.numero|cut:" — " }}</td>
+                            <td class="px-4 py-2 text-gray-600">{{ item.caixa.nome|default:"—" }}</td>
+                            <td class="px-4 py-2 text-right font-mono font-semibold text-green-700">{{ item.valor|moeda_br }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
     <!-- SERVIÇOS DA OS -->
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 border-t-4 border-purple-500">
         <div class="p-6">
@@ -449,17 +479,34 @@
                     </div>
                 </div>
 
-                <!-- Forma de Pagamento ( Dropdown ) -->
                 <div id="div-forma-pagamento">
-                    <label class="block text-sm font-bold text-gray-700 mb-1">Forma de Pagamento *</label>
-                    <select name="forma_pagamento_id" id="select-forma-pagamento"
-                            onchange="verificarAfetaCaixa()"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500" required>
-                        <option value="">Selecione a forma...</option>
-                        {% for fp in formas_pagamento %}
-                        <option value="{{ fp.id }}" data-afeta-caixa="{{ fp.afeta_caixa|yesno:'true,false' }}">{{ fp.nome }}</option>
-                        {% endfor %}
-                    </select>
+                    <label class="block text-sm font-bold text-gray-700 mb-1">Formas de Pagamento *</label>
+                    <div id="lista-formas-pagamento" class="space-y-2">
+                        <div class="rounded-lg border border-gray-200 p-3 bg-gray-50">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-xs font-semibold text-gray-600">Forma 1</span>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                <select name="pagamento_forma_id[]" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white" required>
+                                    <option value="">Selecione...</option>
+                                    {% for fp in formas_pagamento %}
+                                    <option value="{{ fp.id }}">{{ fp.nome }}</option>
+                                    {% endfor %}
+                                </select>
+                                <input type="text" name="pagamento_valor[]" inputmode="decimal" pattern="[0-9,\\.]*" autocomplete="off" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white" placeholder="Valor" value="0" required style="pointer-events:auto; cursor:text;" onchange="if(this.value==='') this.value='0';"
+                            </div>
+                            <label class="block mt-2 text-xs font-semibold text-gray-600">Caixa/Banco</label>
+                            <select name="pagamento_caixa_id[]" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
+                                <option value="">Selecione o caixa...</option>
+                                {% for caixa in caixas %}
+                                <option value="{{ caixa.id }}" {% if caixa.id == caixa_padrao_id %}selected{% endif %}>{{ caixa.nome }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                    <button type="button" onclick="adicionarLinhaPagamento()" class="mt-2 text-sm text-green-700 hover:text-green-800 font-semibold">
+                        + Adicionar forma de pagamento
+                    </button>
                 </div>
 
                 <div id="div-parcelas" style="display:none;">
@@ -478,33 +525,6 @@
                     </div>
                 </div>
 
-                <!-- Seleção de Caixa (apenas se afeta_caixa) -->
-                <div id="div-caixa" style="display:none;">
-                    <label class="block text-sm font-bold text-gray-700 mb-1">Caixa/Banco para Recebimento *</label>
-                    <select name="caixa_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500">
-                        <option value="">Selecione o caixa...</option>
-                        {% for caixa in caixas %}
-                        <option value="{{ caixa.id }}" {% if caixa.id == caixa_padrao_id %}selected{% endif %}>{{ caixa.nome }}</option>
-                        {% endfor %}
-                    </select>
-                    <div class="bg-green-50 border border-green-200 rounded-lg p-3 mt-3">
-                        <p class="text-xs text-green-700">
-                            <i class="fa fa-info-circle mr-1"></i>
-                            O pagamento será registrado imediatamente no caixa selecionado.
-                        </p>
-                    </div>
-                </div>
-
-                <!-- Info: sem movimentação de caixa -->
-                <div id="div-sem-caixa" style="display:none;">
-                    <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                        <p class="text-xs text-yellow-700">
-                            <i class="fa fa-info-circle mr-1"></i>
-                            Esta forma de pagamento <strong>não</strong> movimenta o caixa físico.
-                            A conta será registrada como paga sem lançamento no caixa.
-                        </p>
-                    </div>
-                </div>
             </div>
 
             <div class="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
@@ -528,37 +548,106 @@
 <script>
 function alternarFormaPagamento(valor) {
     var divParcelas = document.getElementById('div-parcelas');
-    var divFormaPagamento = document.getElementById('div-forma-pagamento');
-
     if (valor === 'A_PRAZO') {
         divParcelas.style.display = 'block';
     } else {
         divParcelas.style.display = 'none';
     }
-    verificarAfetaCaixa();
     calcularParcela();
 }
 
-function verificarAfetaCaixa() {
-    var select = document.getElementById('select-forma-pagamento');
-    var divCaixa = document.getElementById('div-caixa');
-    var divSemCaixa = document.getElementById('div-sem-caixa');
-    var selectCaixa = document.querySelector('#div-caixa select');
+function adicionarLinhaPagamento() {
+    var container = document.getElementById('lista-formas-pagamento');
+    if (!container) return;
+    var index = container.children.length;
 
-    if (!select) return;
+    var linha = document.createElement('div');
+    linha.className = 'rounded-lg border border-gray-200 p-3 bg-gray-50';
 
-    var option = select.options[select.selectedIndex];
-    var afetaCaixa = option.getAttribute('data-afeta-caixa') === 'true';
+    var cabecalho = document.createElement('div');
+    cabecalho.className = 'flex items-center justify-between mb-2';
 
-    if (afetaCaixa) {
-        divCaixa.style.display = 'block';
-        divSemCaixa.style.display = 'none';
-        if (selectCaixa) selectCaixa.required = true;
-    } else {
-        divCaixa.style.display = 'none';
-        divSemCaixa.style.display = 'block';
-        if (selectCaixa) selectCaixa.required = false;
-    }
+    var titulo = document.createElement('span');
+    titulo.className = 'text-xs font-semibold text-gray-600';
+    titulo.textContent = 'Forma ' + (index + 1);
+
+    var removerBtn = document.createElement('button');
+    removerBtn.type = 'button';
+    removerBtn.className = 'text-xs text-red-600 hover:text-red-700';
+    removerBtn.textContent = 'Remover';
+    removerBtn.onclick = function() { linha.remove(); };
+
+    cabecalho.appendChild(titulo);
+    cabecalho.appendChild(removerBtn);
+    linha.appendChild(cabecalho);
+
+    var campos = document.createElement('div');
+    campos.className = 'grid grid-cols-1 md:grid-cols-2 gap-2';
+
+    var selectForma = document.createElement('select');
+    selectForma.name = 'pagamento_forma_id[]';
+    selectForma.className = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white';
+    selectForma.required = true;
+    var optionVazia = document.createElement('option');
+    optionVazia.value = '';
+    optionVazia.textContent = 'Selecione...';
+    selectForma.appendChild(optionVazia);
+    {% for fp in formas_pagamento %}
+    var optionForma = document.createElement('option');
+    optionForma.value = '{{ fp.id }}';
+    optionForma.textContent = '{{ fp.nome }}';
+    selectForma.appendChild(optionForma);
+    {% endfor %}
+
+    var inputValor = document.createElement('input');
+    inputValor.type = 'text';
+    inputValor.name = 'pagamento_valor[]';
+    inputValor.inputMode = 'decimal';
+    inputValor.autocomplete = 'off';
+    inputValor.setAttribute('pattern', '[0-9,\\.]*');
+    inputValor.className = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white';
+    inputValor.placeholder = 'Valor';
+    inputValor.value = '0';
+    inputValor.required = true;
+    inputValor.removeAttribute('disabled');
+    inputValor.removeAttribute('readonly');
+    inputValor.style.pointerEvents = 'auto';
+    
+    selectForma.addEventListener('change', function(e) {
+        if (e.target.value) {
+            inputValor.focus();
+            inputValor.select();
+        }
+    });
+
+    campos.appendChild(selectForma);
+    campos.appendChild(inputValor);
+    linha.appendChild(campos);
+
+    var labelCaixa = document.createElement('label');
+    labelCaixa.className = 'block mt-2 text-xs font-semibold text-gray-600';
+    labelCaixa.textContent = 'Caixa/Banco';
+
+    var selectCaixa = document.createElement('select');
+    selectCaixa.name = 'pagamento_caixa_id[]';
+    selectCaixa.className = 'mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white';
+    var optionCaixaVazia = document.createElement('option');
+    optionCaixaVazia.value = '';
+    optionCaixaVazia.textContent = 'Selecione o caixa...';
+    selectCaixa.appendChild(optionCaixaVazia);
+    {% for caixa in caixas %}
+    var optionCaixa = document.createElement('option');
+    optionCaixa.value = '{{ caixa.id }}';
+    optionCaixa.textContent = '{{ caixa.nome }}';
+    {% if caixa.id == caixa_padrao_id %}
+    optionCaixa.selected = true;
+    {% endif %}
+    selectCaixa.appendChild(optionCaixa);
+    {% endfor %}
+
+    linha.appendChild(labelCaixa);
+    linha.appendChild(selectCaixa);
+    container.appendChild(linha);
 }
 
 function calcularParcela() {
@@ -593,6 +682,55 @@ function editarFuncionarioOS(id, funcionarioId, valor) {
     modal.querySelector('input[name="valor_remuneracao"]').value = valor;
     modal.querySelector('button[type="submit"]').innerHTML = '<i class="fa fa-save mr-1"></i> Salvar Alterações';
     modal.classList.remove('hidden');
+}
+
+function habilitarCamposValorPagamento() {
+    var inputs = document.querySelectorAll('input[name="pagamento_valor[]"]');
+    inputs.forEach(function(input) {
+        input.disabled = false;
+        input.readOnly = false;
+        input.removeAttribute('disabled');
+        input.removeAttribute('readonly');
+        input.style.pointerEvents = 'auto';
+        input.style.cursor = 'text';
+        input.style.opacity = '1';
+        input.style.backgroundColor = '#ffffff';
+    });
+}
+
+var observer = new MutationObserver(function() {
+    habilitarCamposValorPagamento();
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+    var modalFechar = document.getElementById('modal-fechar');
+    if (modalFechar) {
+        observer.observe(modalFechar, { childList: true, subtree: true });
+        habilitarCamposValorPagamento();
+    }
+});
+
+var btnAbrirModal = document.querySelector('button[onclick*="modal-fechar"]');
+if (btnAbrirModal) {
+    var originalOnclick = btnAbrirModal.onclick;
+    btnAbrirModal.onclick = function(e) {
+        if (originalOnclick) originalOnclick.call(this, e);
+        setTimeout(function() {
+            habilitarCamposValorPagamento();
+            var selectPrimeira = document.querySelector('#lista-formas-pagamento select[name="pagamento_forma_id[]"]');
+            if (selectPrimeira) {
+                selectPrimeira.addEventListener('change', function(e) {
+                    if (e.target.value) {
+                        var inputValor = e.target.closest('.rounded-lg').querySelector('input[name="pagamento_valor[]"]');
+                        if (inputValor) {
+                            inputValor.focus();
+                            inputValor.select();
+                        }
+                    }
+                });
+            }
+        }, 50);
+    };
 }
 </script>
 {% endblock %}

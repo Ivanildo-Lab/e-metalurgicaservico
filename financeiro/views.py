@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from core.decorators import permission_required_module
 from django.contrib import messages
-from django.db.models import Sum
+from django.db.models import Sum, Q
 from django.utils.dateparse import parse_date
 
 # Imports dos Modelos e Formulários
@@ -646,6 +646,22 @@ def relatorio_fluxo(request):
     # ===> SALDO FINAL REAL
     saldo_final = saldo_anterior + resultado_periodo
 
+    resumo_pagamentos = (
+        Lancamento.objects.filter(
+            empresa=request.user.empresa,
+            data_lancamento__range=[data_inicio_str, data_fim_str],
+            tipo='C',
+            descricao__icontains='Recebimento OS'
+        )
+        .select_related('caixa')
+        .order_by('data_lancamento', 'id')
+    )
+
+    if caixa_id:
+        resumo_pagamentos = resumo_pagamentos.filter(caixa_id=caixa_id)
+
+    resumo_pagamentos = list(resumo_pagamentos)
+
     return render(request, 'financeiro/relatorio_impresso.html', {
         'data_inicio': data_inicio,
         'data_fim': data_fim,
@@ -659,6 +675,7 @@ def relatorio_fluxo(request):
         'total_despesas': total_despesas,
         'resultado_periodo': resultado_periodo,
         'saldo_final': saldo_final,
+        'resumo_pagamentos': resumo_pagamentos,
         
         'empresa': request.user.empresa,
     })

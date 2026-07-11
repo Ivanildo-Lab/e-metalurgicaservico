@@ -169,6 +169,31 @@
                     <p class="text-gray-400">A definir</p>
                     {% endif %}
                 </div>
+                {% if historico_pagamentos %}
+                <div class="mt-1 border border-gray-200 rounded p-1 bg-gray-50">
+                    <p class="text-[8px] font-bold text-gray-700 uppercase mb-0.5">Histórico de Pagamentos</p>
+                    <table class="w-full" style="font-size:8px; line-height:1.2;">
+                        <thead>
+                            <tr class="border-b border-gray-300">
+                                <th class="text-left py-px">Data</th>
+                                <th class="text-left py-px">Forma</th>
+                                <th class="text-left py-px">Caixa</th>
+                                <th class="text-right py-px">Valor</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in historico_pagamentos %}
+                            <tr>
+                                <td class="py-px">{{ item.data_lancamento|date:"d/m/Y" }}</td>
+                                <td class="py-px">{{ item.descricao|cut:"Recebimento OS "|cut:os.numero|cut:" — " }}</td>
+                                <td class="py-px">{{ item.caixa.nome|default:"—" }}</td>
+                                <td class="py-px text-right font-mono">{{ item.valor|moeda_br }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
             </div>
 
             <!-- FUNCIONÁRIOS -->

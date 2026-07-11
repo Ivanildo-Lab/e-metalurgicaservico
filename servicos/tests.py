@@ -9,6 +9,8 @@ from .models import (
     Funcionario, OrdemServico, FuncionarioOS,
     MetaFuncionario, FormaPagamento,
 )
+from financeiro.models import Caixa, Conta, Lancamento, PlanoDeContas
+from core.models import ParametroSistema
 
 
 DATABASES_TEST = {
@@ -127,6 +129,102 @@ class FormaPagamentoTests(TestCase):
         self.assertEqual(resp.status_code, 200)
         msgs = get_messages_list(resp)
         self.assertTrue(any('já existe' in str(m).lower() for m in msgs))
+
+
+# ============================================================
+# FECHAMENTO DE OS COM MÚLTIPLAS FORMAS DE PAGAMENTO
+# ============================================================
+@override_settings(DATABASES=DATABASES_TEST)
+class FechamentoOSTests(TestCase):
+
+    def setUp(self):
+        self.empresa = criar_empresa()
+        self.user = criar_usuario(self.empresa)
+        self.cliente = criar_cliente(self.empresa)
+        self.client = Client()
+        login_usuario(self.client, self.user)
+
+        self.plano = PlanoDeContas.objects.create(
+            empresa=self.empresa, nome='Receita Serviços', tipo='R', codigo='4.01'
+        )
+        ParametroSistema.objects.create(
+            empresa=self.empresa, chave='PLANO_CONTAS_SERVICOS_ID', valor=str(self.plano.id)
+        )
+        self.caixa = Caixa.objects.create(empresa=self.empresa, nome='Caixa Principal')
+        ParametroSistema.objects.create(
+            empresa=self.empresa, chave='CAIXA_PADRAO_ID', valor=str(self.caixa.id)
+        )
+
+        self.funcionario = Funcionario.objects.create(empresa=self.empresa, nome='João')
+        self.os = OrdemServico.objects.create(
+            empresa=self.empresa, cadastro=self.cliente,
+            descricao_geral='Peça teste', data_entrada=date.today(), status='CONCLUIDA'
+        )
+        self.servico = self.os.servicos.create(descricao='Serviço', valor=150)
+        self.os.funcionarios.create(funcionario=self.funcionario, valor_remuneracao=150)
+
+        self.forma_dinheiro = FormaPagamento.objects.create(
+            empresa=self.empresa, nome='Dinheiro', afeta_caixa=True, ativo=True
+        )
+        self.forma_pix = FormaPagamento.objects.create(
+            empresa=self.empresa, nome='PIX', afeta_caixa=True, ativo=True
+        )
+
+    def test_fechar_os_com_duas_formas_de_pagamento(self):
+        resp = self.client.post(f'{PREFIX}/ordens/{self.os.id}/fechar/', {
+            'forma_pagamento': 'A_VISTA',
+            'pagamento_forma_id[]': [str(self.forma_dinheiro.id), str(self.forma_pix.id)],
+            'pagamento_valor[]': ['100.00', '50.00'],
+            'pagamento_caixa_id[]': [str(self.caixa.id), str(self.caixa.id)],
+        })
+
+        self.assertEqual(resp.status_code, 302)
+        self.os.refresh_from_db()
+        self.assertEqual(self.os.status, 'FECHADA')
+        self.assertEqual(Lancamento.objects.filter(empresa=self.empresa, tipo='C').count(), 2)
+        self.assertEqual(Conta.objects.filter(empresa=self.empresa).count(), 2)
+
+    def test_impressao_exibe_historico_de_pagamentos(self):
+        Lancamento.objects.create(
+            empresa=self.empresa,
+            caixa=self.caixa,
+            plano_de_contas=self.plano,
+            data_lancamento=date.today(),
+            descricao=f'Recebimento OS {self.os.numero} — Dinheiro',
+            valor=100,
+            tipo='C',
+        )
+        Lancamento.objects.create(
+            empresa=self.empresa,
+            caixa=self.caixa,
+            plano_de_contas=self.plano,
+            data_lancamento=date.today(),
+            descricao=f'Recebimento OS {self.os.numero} — PIX',
+            valor=50,
+            tipo='C',
+        )
+
+        resp = self.client.get(f'{PREFIX}/ordens/{self.os.id}/imprimir/')
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'Dinheiro')
+        self.assertContains(resp, 'PIX')
+
+    def test_lista_ordens_exibe_modal_com_multiplas_formas_de_pagamento(self):
+        resp = self.client.get(f'{PREFIX}/ordens/')
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'pagamento_forma_id[]')
+        self.assertContains(resp, 'pagamento_valor[]')
+        self.assertContains(resp, 'pagamento_caixa_id[]')
+        self.assertContains(resp, 'inputmode="decimal"')
+
+    def test_editar_os_exibe_input_editavel_de_valor_de_pagamento(self):
+        resp = self.client.get(f'{PREFIX}/ordens/editar/{self.os.id}/')
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertContains(resp, 'pagamento_valor[]')
+        self.assertContains(resp, 'inputmode="decimal"')
 
 
 # ============================================================

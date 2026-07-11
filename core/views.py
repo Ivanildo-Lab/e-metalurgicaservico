@@ -1,10 +1,12 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
+from core.decorators import permission_required_module
 from django.contrib import messages
 from .models import ParametroSistema
 from .forms import ParametroForm
 
 @login_required
+@permission_required_module('core')
 def configuracoes_sistema(request):
     empresa = request.user.empresa
     
@@ -29,6 +31,7 @@ def configuracoes_sistema(request):
     return render(request, 'core/configuracoes.html', {'parametros': parametros})
 
 @login_required
+@permission_required_module('core')
 def editar_parametro(request, id):
     parametro = get_object_or_404(ParametroSistema, id=id, empresa=request.user.empresa)
     
