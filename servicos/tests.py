@@ -184,6 +184,19 @@ class FechamentoOSTests(TestCase):
         self.assertEqual(Lancamento.objects.filter(empresa=self.empresa, tipo='C').count(), 2)
         self.assertEqual(Conta.objects.filter(empresa=self.empresa).count(), 2)
 
+    def test_fechar_os_pela_edicao_ignora_campos_vazios(self):
+        resp = self.client.post(f'{PREFIX}/ordens/{self.os.id}/fechar/', {
+            'forma_pagamento': 'A_VISTA',
+            'pagamento_forma_id[]': [str(self.forma_dinheiro.id), ''],
+            'pagamento_valor[]': ['150.00', ''],
+            'pagamento_caixa_id[]': [str(self.caixa.id), ''],
+        })
+
+        self.assertEqual(resp.status_code, 302)
+        self.os.refresh_from_db()
+        self.assertEqual(self.os.status, 'FECHADA')
+        self.assertEqual(Conta.objects.filter(empresa=self.empresa).count(), 1)
+
     def test_impressao_exibe_historico_de_pagamentos(self):
         Lancamento.objects.create(
             empresa=self.empresa,

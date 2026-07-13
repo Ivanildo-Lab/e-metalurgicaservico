@@ -585,16 +585,29 @@ def fechar_os(request, id):
     valores_pagamento = request.POST.getlist('pagamento_valor[]') or request.POST.getlist('pagamento_valor')
     caixas_pagamento = request.POST.getlist('pagamento_caixa_id[]') or request.POST.getlist('pagamento_caixa_id')
 
-    if forma_pagamento_ids:
+    linhas_pagamento = []
+    max_len = max(len(forma_pagamento_ids), len(valores_pagamento), len(caixas_pagamento))
+    for idx in range(max_len):
+        forma_id = forma_pagamento_ids[idx] if idx < len(forma_pagamento_ids) else ''
+        valor_text = valores_pagamento[idx] if idx < len(valores_pagamento) else ''
+        caixa_id = caixas_pagamento[idx] if idx < len(caixas_pagamento) else ''
+
+        if not str(forma_id).strip() and not str(valor_text).strip() and not str(caixa_id).strip():
+            continue
+
+        linhas_pagamento.append({
+            'forma_id': forma_id,
+            'valor_text': valor_text,
+            'caixa_id': caixa_id,
+        })
+
+    if linhas_pagamento:
         if forma != 'A_VISTA':
             messages.error(request, "A divisão por formas de pagamento é permitida apenas para pagamento à vista.")
             return redirect('servicos:editar_os', id=os_obj.id)
 
-        if len(forma_pagamento_ids) != len(valores_pagamento):
-            messages.error(request, "Há uma inconsistência nas formas de pagamento informadas.")
-            return redirect('servicos:editar_os', id=os_obj.id)
-
-        for idx, forma_id in enumerate(forma_pagamento_ids):
+        for idx, linha in enumerate(linhas_pagamento):
+            forma_id = linha['forma_id']
             if not forma_id:
                 messages.error(request, "Selecione uma forma de pagamento para cada linha informada.")
                 return redirect('servicos:editar_os', id=os_obj.id)
@@ -604,12 +617,12 @@ def fechar_os(request, id):
                 messages.error(request, f"Forma de pagamento inválida na linha {idx + 1}.")
                 return redirect('servicos:editar_os', id=os_obj.id)
 
-            valor = _parse_decimal(valores_pagamento[idx])
+            valor = _parse_decimal(linha['valor_text'])
             if valor <= 0:
                 messages.error(request, f"Informe um valor maior que zero para a forma {forma_pagamento_obj.nome}.")
                 return redirect('servicos:editar_os', id=os_obj.id)
 
-            caixa_id = caixas_pagamento[idx] if idx < len(caixas_pagamento) else None
+            caixa_id = linha['caixa_id'] or None
             pagamentos.append({
                 'forma_pagamento_obj': forma_pagamento_obj,
                 'valor': valor,
