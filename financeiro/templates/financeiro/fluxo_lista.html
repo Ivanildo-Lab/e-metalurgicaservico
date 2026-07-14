@@ -55,6 +55,13 @@
                 <i class="fa fa-search"></i>
             </button>
             
+            <!-- Botão Limpar Filtro -->
+            <a href="{% url 'financeiro:fluxo_caixa' %}" 
+               class="flex-1 bg-orange-500 hover:bg-orange-600 text-white font-bold py-2 px-3 rounded shadow transition text-center text-sm" 
+               title="Limpar Filtros">
+                <i class="fa fa-times"></i>
+            </a>
+            
             <!-- Botão Imprimir Relatório (Atualizado com categoria) -->
             <a href="{% url 'financeiro:relatorio_fluxo' %}?data_inicio={{ data_inicio }}&data_fim={{ data_fim }}&caixa={{ caixa_selecionado_id }}&categoria={{ categoria_selecionada_id }}" 
                target="_blank" 

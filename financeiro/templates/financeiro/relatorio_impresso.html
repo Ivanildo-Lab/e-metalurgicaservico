@@ -168,10 +168,7 @@
                     <div class="space-y-2 text-[10px]">
                         {% for item in resumo_pagamentos %}
                         <div class="flex justify-between items-center border-b border-amber-100 pb-2 last:border-b-0 last:pb-0">
-                            <div>
-                                <span class="font-semibold text-gray-800">{{ item.descricao }}</span>
-                                <span class="text-gray-500 ml-2">({{ item.caixa.nome }})</span>
-                            </div>
+                            <span class="font-semibold text-gray-800">{{ item.descricao }}</span>
                             <span class="font-bold text-amber-700">R$ {{ item.valor|floatformat:2 }}</span>
                         </div>
                         {% endfor %}

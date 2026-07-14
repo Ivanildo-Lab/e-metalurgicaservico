@@ -660,7 +660,15 @@ def relatorio_fluxo(request):
     if caixa_id:
         resumo_pagamentos = resumo_pagamentos.filter(caixa_id=caixa_id)
 
-    resumo_pagamentos = list(resumo_pagamentos)
+    # Totalizar por forma de pagamento
+    from collections import defaultdict
+    totais_forma = defaultdict(float)
+    for item in resumo_pagamentos:
+        partes = item.descricao.split(' — ')
+        forma_nome = partes[-1].strip() if len(partes) > 1 else item.descricao
+        totais_forma[forma_nome] += float(item.valor)
+
+    resumo_pagamentos = [{'descricao': k, 'valor': v} for k, v in sorted(totais_forma.items())]
 
     return render(request, 'financeiro/relatorio_impresso.html', {
         'data_inicio': data_inicio,
