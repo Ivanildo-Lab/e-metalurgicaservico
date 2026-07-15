@@ -169,6 +169,39 @@
                     <p class="text-gray-400">A definir</p>
                     {% endif %}
                 </div>
+                {% if parcelas %}
+                <div class="mt-1 border border-gray-200 rounded p-1 bg-gray-50">
+                    <p class="text-[8px] font-bold text-gray-700 uppercase mb-0.5">Parcelas — Vencimentos</p>
+                    <table class="w-full" style="font-size:8px; line-height:1.2;">
+                        <thead>
+                            <tr class="border-b border-gray-300">
+                                <th class="text-left py-px">Parcela</th>
+                                <th class="text-right py-px">Valor</th>
+                                <th class="text-right py-px">Vencimento</th>
+                                <th class="text-center py-px">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for parcela in parcelas %}
+                            <tr>
+                                <td class="py-px">{{ parcela.descricao }}</td>
+                                <td class="py-px text-right font-mono">{{ parcela.valor|moeda_br }}</td>
+                                <td class="py-px text-right font-mono">{{ parcela.data_vencimento|date:"d/m/Y" }}</td>
+                                <td class="py-px text-center">
+                                    {% if parcela.status == 'PAGA' %}
+                                    <span class="text-green-600 font-bold">Paga</span>
+                                    {% elif parcela.status == 'PENDENTE' %}
+                                    <span class="text-orange-600 font-bold">Pendente</span>
+                                    {% else %}
+                                    <span class="text-red-600 font-bold">{{ parcela.status }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
                 {% if historico_pagamentos %}
                 <div class="mt-1 border border-gray-200 rounded p-1 bg-gray-50">
                     <p class="text-[8px] font-bold text-gray-700 uppercase mb-0.5">Histórico de Pagamentos</p>
@@ -350,6 +383,39 @@
                     <p class="text-gray-400">A definir</p>
                     {% endif %}
                 </div>
+                {% if parcelas %}
+                <div class="mt-1 border border-gray-200 rounded p-1 bg-gray-50">
+                    <p class="text-[8px] font-bold text-gray-700 uppercase mb-0.5">Parcelas — Vencimentos</p>
+                    <table class="w-full" style="font-size:8px; line-height:1.2;">
+                        <thead>
+                            <tr class="border-b border-gray-300">
+                                <th class="text-left py-px">Parcela</th>
+                                <th class="text-right py-px">Valor</th>
+                                <th class="text-right py-px">Vencimento</th>
+                                <th class="text-center py-px">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for parcela in parcelas %}
+                            <tr>
+                                <td class="py-px">{{ parcela.descricao }}</td>
+                                <td class="py-px text-right font-mono">{{ parcela.valor|moeda_br }}</td>
+                                <td class="py-px text-right font-mono">{{ parcela.data_vencimento|date:"d/m/Y" }}</td>
+                                <td class="py-px text-center">
+                                    {% if parcela.status == 'PAGA' %}
+                                    <span class="text-green-600 font-bold">Paga</span>
+                                    {% elif parcela.status == 'PENDENTE' %}
+                                    <span class="text-orange-600 font-bold">Pendente</span>
+                                    {% else %}
+                                    <span class="text-red-600 font-bold">{{ parcela.status }}</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% endif %}
             </div>
 
             <!-- FUNCIONÁRIOS -->

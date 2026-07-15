@@ -548,10 +548,19 @@
 <script>
 function alternarFormaPagamento(valor) {
     var divParcelas = document.getElementById('div-parcelas');
+    var divFormaPagamento = document.getElementById('div-forma-pagamento');
     if (valor === 'A_PRAZO') {
         divParcelas.style.display = 'block';
+        divFormaPagamento.style.display = 'none';
+        divFormaPagamento.querySelectorAll('select[required], input[required]').forEach(function(el) {
+            el.removeAttribute('required');
+        });
     } else {
         divParcelas.style.display = 'none';
+        divFormaPagamento.style.display = 'block';
+        divFormaPagamento.querySelectorAll('select[name="pagamento_forma_id[]"], input[name="pagamento_valor[]"]').forEach(function(el) {
+            el.setAttribute('required', '');
+        });
     }
     calcularParcela();
 }

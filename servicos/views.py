@@ -601,11 +601,9 @@ def fechar_os(request, id):
             'caixa_id': caixa_id,
         })
 
-    if linhas_pagamento:
-        if forma != 'A_VISTA':
-            messages.error(request, "A divisão por formas de pagamento é permitida apenas para pagamento à vista.")
-            return redirect('servicos:editar_os', id=os_obj.id)
-
+    if forma == 'A_PRAZO':
+        pagamentos = []
+    elif linhas_pagamento:
         for idx, linha in enumerate(linhas_pagamento):
             forma_id = linha['forma_id']
             if not forma_id:
@@ -1025,6 +1023,11 @@ def imprimir_os(request, id):
         Q(descricao__icontains=f'OS {os_obj.numero}')
     ).select_related('caixa', 'conta_origem').order_by('data_lancamento', 'id')
 
+    parcelas = Conta.objects.filter(
+        empresa=request.user.empresa,
+        descricao__icontains=f'OS {os_obj.numero}'
+    ).order_by('data_vencimento')
+
     return render(request, 'servicos/os_impressao.html', {
         'os': os_obj,
         'servicos': servicos,
@@ -1033,6 +1036,7 @@ def imprimir_os(request, id):
         'valor_total': valor_total,
         'valor_parcela': valor_parcela,
         'historico_pagamentos': historico_pagamentos,
+        'parcelas': parcelas,
     })
 
 

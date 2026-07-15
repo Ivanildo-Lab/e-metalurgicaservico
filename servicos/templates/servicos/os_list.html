@@ -344,10 +344,19 @@ function recalcularValorOS() {
 
 function alternarFormaLista(valor) {
     var divParcelas = document.getElementById('div-parcelas-lista');
+    var divFormaLista = document.getElementById('div-forma-lista');
     if (valor === 'A_PRAZO') {
         divParcelas.style.display = 'block';
+        divFormaLista.style.display = 'none';
+        divFormaLista.querySelectorAll('select[required], input[required]').forEach(function(el) {
+            el.removeAttribute('required');
+        });
     } else {
         divParcelas.style.display = 'none';
+        divFormaLista.style.display = 'block';
+        divFormaLista.querySelectorAll('select[name="pagamento_forma_id[]"], input[name="pagamento_valor[]"]').forEach(function(el) {
+            el.setAttribute('required', '');
+        });
     }
     calcularParcelaLista();
 }
