@@ -5,6 +5,7 @@
     <title>{{ titulo_relatorio }} - {{ empresa.nome }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    {% load moeda_filters %}
     <style>
         @media print {
             body { -webkit-print-color-adjust: exact; font-size: 9pt; }
@@ -103,9 +104,9 @@
                                 {% endif %}
                             {% endif %}
                         </td>
-                        <td class="py-1 text-right font-bold text-gray-700">R$ {{ c.valor|floatformat:2 }}
+                        <td class="py-1 text-right font-bold text-gray-700">{{ c.valor|moeda_br }}
                             {% if c.valor_pago > 0 and c.status != 'PAGA' %}
-                                <br><span class="text-[8px] text-orange-500">Restante: R$ {{ c.valor_restante|floatformat:2 }}</span>
+                                <br><span class="text-[8px] text-orange-500">Restante: {{ c.valor_restante|moeda_br }}</span>
                             {% endif %}
                         </td>
                     </tr>
@@ -116,7 +117,7 @@
                 <tfoot>
                     <tr class="border-t border-gray-300 bg-gray-50">
                         <td colspan="5" class="py-2 text-right text-[10px] font-bold text-gray-600 uppercase pr-4">Total Geral:</td>
-                        <td class="py-2 text-right font-bold text-lg text-gray-800">R$ {{ total_valor|floatformat:2 }}</td>
+                        <td class="py-2 text-right font-bold text-lg text-gray-800">{{ total_valor|moeda_br }}</td>
                     </tr>
                 </tfoot>
             </table>

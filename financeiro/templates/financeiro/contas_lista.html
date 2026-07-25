@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load moeda_filters %}
 
 {% block titulo_cabecalho %}Financeiro{% endblock %}
 {% block subtitulo_cabecalho %}{{ titulo }}{% endblock %}
@@ -128,10 +129,10 @@
 
                     <td class="px-6 py-4 text-right">
                         <span class="font-bold {% if c.plano_de_contas.tipo == 'R' %}text-green-600{% else %}text-red-600{% endif %}">
-                            R$ {{ c.valor|floatformat:2 }}
+                            {{ c.valor|moeda_br }}
                         </span>
                         {% if c.valor_pago > 0 and c.status != 'PAGA' %}
-                            <br><span class="text-xs text-orange-500 font-semibold">Restante: R$ {{ c.valor_restante|floatformat:2 }}</span>
+                            <br><span class="text-xs text-orange-500 font-semibold">Restante: {{ c.valor_restante|moeda_br }}</span>
                         {% endif %}
                     </td>
                     

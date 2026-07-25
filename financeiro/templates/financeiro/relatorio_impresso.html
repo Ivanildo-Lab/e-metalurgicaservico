@@ -5,6 +5,7 @@
     <title>Relatório Financeiro - {{ empresa.nome }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    {% load moeda_filters %}
     <style>
         /* Ajustes para Impressão */
         @media print {
@@ -86,7 +87,7 @@
                             <td class="py-1 text-gray-600">{{ item.data_lancamento|date:"d/m/Y" }}</td>
                             <td class="py-1 font-medium text-gray-800 uppercase truncate max-w-xs">{{ item.descricao }}</td>
                             <td class="py-1 text-gray-500 truncate">{{ item.plano_de_contas.nome|default:"-" }}</td>
-                            <td class="py-1 text-right font-bold text-green-600">R$ {{ item.valor|floatformat:2 }}</td>
+                            <td class="py-1 text-right font-bold text-green-600">{{ item.valor|moeda_br }}</td>
                         </tr>
                         {% empty %}
                         <tr><td colspan="4" class="py-2 text-center text-gray-400 italic">Nenhuma receita.</td></tr>
@@ -116,7 +117,7 @@
                             <td class="py-1 text-gray-600">{{ item.data_lancamento|date:"d/m/Y" }}</td>
                             <td class="py-1 font-medium text-gray-800 uppercase truncate max-w-xs">{{ item.descricao }}</td>
                             <td class="py-1 text-gray-500 truncate">{{ item.plano_de_contas.nome|default:"-" }}</td>
-                            <td class="py-1 text-right font-bold text-red-600">R$ {{ item.valor|floatformat:2 }}</td>
+                            <td class="py-1 text-right font-bold text-red-600">{{ item.valor|moeda_br }}</td>
                         </tr>
                         {% empty %}
                         <tr><td colspan="4" class="py-2 text-center text-gray-400 italic">Nenhuma despesa.</td></tr>
@@ -134,18 +135,18 @@
                         <div class="flex justify-between items-center">
                             <span class="text-gray-600 font-medium">Saldo Anterior ({{ data_inicio|date:"d/m" }}):</span>
                             <span class="font-bold {% if saldo_anterior < 0 %}text-red-600{% else %}text-gray-800{% endif %}">
-                                R$ {{ saldo_anterior|floatformat:2 }}
+                                {{ saldo_anterior|moeda_br }}
                             </span>
                         </div>
 
                         <div class="flex justify-between items-center">
                             <span class="text-green-700 font-medium">Total Entradas:</span>
-                            <span class="font-bold text-green-700">+ R$ {{ total_receitas|floatformat:2 }}</span>
+                            <span class="font-bold text-green-700">+ {{ total_receitas|moeda_br }}</span>
                         </div>
 
                         <div class="flex justify-between items-center">
                             <span class="text-red-700 font-medium">Total Saídas:</span>
-                            <span class="font-bold text-red-700">R$ {{ total_despesas|floatformat:2 }}</span>
+                            <span class="font-bold text-red-700">{{ total_despesas|moeda_br }}</span>
                         </div>
 
                         <!-- Linha Divisória -->
@@ -154,7 +155,7 @@
                         <div class="flex justify-between items-center bg-white p-2 rounded border border-blue-100">
                             <span class="text-blue-800 font-bold uppercase text-sm">Saldo Final ({{ data_fim|date:"d/m" }}):</span>
                             <span class="text-base font-bold {% if saldo_final < 0 %}text-red-700{% else %}text-blue-700{% endif %}">
-                                R$ {{ saldo_final|floatformat:2 }}
+                                {{ saldo_final|moeda_br }}
                             </span>
                         </div>
                     </div>
@@ -169,7 +170,7 @@
                         {% for item in resumo_pagamentos %}
                         <div class="flex justify-between items-center border-b border-amber-100 pb-2 last:border-b-0 last:pb-0">
                             <span class="font-semibold text-gray-800">{{ item.descricao }}</span>
-                            <span class="font-bold text-amber-700">R$ {{ item.valor|floatformat:2 }}</span>
+                            <span class="font-bold text-amber-700">{{ item.valor|moeda_br }}</span>
                         </div>
                         {% endfor %}
                     </div>

@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load moeda_filters %}
 
 {% block titulo_cabecalho %}Fluxo de Caixa{% endblock %}
 {% block subtitulo_cabecalho %}Extrato e Movimentações{% endblock %}
@@ -80,7 +81,7 @@
     <div class="bg-gray-100 p-4 rounded border border-gray-200">
         <p class="text-xs text-gray-500 uppercase font-bold">Saldo Anterior ({{ data_inicio }})</p>
         <p class="text-xl font-mono font-bold {% if saldo_anterior < 0 %}text-red-600{% else %}text-gray-800{% endif %}">
-            R$ {{ saldo_anterior|floatformat:2 }}
+            {{ saldo_anterior|moeda_br }}
         </p>
     </div>
     
@@ -100,7 +101,7 @@
     <div class="bg-blue-50 p-4 rounded border border-blue-200">
         <p class="text-xs text-blue-500 uppercase font-bold">Saldo Final ({{ data_fim }})</p>
         <p class="text-2xl font-mono font-bold {% if saldo_final < 0 %}text-red-600{% else %}text-blue-800{% endif %}">
-            R$ {{ saldo_final|floatformat:2 }}
+            {{ saldo_final|moeda_br }}
         </p>
     </div>
 </div>
@@ -114,7 +115,7 @@
         {% for item in resumo_pagamentos %}
         <div class="bg-amber-50 rounded p-3 border border-amber-200 flex justify-between items-center">
             <span class="text-sm font-semibold text-gray-800">{{ item.descricao }}</span>
-            <span class="text-sm font-bold text-amber-700">R$ {{ item.valor|floatformat:2 }}</span>
+            <span class="text-sm font-bold text-amber-700">{{ item.valor|moeda_br }}</span>
         </div>
         {% endfor %}
     </div>
@@ -165,7 +166,7 @@
                     
                     <td class="px-6 py-4 text-right font-bold 
                         {% if l.tipo == 'C' %}text-green-600{% else %}text-red-600{% endif %}">
-                        R$ {{ l.valor|floatformat:2 }}
+                        {{ l.valor|moeda_br }}
                     </td>
                     
                     <td class="px-6 py-4 text-center whitespace-nowrap text-sm font-medium">
