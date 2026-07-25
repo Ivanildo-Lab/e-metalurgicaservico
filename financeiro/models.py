@@ -80,6 +80,14 @@ class Lancamento(ModeloSaaS):
     # Se veio de uma conta a pagar/receber, vinculamos aqui
     conta_origem = models.ForeignKey(Conta, on_delete=models.SET_NULL, null=True, blank=True, related_name="lancamentos_vinculados")
     
+    # Forma de pagamento (Dinheiro, PIX, Cartão, etc.)
+    forma_pagamento = models.ForeignKey(
+        'servicos.FormaPagamento',
+        on_delete=models.SET_NULL,
+        null=True, blank=True,
+        verbose_name="Forma de Pagamento"
+    )
+    
     # ATENÇÃO: O nome do campo é 'data_lancamento'
     data_lancamento = models.DateField(verbose_name="Data do Movimento")
     

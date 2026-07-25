@@ -167,11 +167,14 @@ def lista_contas_receber(request):
     caixas = Caixa.objects.filter(empresa=request.user.empresa)
     # Carrega apenas categorias de RECEITA para o filtro
     categorias = PlanoDeContas.objects.filter(empresa=request.user.empresa, tipo='R').order_by('nome')
+    from servicos.models import FormaPagamento
+    formas_pagamento = FormaPagamento.objects.filter(empresa=request.user.empresa, ativo=True).order_by('ordem', 'nome')
     
     return render(request, 'financeiro/contas_lista.html', {
         'contas': contas.order_by('data_vencimento'), 
         'caixas': caixas,
-        'categorias': categorias, # Envia para o template
+        'categorias': categorias,
+        'formas_pagamento': formas_pagamento,
         'titulo': 'Contas a Receber',
         'tipo_lista': 'receber',
         
@@ -180,7 +183,7 @@ def lista_contas_receber(request):
         'filtro_data_fim': data_fim,
         'filtro_nome': cliente_nome,
         'filtro_status': status,
-        'filtro_categoria': categoria_id # NOVO
+        'filtro_categoria': categoria_id
     })
 
 @login_required
@@ -216,11 +219,14 @@ def lista_contas_pagar(request):
     caixas = Caixa.objects.filter(empresa=request.user.empresa)
     # Carrega apenas categorias de DESPESA para o filtro
     categorias = PlanoDeContas.objects.filter(empresa=request.user.empresa, tipo='D').order_by('nome')
+    from servicos.models import FormaPagamento
+    formas_pagamento = FormaPagamento.objects.filter(empresa=request.user.empresa, ativo=True).order_by('ordem', 'nome')
     
     return render(request, 'financeiro/contas_lista.html', {
         'contas': contas.order_by('data_vencimento'), 
         'caixas': caixas,
         'categorias': categorias,
+        'formas_pagamento': formas_pagamento,
         'titulo': 'Contas a Pagar',
         'tipo_lista': 'pagar',
         'filtro_data_ini': data_ini,
@@ -348,68 +354,116 @@ def excluir_conta(request, id):
 @login_required
 @permission_required_module('financeiro')
 def baixar_conta(request, id):
+    from servicos.models import FormaPagamento
     conta = get_object_or_404(Conta, id=id, empresa=request.user.empresa)
     
     if request.method == 'POST':
         caixa_id = request.POST.get('caixa')
         data_pagamento = request.POST.get('data_pagamento')
-        valor_pagamento = request.POST.get('valor_pagamento')
         
-        if not caixa_id or not data_pagamento or not valor_pagamento:
+        # Múltiplas linhas de pagamento
+        forma_pagamento_ids = request.POST.getlist('pagamento_forma_id[]') or request.POST.getlist('pagamento_forma_id')
+        valores_pagamento = request.POST.getlist('pagamento_valor[]') or request.POST.getlist('pagamento_valor')
+        
+        if not caixa_id or not data_pagamento:
             messages.error(request, "Preencha todos os campos da baixa.")
             return redirect('financeiro:lista_receber' if conta.plano_de_contas.tipo == 'R' else 'financeiro:lista_pagar')
 
-        try:
-            valor_pagamento = Decimal(str(valor_pagamento).replace(',', '.').strip())
-        except Exception:
-            messages.error(request, "Valor de pagamento inválido.")
+        # Montar linhas de pagamento
+        linhas = []
+        max_len = max(len(forma_pagamento_ids), len(valores_pagamento))
+        for idx in range(max_len):
+            fp_id = forma_pagamento_ids[idx] if idx < len(forma_pagamento_ids) else ''
+            valor_text = valores_pagamento[idx] if idx < len(valores_pagamento) else ''
+            if not str(fp_id).strip() and not str(valor_text).strip():
+                continue
+            linhas.append({'forma_id': fp_id, 'valor_text': valor_text})
+
+        if not linhas:
+            messages.error(request, "Adicione pelo menos uma forma de pagamento.")
             return redirect('financeiro:lista_receber' if conta.plano_de_contas.tipo == 'R' else 'financeiro:lista_pagar')
 
-        if valor_pagamento <= 0:
-            messages.error(request, "O valor do pagamento deve ser maior que zero.")
-            return redirect('financeiro:lista_receber' if conta.plano_de_contas.tipo == 'R' else 'financeiro:lista_pagar')
+        # Validar e parsear valores
+        valor_total_informado = Decimal('0')
+        linhas_validadas = []
+        for idx, linha in enumerate(linhas):
+            if not linha['forma_id']:
+                messages.error(request, f"Selecione uma forma de pagamento na linha {idx + 1}.")
+                return redirect('financeiro:lista_receber' if conta.plano_de_contas.tipo == 'R' else 'financeiro:lista_pagar')
+            try:
+                fp_obj = FormaPagamento.objects.get(id=int(linha['forma_id']), empresa=request.user.empresa)
+            except (FormaPagamento.DoesNotExist, ValueError):
+                messages.error(request, f"Forma de pagamento inválida na linha {idx + 1}.")
+                return redirect('financeiro:lista_receber' if conta.plano_de_contas.tipo == 'R' else 'financeiro:lista_pagar')
+            
+            try:
+                valor = Decimal(str(linha['valor_text']).replace(',', '.').strip())
+            except Exception:
+                messages.error(request, f"Valor inválido na linha {idx + 1}.")
+                return redirect('financeiro:lista_receber' if conta.plano_de_contas.tipo == 'R' else 'financeiro:lista_pagar')
+            
+            if valor <= 0:
+                messages.error(request, f"O valor na linha {idx + 1} deve ser maior que zero.")
+                return redirect('financeiro:lista_receber' if conta.plano_de_contas.tipo == 'R' else 'financeiro:lista_pagar')
+            
+            valor_total_informado += valor
+            linhas_validadas.append({'forma_pagamento': fp_obj, 'valor': valor})
 
         saldo_restante = conta.valor - conta.valor_pago
-        if valor_pagamento > saldo_restante:
-            messages.error(request, f"Valor informado (R$ {valor_pagamento:.2f}) excede o saldo restante (R$ {saldo_restante:.2f}).")
+        if valor_total_informado > saldo_restante + Decimal('0.01'):
+            messages.error(request, f"Valor informado (R$ {valor_total_informado:.2f}) excede o saldo restante (R$ {saldo_restante:.2f}).")
             return redirect('financeiro:lista_receber' if conta.plano_de_contas.tipo == 'R' else 'financeiro:lista_pagar')
 
         caixa = get_object_or_404(Caixa, id=caixa_id, empresa=request.user.empresa)
-
         tipo_lancamento = 'C' if conta.plano_de_contas.tipo == 'R' else 'D'
-
         saldo_restante_antes = conta.valor - conta.valor_pago
-        eh_parcial = valor_pagamento < saldo_restante_antes
 
-        if eh_parcial:
-            tipo_label = 'RECEBIMENTO PARCIAL' if conta.plano_de_contas.tipo == 'R' else 'PAGAMENTO PARCIAL'
-            descricao_lancamento = f"{tipo_label}: {conta.descricao} (R$ {valor_pagamento:.2f} de R$ {conta.valor:.2f})"
-        else:
-            tipo_label = 'RECEBIMENTO' if conta.plano_de_contas.tipo == 'R' else 'PAGAMENTO'
-            descricao_lancamento = f"{tipo_label}: {conta.descricao}"
+        # Criar um Lancamento por linha de pagamento
+        from django.db import transaction
+        with transaction.atomic():
+            for idx, linha in enumerate(linhas_validadas):
+                valor = linha['valor']
+                fp_obj = linha['forma_pagamento']
 
-        Lancamento.objects.create(
-            empresa=request.user.empresa,
-            caixa=caixa,
-            plano_de_contas=conta.plano_de_contas,
-            conta_origem=conta,
-            descricao=descricao_lancamento,
-            data_lancamento=data_pagamento,
-            valor=valor_pagamento,
-            tipo=tipo_lancamento
-        )
+                eh_parcial = (idx == 0 and valor_total_informado < saldo_restante_antes) or \
+                             (idx > 0)
+                # Se é a única linha e paga tudo → integral; senão → parcial
+                if len(linhas_validadas) == 1 and valor_total_informado >= saldo_restante_antes:
+                    eh_parcial = False
 
-        conta.valor_pago = conta.valor_pago + valor_pagamento
-        if conta.valor_pago >= conta.valor:
-            conta.status = 'PAGA'
+                if eh_parcial or valor_total_informado < saldo_restante_antes:
+                    tipo_label = 'RECEBIMENTO PARCIAL' if tipo_lancamento == 'C' else 'PAGAMENTO PARCIAL'
+                    saldo_info = f" (R$ {valor_total_informado:.2f} de R$ {conta.valor:.2f})" if idx == 0 else ""
+                    descricao = f"{tipo_label}: {conta.descricao}{saldo_info} — {fp_obj.nome}"
+                else:
+                    tipo_label = 'RECEBIMENTO' if tipo_lancamento == 'C' else 'PAGAMENTO'
+                    descricao = f"{tipo_label}: {conta.descricao} — {fp_obj.nome}"
+
+                Lancamento.objects.create(
+                    empresa=request.user.empresa,
+                    caixa=caixa,
+                    plano_de_contas=conta.plano_de_contas,
+                    conta_origem=conta,
+                    forma_pagamento=fp_obj,
+                    descricao=descricao,
+                    data_lancamento=data_pagamento,
+                    valor=valor,
+                    tipo=tipo_lancamento
+                )
+
+            # Atualizar Conta
+            conta.valor_pago = conta.valor_pago + valor_total_informado
+            if conta.valor_pago >= conta.valor:
+                conta.status = 'PAGA'
+            else:
+                conta.status = 'PARCIAL'
+            conta.save(update_fields=['valor_pago', 'status'])
+
+        if valor_total_informado < saldo_restante_antes:
+            messages.success(request, f"Baixa parcial realizada! R$ {valor_total_informado:.2f} registrados em {len(linhas_validadas)} forma(s). Restante: R$ {conta.valor_restante:.2f}")
         else:
-            conta.status = 'PARCIAL'
-        conta.save(update_fields=['valor_pago', 'status'])
-        
-        if valor_pagamento < conta.valor:
-            messages.success(request, f"Baixa parcial realizada! R$ {valor_pagamento:.2f} registrados. Restante: R$ {conta.valor_restante:.2f}")
-        else:
-            messages.success(request, "Baixa realizada com sucesso!")
+            nomes = ', '.join(l['forma_pagamento'].nome for l in linhas_validadas)
+            messages.success(request, f"Baixa realizada! {len(linhas_validadas)} forma(s): {nomes}.")
         
         if conta.plano_de_contas.tipo == 'R':
             return redirect('financeiro:lista_receber')
@@ -524,6 +578,29 @@ def fluxo_caixa(request):
     caixas = Caixa.objects.filter(empresa=request.user.empresa)
     categorias = PlanoDeContas.objects.filter(empresa=request.user.empresa).order_by('nome')
 
+    # Resumo por forma de pagamento (recebimentos e pagamentos no período)
+    from collections import defaultdict
+    resumo_pagamentos_qs = (
+        Lancamento.objects.filter(
+            empresa=request.user.empresa,
+            data_lancamento__range=[data_inicio, data_fim],
+            tipo__in=['C', 'D'],
+            forma_pagamento__isnull=False
+        )
+        .select_related('forma_pagamento')
+    )
+    if caixa_id:
+        resumo_pagamentos_qs = resumo_pagamentos_qs.filter(caixa_id=caixa_id)
+
+    totais_forma = defaultdict(float)
+    for item in resumo_pagamentos_qs:
+        forma_nome = item.forma_pagamento.nome if item.forma_pagamento else 'Não informado'
+        tipo_label = 'Recebimento' if item.tipo == 'C' else 'Pagamento'
+        chave = f"{tipo_label} — {forma_nome}"
+        totais_forma[chave] += float(item.valor)
+
+    resumo_pagamentos = [{'descricao': k, 'valor': v} for k, v in sorted(totais_forma.items())]
+
     return render(request, 'financeiro/fluxo_lista.html', {
         'lancamentos': lancamentos, 
         'saldo_anterior': saldo_anterior,
@@ -534,6 +611,7 @@ def fluxo_caixa(request):
         'categoria_selecionada_id': categoria_id_str or '',
         'data_inicio': data_inicio,
         'data_fim': data_fim,
+        'resumo_pagamentos': resumo_pagamentos,
     })
 
 @login_required
@@ -684,23 +762,24 @@ def relatorio_fluxo(request):
         Lancamento.objects.filter(
             empresa=request.user.empresa,
             data_lancamento__range=[data_inicio_str, data_fim_str],
-            tipo='C',
-            descricao__icontains='Recebimento OS'
+            tipo__in=['C', 'D'],
+            forma_pagamento__isnull=False
         )
-        .select_related('caixa')
+        .select_related('caixa', 'forma_pagamento')
         .order_by('data_lancamento', 'id')
     )
 
     if caixa_id:
         resumo_pagamentos = resumo_pagamentos.filter(caixa_id=caixa_id)
 
-    # Totalizar por forma de pagamento
+    # Totalizar por tipo + forma de pagamento usando FK
     from collections import defaultdict
     totais_forma = defaultdict(float)
     for item in resumo_pagamentos:
-        partes = item.descricao.split(' — ')
-        forma_nome = partes[-1].strip() if len(partes) > 1 else item.descricao
-        totais_forma[forma_nome] += float(item.valor)
+        forma_nome = item.forma_pagamento.nome if item.forma_pagamento else 'Não informado'
+        tipo_label = 'Recebimento' if item.tipo == 'C' else 'Pagamento'
+        chave = f"{tipo_label} — {forma_nome}"
+        totais_forma[chave] += float(item.valor)
 
     resumo_pagamentos = [{'descricao': k, 'valor': v} for k, v in sorted(totais_forma.items())]
 

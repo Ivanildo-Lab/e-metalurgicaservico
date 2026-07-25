@@ -735,6 +735,7 @@ def fechar_os(request, id):
                         caixa=caixa,
                         plano_de_contas=plano_de_contas,
                         conta_origem=conta,
+                        forma_pagamento=forma_pagamento_obj,
                         data_lancamento=date.today(),
                         descricao=f"Recebimento OS {os_obj.numero} — {forma_pagamento_obj.nome}",
                         valor=valor_parcela,

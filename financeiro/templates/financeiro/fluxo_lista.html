@@ -106,6 +106,21 @@
 </div>
 {% endif %}
 
+<!-- 2.5 RESUMO POR FORMA DE PAGAMENTO -->
+{% if resumo_pagamentos %}
+<div class="bg-white rounded shadow mb-6 p-4 border-l-4 border-amber-500">
+    <h3 class="text-sm font-bold text-amber-700 uppercase mb-3">Resumo de Formas de Pagamento (Recebimentos)</h3>
+    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+        {% for item in resumo_pagamentos %}
+        <div class="bg-amber-50 rounded p-3 border border-amber-200 flex justify-between items-center">
+            <span class="text-sm font-semibold text-gray-800">{{ item.descricao }}</span>
+            <span class="text-sm font-bold text-amber-700">R$ {{ item.valor|floatformat:2 }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endif %}
+
 <!-- 3. TABELA DE EXTRATO -->
 <div class="bg-white rounded shadow">
     <div class="p-4 border-b border-gray-100 flex justify-between items-center">

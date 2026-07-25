@@ -179,9 +179,9 @@
     </div>
 </div>
 
-<!-- MODAL DE BAIXA ATUALIZADO -->
+<!-- MODAL DE BAIXA - MÚLTIPLOS PAGAMENTOS -->
 <div id="modalBaixa" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50 flex items-center justify-center">
-    <div class="relative p-5 border shadow-lg rounded-md bg-white w-full max-w-md">
+    <div class="relative p-5 border shadow-lg rounded-md bg-white w-full max-w-lg">
         <div class="text-center">
             <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Confirmar Baixa</h3>
             
@@ -202,29 +202,60 @@
                 </div>
             </div>
             
+            <!-- Select oculto para popular as formas de pagamento via JS -->
+            <select id="selectFormasPagamentoBase" class="hidden">
+                <option value="">-- Selecione --</option>
+                {% for fp in formas_pagamento %}
+                    <option value="{{ fp.id }}">{{ fp.nome }}</option>
+                {% endfor %}
+            </select>
+
             <form id="formBaixa" method="POST" action="">
                 {% csrf_token %}
-                <div class="mt-4 text-left">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Valor a Pagar</label>
-                    <input type="number" name="valor_pagamento" id="modalValorPagamento" step="0.01" min="0.01"
-                           class="w-full rounded-md border-gray-300 shadow-sm border p-2 text-lg font-bold text-green-600" required>
+                
+                <!-- Linhas de Pagamento -->
+                <div class="text-left">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-sm font-medium text-gray-700">Formas de Pagamento</label>
+                        <button type="button" onclick="adicionarLinhaBaixa()" class="text-xs text-blue-600 hover:text-blue-800 font-bold flex items-center">
+                            <i class="fa fa-plus-circle mr-1"></i> Adicionar
+                        </button>
+                    </div>
+                    
+                    <div id="linhasPagamento" class="space-y-2">
+                        <!-- Linha inicial será adicionada via JS -->
+                    </div>
+                    
+                    <div class="mt-2 flex justify-between items-center text-sm">
+                        <span class="font-bold text-gray-600">Total Informado:</span>
+                        <span class="font-bold" id="totalInformado">R$ 0,00</span>
+                    </div>
+                    <div class="flex justify-between items-center text-sm" id="divDiferenca" style="display:none;">
+                        <span class="font-bold text-red-600">Diferença:</span>
+                        <span class="font-bold text-red-600" id="diferencaValor">R$ 0,00</span>
+                    </div>
                 </div>
-                <div class="mt-4 text-left">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Data do Movimento</label>
-                    <input type="date" name="data_pagamento" required class="w-full rounded-md border-gray-300 shadow-sm border p-2">
+
+                <!-- Data e Caixa (compartilhados entre todas as linhas) -->
+                <div class="mt-4 text-left grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Data do Movimento</label>
+                        <input type="date" name="data_pagamento" required class="w-full rounded-md border-gray-300 shadow-sm border p-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Conta / Caixa</label>
+                        <select name="caixa" required class="w-full rounded-md border-gray-300 shadow-sm border p-2 bg-white text-sm">
+                            <option value="">-- Selecione --</option>
+                            {% for caixa in caixas %}
+                                <option value="{{ caixa.id }}">{{ caixa.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
                 </div>
-                <div class="mt-4 text-left">
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Conta Bancária / Caixa</label>
-                    <select name="caixa" required class="w-full rounded-md border-gray-300 shadow-sm border p-2 bg-white">
-                        <option value="">-- Selecione --</option>
-                        {% for caixa in caixas %}
-                            <option value="{{ caixa.id }}">{{ caixa.nome }}</option>
-                        {% endfor %}
-                    </select>
-                </div>
+
                 <div class="flex gap-3 mt-6">
-                    <button type="button" onclick="document.getElementById('modalBaixa').classList.add('hidden')" class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 font-medium rounded hover:bg-gray-300">Cancelar</button>
-                    <button type="submit" class="flex-1 px-4 py-2 bg-green-600 text-white font-medium rounded hover:bg-green-700 shadow">Confirmar</button>
+                    <button type="button" onclick="fecharModalBaixa()" class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 font-medium rounded hover:bg-gray-300">Cancelar</button>
+                    <button type="submit" id="btnConfirmarBaixa" class="flex-1 px-4 py-2 bg-green-600 text-white font-medium rounded hover:bg-green-700 shadow">Confirmar</button>
                 </div>
             </form>
         </div>
@@ -232,6 +263,88 @@
 </div>
 
 <script>
+    let linhasBaixaCounter = 0;
+    let formasPagamentoOptions = [];
+
+    function montarOptionsFormaPagamento() {
+        const selectBase = document.getElementById('selectFormasPagamentoBase');
+        if (!selectBase) return;
+        formasPagamentoOptions = [];
+        for (let i = 0; i < selectBase.options.length; i++) {
+            if (selectBase.options[i].value) {
+                formasPagamentoOptions.push({value: selectBase.options[i].value, text: selectBase.options[i].text});
+            }
+        }
+    }
+
+    function adicionarLinhaBaixa(valorDefault) {
+        linhasBaixaCounter++;
+        const container = document.getElementById('linhasPagamento');
+        const idx = linhasBaixaCounter;
+        
+        let optionsHtml = '<option value="">-- Selecione --</option>';
+        formasPagamentoOptions.forEach(function(fp) {
+            optionsHtml += '<option value="' + fp.value + '">' + fp.text + '</option>';
+        });
+
+        const html = `
+            <div class="flex gap-2 items-center linha-pagamento" id="linhaBaixa_${idx}">
+                <select name="pagamento_forma_id[]" class="flex-1 rounded-md border-gray-300 shadow-sm border p-2 text-sm bg-white" required onchange="recalcularBaixa()">
+                    ${optionsHtml}
+                </select>
+                <input type="number" name="pagamento_valor[]" step="0.01" min="0.01"
+                       class="w-32 rounded-md border-gray-300 shadow-sm border p-2 text-sm font-bold text-right" 
+                       placeholder="R$ 0,00" required oninput="recalcularBaixa()"
+                       value="${valorDefault || ''}">
+                <button type="button" onclick="removerLinhaBaixa(${idx})" 
+                        class="text-red-500 hover:text-red-700 text-lg px-1" title="Remover">
+                    <i class="fa fa-times-circle"></i>
+                </button>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', html);
+        recalcularBaixa();
+    }
+
+    function removerLinhaBaixa(idx) {
+        const linha = document.getElementById('linhaBaixa_' + idx);
+        if (linha) {
+            linha.remove();
+            recalcularBaixa();
+        }
+    }
+
+    function recalcularBaixa() {
+        const inputs = document.querySelectorAll('#linhasPagamento input[name="pagamento_valor[]"]');
+        let total = 0;
+        inputs.forEach(function(input) {
+            const val = parseFloat(input.value) || 0;
+            total += val;
+        });
+
+        const valorRestante = parseFloat(document.getElementById('modalValorRestante').innerText.replace('.', '').replace(',', '.')) || 0;
+        const diferenca = valorRestante - total;
+        
+        document.getElementById('totalInformado').innerText = 'R$ ' + total.toFixed(2).replace('.', ',');
+        
+        const divDif = document.getElementById('divDiferenca');
+        if (Math.abs(diferenca) > 0.01 && total > 0) {
+            divDif.style.display = 'flex';
+            document.getElementById('diferencaValor').innerText = 'R$ ' + Math.abs(diferenca).toFixed(2).replace('.', ',');
+        } else {
+            divDif.style.display = 'none';
+        }
+
+        const btn = document.getElementById('btnConfirmarBaixa');
+        if (total <= 0 || Math.abs(diferenca) > 0.01) {
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    }
+
     function abrirModalBaixa(id, cliente, descricao, valor, valorRestante) {
         document.getElementById('modalBaixa').classList.remove('hidden');
         
@@ -240,13 +353,22 @@
         document.getElementById('modalValor').innerText = valor;
         document.getElementById('modalValorRestante').innerText = valorRestante;
         
-        document.getElementById('modalValorPagamento').value = valorRestante;
-        document.getElementById('modalValorPagamento').max = valorRestante;
-        
         const hoje = new Date().toISOString().split('T')[0];
         document.getElementsByName('data_pagamento')[0].value = hoje;
 
         document.getElementById('formBaixa').action = "/financeiro/contas/baixar/" + id + "/";
+
+        // Limpar linhas anteriores
+        document.getElementById('linhasPagamento').innerHTML = '';
+        linhasBaixaCounter = 0;
+        montarOptionsFormaPagamento();
+
+        // Adicionar primeira linha com saldo restante pré-preenchido
+        adicionarLinhaBaixa(valorRestante.replace('.', ','));
+    }
+
+    function fecharModalBaixa() {
+        document.getElementById('modalBaixa').classList.add('hidden');
     }
     
     window.onclick = function(event) {
