@@ -231,8 +231,8 @@
                         <span class="font-bold" id="totalInformado">R$ 0,00</span>
                     </div>
                     <div class="flex justify-between items-center text-sm" id="divDiferenca" style="display:none;">
-                        <span class="font-bold text-red-600">Diferença:</span>
-                        <span class="font-bold text-red-600" id="diferencaValor">R$ 0,00</span>
+                        <span class="font-bold text-orange-600" id="lblDiferenca">Saldo Restante:</span>
+                        <span class="font-bold text-orange-600" id="diferencaValor">R$ 0,00</span>
                     </div>
                 </div>
 
@@ -323,20 +323,29 @@
         });
 
         const valorRestante = parseFloat(document.getElementById('modalValorRestante').innerText.replace('.', '').replace(',', '.')) || 0;
-        const diferenca = valorRestante - total;
+        const restoAposBaixa = valorRestante - total;
         
         document.getElementById('totalInformado').innerText = 'R$ ' + total.toFixed(2).replace('.', ',');
         
         const divDif = document.getElementById('divDiferenca');
-        if (Math.abs(diferenca) > 0.01 && total > 0) {
+        const lblDif = document.getElementById('lblDiferenca');
+        const valDif = document.getElementById('diferencaValor');
+        if (total > 0 && restoAposBaixa > 0.01) {
             divDif.style.display = 'flex';
-            document.getElementById('diferencaValor').innerText = 'R$ ' + Math.abs(diferenca).toFixed(2).replace('.', ',');
+            lblDif.innerText = 'Saldo Restante:';
+            valDif.innerText = 'R$ ' + restoAposBaixa.toFixed(2).replace('.', ',');
+            valDif.className = 'font-bold text-orange-600';
+        } else if (total > 0 && restoAposBaixa < -0.01) {
+            divDif.style.display = 'flex';
+            lblDif.innerText = 'Excedente:';
+            valDif.innerText = 'R$ ' + Math.abs(restoAposBaixa).toFixed(2).replace('.', ',');
+            valDif.className = 'font-bold text-red-600';
         } else {
             divDif.style.display = 'none';
         }
 
         const btn = document.getElementById('btnConfirmarBaixa');
-        if (total <= 0 || Math.abs(diferenca) > 0.01) {
+        if (total <= 0 || restoAposBaixa < -0.01) {
             btn.disabled = true;
             btn.classList.add('opacity-50', 'cursor-not-allowed');
         } else {
