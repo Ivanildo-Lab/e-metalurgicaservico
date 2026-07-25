@@ -155,7 +155,7 @@ def lista_contas_receber(request):
 
     if status:
         if status == 'ATRASADA':
-            contas = contas.filter(status='PENDENTE', data_vencimento__lt=date.today())
+            contas = contas.filter(status__in=['PENDENTE', 'PARCIAL'], data_vencimento__lt=date.today())
         else:
             contas = contas.filter(status=status)
 
@@ -205,7 +205,7 @@ def lista_contas_pagar(request):
 
     if status:
         if status == 'ATRASADA':
-            contas = contas.filter(status='PENDENTE', data_vencimento__lt=date.today())
+            contas = contas.filter(status__in=['PENDENTE', 'PARCIAL'], data_vencimento__lt=date.today())
         else:
             contas = contas.filter(status=status)
 
@@ -353,33 +353,63 @@ def baixar_conta(request, id):
     if request.method == 'POST':
         caixa_id = request.POST.get('caixa')
         data_pagamento = request.POST.get('data_pagamento')
+        valor_pagamento = request.POST.get('valor_pagamento')
         
-        if not caixa_id or not data_pagamento:
+        if not caixa_id or not data_pagamento or not valor_pagamento:
             messages.error(request, "Preencha todos os campos da baixa.")
+            return redirect('financeiro:lista_receber' if conta.plano_de_contas.tipo == 'R' else 'financeiro:lista_pagar')
+
+        try:
+            valor_pagamento = Decimal(str(valor_pagamento).replace(',', '.').strip())
+        except Exception:
+            messages.error(request, "Valor de pagamento inválido.")
+            return redirect('financeiro:lista_receber' if conta.plano_de_contas.tipo == 'R' else 'financeiro:lista_pagar')
+
+        if valor_pagamento <= 0:
+            messages.error(request, "O valor do pagamento deve ser maior que zero.")
+            return redirect('financeiro:lista_receber' if conta.plano_de_contas.tipo == 'R' else 'financeiro:lista_pagar')
+
+        saldo_restante = conta.valor - conta.valor_pago
+        if valor_pagamento > saldo_restante:
+            messages.error(request, f"Valor informado (R$ {valor_pagamento:.2f}) excede o saldo restante (R$ {saldo_restante:.2f}).")
             return redirect('financeiro:lista_receber' if conta.plano_de_contas.tipo == 'R' else 'financeiro:lista_pagar')
 
         caixa = get_object_or_404(Caixa, id=caixa_id, empresa=request.user.empresa)
 
-        # Mapeia o tipo do Plano (R/D) para o tipo do Lançamento (C/D)
-        # R (Receita) -> C (Crédito)
-        # D (Despesa) -> D (Débito)
         tipo_lancamento = 'C' if conta.plano_de_contas.tipo == 'R' else 'D'
+
+        saldo_restante_antes = conta.valor - conta.valor_pago
+        eh_parcial = valor_pagamento < saldo_restante_antes
+
+        if eh_parcial:
+            tipo_label = 'RECEBIMENTO PARCIAL' if conta.plano_de_contas.tipo == 'R' else 'PAGAMENTO PARCIAL'
+            descricao_lancamento = f"{tipo_label}: {conta.descricao} (R$ {valor_pagamento:.2f} de R$ {conta.valor:.2f})"
+        else:
+            tipo_label = 'RECEBIMENTO' if conta.plano_de_contas.tipo == 'R' else 'PAGAMENTO'
+            descricao_lancamento = f"{tipo_label}: {conta.descricao}"
 
         Lancamento.objects.create(
             empresa=request.user.empresa,
             caixa=caixa,
             plano_de_contas=conta.plano_de_contas,
             conta_origem=conta,
-            descricao=f"Baixa: {conta.descricao}",
+            descricao=descricao_lancamento,
             data_lancamento=data_pagamento,
-            valor=conta.valor,
+            valor=valor_pagamento,
             tipo=tipo_lancamento
         )
 
-        conta.status = 'PAGA'
-        conta.save()
+        conta.valor_pago = conta.valor_pago + valor_pagamento
+        if conta.valor_pago >= conta.valor:
+            conta.status = 'PAGA'
+        else:
+            conta.status = 'PARCIAL'
+        conta.save(update_fields=['valor_pago', 'status'])
         
-        messages.success(request, "Baixa realizada com sucesso!")
+        if valor_pagamento < conta.valor:
+            messages.success(request, f"Baixa parcial realizada! R$ {valor_pagamento:.2f} registrados. Restante: R$ {conta.valor_restante:.2f}")
+        else:
+            messages.success(request, "Baixa realizada com sucesso!")
         
         if conta.plano_de_contas.tipo == 'R':
             return redirect('financeiro:lista_receber')
@@ -540,12 +570,16 @@ def editar_lancamento(request, id):
 def excluir_lancamento(request, id):
     lancamento = get_object_or_404(Lancamento, id=id, empresa=request.user.empresa)
     
-    # Se for baixa de conta, retorna a conta para PENDENTE
     if lancamento.conta_origem:
         conta = lancamento.conta_origem
-        conta.status = 'PENDENTE'
-        conta.save()
-        aviso_extra = " A conta original voltou para 'Pendente'."
+        conta.valor_pago = conta.valor_pago - lancamento.valor
+        if conta.valor_pago <= 0:
+            conta.valor_pago = Decimal('0')
+            conta.status = 'PENDENTE'
+        else:
+            conta.status = 'PARCIAL'
+        conta.save(update_fields=['valor_pago', 'status'])
+        aviso_extra = f" O pagamento de R$ {lancamento.valor:.2f} foi estornado da conta original."
     else:
         aviso_extra = ""
 
@@ -717,7 +751,7 @@ def relatorio_contas(request):
 
     if status:
         if status == 'ATRASADA':
-            contas = contas.filter(status='PENDENTE', data_vencimento__lt=date.today())
+            contas = contas.filter(status__in=['PENDENTE', 'PARCIAL'], data_vencimento__lt=date.today())
         else:
             contas = contas.filter(status=status)
 

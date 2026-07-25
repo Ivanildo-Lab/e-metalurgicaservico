@@ -36,6 +36,7 @@ class Conta(ModeloSaaS):
     """Contas a Pagar e Receber (Previsão/Agendamento)"""
     STATUS_CHOICES = [
         ('PENDENTE', 'Pendente'),
+        ('PARCIAL', 'Parcialmente Paga'),
         ('PAGA', 'Paga / Recebida'),
         ('CANCELADA', 'Cancelada'),
     ]
@@ -45,6 +46,7 @@ class Conta(ModeloSaaS):
     cadastro = models.ForeignKey(Cadastro, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Cliente/Fornecedor")
     
     valor = models.DecimalField(max_digits=12, decimal_places=2)
+    valor_pago = models.DecimalField(max_digits=12, decimal_places=2, default=0, verbose_name="Valor Pago")
     data_vencimento = models.DateField(verbose_name="Vencimento")
     
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDENTE')
@@ -53,6 +55,10 @@ class Conta(ModeloSaaS):
     observacoes = models.TextField(blank=True)
     
     created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def valor_restante(self):
+        return self.valor - self.valor_pago
 
     def __str__(self):
         return f"{self.descricao} - {self.data_vencimento}"
@@ -72,7 +78,7 @@ class Lancamento(ModeloSaaS):
     plano_de_contas = models.ForeignKey(PlanoDeContas, on_delete=models.SET_NULL, null=True, blank=True)
     
     # Se veio de uma conta a pagar/receber, vinculamos aqui
-    conta_origem = models.OneToOneField(Conta, on_delete=models.SET_NULL, null=True, blank=True, related_name="lancamento_caixa")
+    conta_origem = models.ForeignKey(Conta, on_delete=models.SET_NULL, null=True, blank=True, related_name="lancamentos_vinculados")
     
     # ATENÇÃO: O nome do campo é 'data_lancamento'
     data_lancamento = models.DateField(verbose_name="Data do Movimento")

@@ -90,6 +90,8 @@
                         <td class="py-1 text-center">
                             {% if c.status == 'PAGA' %}
                                 <span class="text-green-600 font-bold text-[9px]">BAIXADA</span>
+                            {% elif c.status == 'PARCIAL' %}
+                                <span class="text-orange-600 font-bold text-[9px]">PARCIAL</span>
                             {% elif c.status == 'CANCELADA' %}
                                 <span class="text-gray-400 text-[9px]">CANCELADA</span>
                             {% else %}
@@ -101,7 +103,11 @@
                                 {% endif %}
                             {% endif %}
                         </td>
-                        <td class="py-1 text-right font-bold text-gray-700">R$ {{ c.valor|floatformat:2 }}</td>
+                        <td class="py-1 text-right font-bold text-gray-700">R$ {{ c.valor|floatformat:2 }}
+                            {% if c.valor_pago > 0 and c.status != 'PAGA' %}
+                                <br><span class="text-[8px] text-orange-500">Restante: R$ {{ c.valor_restante|floatformat:2 }}</span>
+                            {% endif %}
+                        </td>
                     </tr>
                     {% empty %}
                     <tr><td colspan="6" class="py-4 text-center text-gray-400 italic">Nenhum registro encontrado.</td></tr>

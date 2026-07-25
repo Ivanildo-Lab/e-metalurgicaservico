@@ -562,7 +562,15 @@ def fechar_os(request, id):
 
     forma = request.POST.get('forma_pagamento', 'A_VISTA')
     qtd_parcelas = int(request.POST.get('qtd_parcelas', 1))
-    desconto = Decimal(request.POST.get('desconto', '0'))
+    desconto_text = request.POST.get('desconto', '0').replace('R$', '').replace(' ', '').strip()
+    if ',' in desconto_text and '.' in desconto_text:
+        if desconto_text.rfind(',') > desconto_text.rfind('.'):
+            desconto_text = desconto_text.replace('.', '').replace(',', '.')
+        else:
+            desconto_text = desconto_text.replace(',', '')
+    elif ',' in desconto_text:
+        desconto_text = desconto_text.replace(',', '.')
+    desconto = Decimal(desconto_text or '0')
 
     def _parse_decimal(valor):
         if valor is None:
