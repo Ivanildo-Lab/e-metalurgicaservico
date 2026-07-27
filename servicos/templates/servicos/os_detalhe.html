@@ -113,7 +113,7 @@
             <input type="hidden" name="observacoes" value="{{ os.observacoes|default_if_none:''|escape }}">
             <div class="flex-1">
                 <label class="block text-xs text-gray-500 font-medium mb-1"><i class="fa fa-tag mr-1"></i> Desconto (R$)</label>
-                <input type="number" name="desconto" step="0.01" min="0" value="{{ os.desconto|default:'0' }}"
+                <input type="number" name="desconto" step="0.01" min="0" value="{{ os.desconto|floatformat:2 }}"
                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500">
             </div>
             <button type="submit"
