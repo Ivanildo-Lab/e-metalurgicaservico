@@ -174,7 +174,7 @@ def nova_os(request):
             'data_entrada': date.today(),
             'data_prevista': date.today(),
         })
-    return render(request, 'servicos/os_form.html', {'form': form, 'editar': False})
+    return render(request, 'servicos/os_form.html', {'form': form, 'editar': False, 'desfechar_url': ''})
 
 
 @login_required
@@ -217,6 +217,9 @@ def editar_os(request, id):
         empresa=request.user.empresa, ativo=True
     ) if pode_fechar else []
 
+    from django.urls import reverse
+    desfechar_url = reverse('servicos:desfechar_os', args=[obj.id]) if obj.status == 'FECHADA' else ''
+
     return render(request, 'servicos/os_form.html', {
         'form': form,
         'editar': True,
@@ -235,6 +238,7 @@ def editar_os(request, id):
         'caixas': caixas,
         'caixa_padrao_id': caixa_padrao_id,
         'formas_pagamento': formas_pagamento,
+        'desfechar_url': desfechar_url,
     })
 
 

@@ -417,9 +417,9 @@
                         {% endif %}
 
                         {% if os.status == 'FECHADA' %}
-                        <form method="POST" action="{% url 'servicos:desfechar_os' os.id %}" class="inline">
+                        <form method="POST" action="{{ desfechar_url }}" class="inline">
                             {% csrf_token %}
-                            <button type="submit" onclick="return confirm('Tem certeza que deseja DESFECHAR esta OS? Os lançamentos financeiros serão removidos.')"
+                            <button type="submit" onclick="return confirm('Tem certeza que deseja ESTORNAR o fechamento desta OS? Os lançamentos financeiros serão removidos.')"
                                     class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-md">
                                 <i class="fa fa-unlock mr-1"></i> Desfechar OS
                             </button>
@@ -962,7 +962,7 @@ function estornarFechamento() {
     if (!confirm('Tem certeza que deseja ESTORNAR o fechamento desta OS? Os lançamentos financeiros serão removidos.')) return;
     var form = document.createElement('form');
     form.method = 'POST';
-    form.action = '{% url "servicos:desfechar_os" os.id %}';
+    form.action = '{{ desfechar_url }}';
     var csrf = document.querySelector('[name=csrfmiddlewaretoken]');
     if (csrf) {
         var input = document.createElement('input');
