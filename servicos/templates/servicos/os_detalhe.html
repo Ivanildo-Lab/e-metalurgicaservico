@@ -36,7 +36,7 @@
                     </span>
                     <form method="POST" action="{% url 'servicos:desfechar_os' os.id %}" class="inline ml-2">
                         {% csrf_token %}
-                        <button type="submit" onclick="return confirm('Tem certeza que deseja DESFECHAR esta OS? Os lançamentos financeiros serão removidos.')"
+                        <button type="submit" onclick="return confirm('Tem certeza que deseja ESTORNAR o fechamento desta OS? Os lançamentos financeiros serão removidos.')"
                                 class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-full text-xs font-bold transition shadow-md">
                             <i class="fa fa-unlock mr-1"></i> Estornar Fechamento
                         </button>
