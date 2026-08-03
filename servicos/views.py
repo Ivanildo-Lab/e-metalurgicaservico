@@ -790,14 +790,14 @@ def fechar_os(request, id):
 @login_required
 @permission_required_module('servicos')
 def desfechar_os(request, id):
-    """Desfecha uma OS: remove contas e lançamentos vinculados, volta status para CONCLUIDA"""
+    """Estorna o fechamento de uma OS: remove contas e lançamentos vinculados, volta status para CONCLUIDA"""
     os_obj = get_object_or_404(OrdemServico, id=id, empresa=request.user.empresa)
 
     if request.method != 'POST':
         return redirect('servicos:editar_os', id=os_obj.id)
 
     if os_obj.status != 'FECHADA':
-        messages.error(request, "Somente OS FECHADAS podem ser desfechadas.")
+        messages.error(request, "Somente OS FECHADAS podem ter o fechamento estornado.")
         return redirect('servicos:editar_os', id=os_obj.id)
 
     # Buscar contas vinculadas a esta OS (pelo número da OS na descrição)
@@ -814,7 +814,7 @@ def desfechar_os(request, id):
             nomes = ', '.join(c.descricao[:50] for c in contas_pagas)
             messages.error(
                 request,
-                f"Não é possível desfechar. As seguintes contas já foram baixadas: {nomes}. "
+                f"Não é possível estornar. As seguintes contas já foram baixadas: {nomes}. "
                 f"Exclua as baixas primeiro no Financeiro > Fluxo de Caixa."
             )
             return redirect('servicos:editar_os', id=os_obj.id)
@@ -836,7 +836,7 @@ def desfechar_os(request, id):
     os_obj.data_conclusao = None
     os_obj.save()
 
-    messages.success(request, f"OS {os_obj.numero} DESFECHADA com sucesso! Agora pode ser fechada novamente.")
+    messages.success(request, f"OS {os_obj.numero} - Fechamento ESTORNADO com sucesso! Agora pode ser fechada novamente.")
     return redirect('servicos:editar_os', id=os_obj.id)
 
 
