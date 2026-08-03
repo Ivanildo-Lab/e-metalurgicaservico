@@ -39,7 +39,7 @@ class CadastroAdmin(admin.ModelAdmin):
             'fields': ('empresa', 'papel', 'categoria', 'situacao')
         }),
         ('Identificação', {
-            'fields': ('tipo_pessoa', 'nome', 'razao_social', 'cpf_cnpj', 'rg_ie', 'data_nascimento')
+            'fields': ('tipo_pessoa', 'nome', 'razao_social', 'cpf_cnpj', 'rg', 'inscricao_estadual', 'is_produtor_rural', 'data_nascimento')
         }),
         ('Contato', {
             'fields': ('email', 'celular', 'telefone_fixo')
