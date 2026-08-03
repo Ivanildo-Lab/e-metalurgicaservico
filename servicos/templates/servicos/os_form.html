@@ -158,6 +158,18 @@
                                 <span class="font-semibold ml-1">{{ os.servicos.count }}</span>
                             </div>
                         </div>
+                        {% if os.status == 'FECHADA' %}
+                        <div class="mt-3 pt-3 border-t border-blue-200">
+                            <form method="POST" action="{% url 'servicos:desfechar_os' os.id %}" class="inline">
+                                {% csrf_token %}
+                                <button type="submit" onclick="return confirm('Tem certeza que deseja DESFECHAR esta OS? Os lançamentos financeiros serão removidos.')"
+                                        class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-md">
+                                    <i class="fa fa-unlock mr-1"></i> Desfechar OS
+                                </button>
+                            </form>
+                            <span class="text-xs text-gray-500 ml-3">Remove os lançamentos financeiros e permite fechar novamente.</span>
+                        </div>
+                        {% endif %}
                     </div>
                     {% endif %}
 
@@ -405,6 +417,16 @@
                                 class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-md">
                             <i class="fa fa-lock mr-1"></i> Fechar OS (Gerar Financeiro)
                         </button>
+                        {% endif %}
+
+                        {% if os.status == 'FECHADA' %}
+                        <form method="POST" action="{% url 'servicos:desfechar_os' os.id %}" class="inline">
+                            {% csrf_token %}
+                            <button type="submit" onclick="return confirm('Tem certeza que deseja DESFECHAR esta OS? Os lançamentos financeiros serão removidos.')"
+                                    class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-md">
+                                <i class="fa fa-unlock mr-1"></i> Desfechar OS
+                            </button>
+                        </form>
                         {% endif %}
 
                         {% if os.status != 'FECHADA' %}

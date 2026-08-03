@@ -22,6 +22,7 @@ urlpatterns = [
     # Ações de status
     path('ordens/<int:id>/concluir/', views.concluir_os, name='concluir_os'),
     path('ordens/<int:id>/fechar/', views.fechar_os, name='fechar_os'),
+    path('ordens/<int:id>/desfechar/', views.desfechar_os, name='desfechar_os'),
     path('ordens/<int:id>/cancelar/', views.cancelar_os, name='cancelar_os'),
 
     # Serviços da OS (inline)

@@ -34,6 +34,13 @@
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-800">
                         <i class="fa fa-lock mr-1"></i> FECHADA
                     </span>
+                    <form method="POST" action="{% url 'servicos:desfechar_os' os.id %}" class="inline ml-2">
+                        {% csrf_token %}
+                        <button type="submit" onclick="return confirm('Tem certeza que deseja DESFECHAR esta OS? Os lançamentos financeiros serão removidos.')"
+                                class="bg-orange-500 hover:bg-orange-600 text-white px-3 py-1 rounded-full text-xs font-bold transition shadow-md">
+                            <i class="fa fa-unlock mr-1"></i> Desfechar
+                        </button>
+                    </form>
                     {% elif os.status == 'CANCELADA' %}
                     <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-800">
                         <i class="fa fa-ban mr-1"></i> CANCELADA
@@ -324,6 +331,16 @@
                     class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-md">
                 <i class="fa fa-lock mr-1"></i> Fechar OS (Gerar Financeiro)
             </button>
+            {% endif %}
+
+            {% if os.status == 'FECHADA' %}
+            <form method="POST" action="{% url 'servicos:desfechar_os' os.id %}" class="inline">
+                {% csrf_token %}
+                <button type="submit" onclick="return confirm('Tem certeza que deseja DESFECHAR esta OS? Os lançamentos financeiros serão removidos.')"
+                        class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-md">
+                    <i class="fa fa-unlock mr-1"></i> Desfechar OS
+                </button>
+            </form>
             {% endif %}
 
             {% if os.status != 'FECHADA' %}

@@ -787,6 +787,59 @@ def fechar_os(request, id):
     return redirect('servicos:imprimir_os', id=os_obj.id)
 
 
+@login_required
+@permission_required_module('servicos')
+def desfechar_os(request, id):
+    """Desfecha uma OS: remove contas e lançamentos vinculados, volta status para CONCLUIDA"""
+    os_obj = get_object_or_404(OrdemServico, id=id, empresa=request.user.empresa)
+
+    if request.method != 'POST':
+        return redirect('servicos:editar_os', id=os_obj.id)
+
+    if os_obj.status != 'FECHADA':
+        messages.error(request, "Somente OS FECHADAS podem ser desfechadas.")
+        return redirect('servicos:editar_os', id=os_obj.id)
+
+    # Buscar contas vinculadas a esta OS (pelo número da OS na descrição)
+    prefixo_doc = f"{os_obj.numero}-"
+    contas_vinculadas = Conta.objects.filter(
+        empresa=request.user.empresa,
+        descricao__icontains=f"OS {os_obj.numero}"
+    )
+
+    if contas_vinculadas.exists():
+        # Verificar se alguma conta já foi parcialmente ou totalmente paga via baixa manual
+        contas_pagas = contas_vinculadas.filter(status__in=['PAGA', 'PARCIAL'])
+        if contas_pagas.exists():
+            nomes = ', '.join(c.descricao[:50] for c in contas_pagas)
+            messages.error(
+                request,
+                f"Não é possível desfechar. As seguintes contas já foram baixadas: {nomes}. "
+                f"Exclua as baixas primeiro no Financeiro > Fluxo de Caixa."
+            )
+            return redirect('servicos:editar_os', id=os_obj.id)
+
+        with transaction.atomic():
+            # Deletar lançamentos vinculados a estas contas
+            Lancamento.objects.filter(conta_origem__in=contas_vinculadas).delete()
+            # Deletar as contas
+            contas_vinculadas.delete()
+
+    # Reverter desconto se foi aplicado
+    if os_obj.desconto and os_obj.desconto > 0:
+        os_obj.desconto = Decimal('0')
+
+    # Voltar status para CONCLUIDA e limpar dados de fechamento
+    os_obj.status = 'CONCLUIDA'
+    os_obj.forma_pagamento = ''
+    os_obj.qtd_parcelas = 0
+    os_obj.data_conclusao = None
+    os_obj.save()
+
+    messages.success(request, f"OS {os_obj.numero} DESFECHADA com sucesso! Agora pode ser fechada novamente.")
+    return redirect('servicos:editar_os', id=os_obj.id)
+
+
 # ==========================================================
 # 5. CRUD DE METAS
 # ==========================================================
