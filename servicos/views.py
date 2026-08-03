@@ -703,23 +703,10 @@ def fechar_os(request, id):
     # Gerar financeiro
     if forma == 'A_VISTA':
         with transaction.atomic():
-            created_accounts = []
             for index, pagamento in enumerate(pagamentos, start=1):
                 forma_pagamento_obj = pagamento['forma_pagamento_obj']
                 valor_parcela = pagamento['valor']
                 caixa_id = pagamento['caixa_id']
-
-                conta = Conta.objects.create(
-                    empresa=request.user.empresa,
-                    descricao=f"OS {os_obj.numero} — {os_obj.descricao_geral[:100]}",
-                    plano_de_contas=plano_de_contas,
-                    cadastro=os_obj.cadastro,
-                    valor=valor_parcela,
-                    data_vencimento=date.today(),
-                    status='PENDENTE',
-                    documento=f"{os_obj.numero}-{index}",
-                )
-                created_accounts.append(conta)
 
                 if forma_pagamento_obj and forma_pagamento_obj.afeta_caixa:
                     if caixa_id:
@@ -734,25 +721,21 @@ def fechar_os(request, id):
                         empresa=request.user.empresa,
                         caixa=caixa,
                         plano_de_contas=plano_de_contas,
-                        conta_origem=conta,
                         forma_pagamento=forma_pagamento_obj,
                         data_lancamento=date.today(),
-                        descricao=f"Recebimento OS {os_obj.numero} — {forma_pagamento_obj.nome}",
+                        descricao=f"Recebimento OS {os_obj.numero} — {os_obj.descricao_geral[:100]} — {forma_pagamento_obj.nome}",
                         valor=valor_parcela,
                         tipo='C',
                     )
 
-                conta.status = 'PAGA'
-                conta.save(update_fields=['status'])
-
             if len(pagamentos) == 1:
                 nome_forma = pagamentos[0]['forma_pagamento_obj'].nome if pagamentos[0]['forma_pagamento_obj'] else 'A Vista'
-                messages.success(request, f"OS {os_obj.numero} FECHADA! Pagamento via {nome_forma} registrado.")
+                messages.success(request, f"OS {os_obj.numero} FECHADA! Pagamento via {nome_forma} registrado no caixa.")
             else:
                 nomes = ', '.join(
                     p['forma_pagamento_obj'].nome if p['forma_pagamento_obj'] else 'Sem forma' for p in pagamentos
                 )
-                messages.success(request, f"OS {os_obj.numero} FECHADA! {len(pagamentos)} forma(s) de pagamento registradas: {nomes}.")
+                messages.success(request, f"OS {os_obj.numero} FECHADA! {len(pagamentos)} forma(s) de pagamento registradas no caixa: {nomes}.")
 
     elif forma == 'A_PRAZO':
         # Gera N Contas pendentes
@@ -800,30 +783,32 @@ def desfechar_os(request, id):
         messages.error(request, "Somente OS FECHADAS podem ter o fechamento estornado.")
         return redirect('servicos:editar_os', id=os_obj.id)
 
-    # Buscar contas vinculadas a esta OS (pelo número da OS na descrição)
-    prefixo_doc = f"{os_obj.numero}-"
-    contas_vinculadas = Conta.objects.filter(
-        empresa=request.user.empresa,
-        descricao__icontains=f"OS {os_obj.numero}"
-    )
+    with transaction.atomic():
+        # 1. Deletar contas vinculadas (A_PRAZO ou A_VISTA legado)
+        contas_vinculadas = Conta.objects.filter(
+            empresa=request.user.empresa,
+            descricao__icontains=f"OS {os_obj.numero}"
+        )
 
-    if contas_vinculadas.exists():
-        # Verificar se alguma conta já foi parcialmente ou totalmente paga via baixa manual
-        contas_pagas = contas_vinculadas.filter(status__in=['PAGA', 'PARCIAL'])
-        if contas_pagas.exists():
-            nomes = ', '.join(c.descricao[:50] for c in contas_pagas)
-            messages.error(
-                request,
-                f"Não é possível estornar. As seguintes contas já foram baixadas: {nomes}. "
-                f"Exclua as baixas primeiro no Financeiro > Fluxo de Caixa."
-            )
-            return redirect('servicos:editar_os', id=os_obj.id)
+        if contas_vinculadas.exists():
+            contas_pagas = contas_vinculadas.filter(status__in=['PAGA', 'PARCIAL'])
+            if contas_pagas.exists():
+                nomes = ', '.join(c.descricao[:50] for c in contas_pagas)
+                messages.error(
+                    request,
+                    f"Não é possível estornar. As seguintes contas já foram baixadas: {nomes}. "
+                    f"Exclua as baixas primeiro no Financeiro > Fluxo de Caixa."
+                )
+                return redirect('servicos:editar_os', id=os_obj.id)
 
-        with transaction.atomic():
-            # Deletar lançamentos vinculados a estas contas
             Lancamento.objects.filter(conta_origem__in=contas_vinculadas).delete()
-            # Deletar as contas
             contas_vinculadas.delete()
+
+        # 2. Deletar lançamentos diretos do caixa (A_VISTA sem Conta)
+        Lancamento.objects.filter(
+            empresa=request.user.empresa,
+            descricao__icontains=f"Recebimento OS {os_obj.numero}"
+        ).delete()
 
     # Reverter desconto se foi aplicado
     if os_obj.desconto and os_obj.desconto > 0:
