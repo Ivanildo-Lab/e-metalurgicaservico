@@ -60,6 +60,11 @@ class Conta(ModeloSaaS):
     def valor_restante(self):
         return self.valor - self.valor_pago
 
+    @property
+    def data_pagamento(self):
+        ultimo = self.lancamentos_vinculados.order_by('-data_lancamento').first()
+        return ultimo.data_lancamento if ultimo else None
+
     def __str__(self):
         return f"{self.descricao} - {self.data_vencimento}"
 

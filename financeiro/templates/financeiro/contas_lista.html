@@ -166,13 +166,11 @@
                     </td>
 
                     <td class="px-6 py-4 text-center text-xs text-gray-600">
-                        {% with pgto=c.lancamentos_vinculados.all|last %}
-                            {% if pgto %}
-                                {{ pgto.data_lancamento|date:"d/m/Y" }}
-                            {% else %}
-                                -
-                            {% endif %}
-                        {% endwith %}
+                        {% if c.data_pagamento %}
+                            {{ c.data_pagamento|date:"d/m/Y" }}
+                        {% else %}
+                            -
+                        {% endif %}
                     </td>
                     
                     <td class="px-6 py-4 text-center">
