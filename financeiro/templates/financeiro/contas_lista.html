@@ -10,74 +10,84 @@
     
 <!-- BARRA DE FILTROS -->
     <div class="p-4 bg-gray-50 border-b flex flex-col lg:flex-row gap-4 justify-between items-end">
-        <form method="GET" class="flex-1 grid grid-cols-1 md:grid-cols-12 gap-3 w-full">
-            
-            <!-- Nome -->
-            <div class="md:col-span-2">
-                <label class="text-[10px] font-bold text-gray-500 uppercase">
-                    {% if tipo_lista == 'receber' %}Cliente{% else %}Fornecedor{% endif %}
-                </label>
-                <input type="text" name="cliente" value="{{ filtro_nome|default:'' }}" class="w-full border p-2 rounded text-sm h-9" placeholder="Buscar nome...">
+        <form method="GET" class="flex-1 w-full">
+            <!-- Linha 1: Nome, Categoria, Status -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-3 mb-3">
+                <!-- Nome -->
+                <div class="md:col-span-4">
+                    <label class="text-[10px] font-bold text-gray-500 uppercase">
+                        {% if tipo_lista == 'receber' %}Cliente{% else %}Fornecedor{% endif %}
+                    </label>
+                    <input type="text" name="cliente" value="{{ filtro_nome|default:'' }}" class="w-full border p-2 rounded text-sm h-9" placeholder="Buscar nome...">
+                </div>
+
+                <!-- Categoria -->
+                <div class="md:col-span-4">
+                    <label class="text-[10px] font-bold text-gray-500 uppercase">Categoria</label>
+                    <select name="categoria" class="w-full border p-2 rounded text-sm h-9 bg-white">
+                        <option value="">Todas</option>
+                        {% for cat in categorias %}
+                            <option value="{{ cat.id }}" {% if filtro_categoria == cat.id|stringformat:"s" %}selected{% endif %}>
+                                {{ cat.nome }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Status -->
+                <div class="md:col-span-4">
+                    <label class="text-[10px] font-bold text-gray-500 uppercase">Status</label>
+                    <select name="status" class="w-full border p-2 rounded text-sm h-9 bg-white">
+                        <option value="">Todos</option>
+                        <option value="PENDENTE" {% if filtro_status == 'PENDENTE' %}selected{% endif %}>Pendentes</option>
+                        <option value="PARCIAL" {% if filtro_status == 'PARCIAL' %}selected{% endif %}>Parcialmente Pagas</option>
+                        <option value="PAGA" {% if filtro_status == 'PAGA' %}selected{% endif %}>Baixadas</option>
+                        <option value="ATRASADA" {% if filtro_status == 'ATRASADA' %}selected{% endif %}>Atrasadas</option>
+                    </select>
+                </div>
             </div>
 
-            <!-- Categoria -->
-            <div class="md:col-span-2">
-                <label class="text-[10px] font-bold text-gray-500 uppercase">Categoria</label>
-                <select name="categoria" class="w-full border p-2 rounded text-sm h-9 bg-white">
-                    <option value="">Todas</option>
-                    {% for cat in categorias %}
-                        <option value="{{ cat.id }}" {% if filtro_categoria == cat.id|stringformat:"s" %}selected{% endif %}>
-                            {{ cat.nome }}
-                        </option>
-                    {% endfor %}
-                </select>
-            </div>
-            
-            <!-- Datas Vencimento -->
-            <div class="md:col-span-1">
-                <label class="text-[10px] font-bold text-gray-500 uppercase">Venc. De</label>
-                <input type="date" name="data_ini" value="{{ filtro_data_ini|default:'' }}" class="w-full border p-2 rounded text-sm h-9">
-            </div>
-            <div class="md:col-span-1">
-                <label class="text-[10px] font-bold text-gray-500 uppercase">Até</label>
-                <input type="date" name="data_fim" value="{{ filtro_data_fim|default:'' }}" class="w-full border p-2 rounded text-sm h-9">
-            </div>
+            <!-- Linha 2: Datas e Botões -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                <!-- Datas Vencimento -->
+                <div class="md:col-span-2">
+                    <label class="text-[10px] font-bold text-gray-500 uppercase">Vencimento De</label>
+                    <input type="date" name="data_ini" value="{{ filtro_data_ini|default:'' }}" class="w-full border p-2 rounded text-sm h-9">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="text-[10px] font-bold text-gray-500 uppercase">Vencimento Até</label>
+                    <input type="date" name="data_fim" value="{{ filtro_data_fim|default:'' }}" class="w-full border p-2 rounded text-sm h-9">
+                </div>
 
-            <!-- Datas Pagamento -->
-            <div class="md:col-span-1">
-                <label class="text-[10px] font-bold text-gray-500 uppercase">Pag. De</label>
-                <input type="date" name="data_pag_ini" value="{{ filtro_data_pag_ini|default:'' }}" class="w-full border p-2 rounded text-sm h-9">
-            </div>
-            <div class="md:col-span-1">
-                <label class="text-[10px] font-bold text-gray-500 uppercase">Até</label>
-                <input type="date" name="data_pag_fim" value="{{ filtro_data_pag_fim|default:'' }}" class="w-full border p-2 rounded text-sm h-9">
-            </div>
+                <!-- Datas Pagamento -->
+                <div class="md:col-span-2">
+                    <label class="text-[10px] font-bold text-gray-500 uppercase">Pagamento De</label>
+                    <input type="date" name="data_pag_ini" value="{{ filtro_data_pag_ini|default:'' }}" class="w-full border p-2 rounded text-sm h-9">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="text-[10px] font-bold text-gray-500 uppercase">Pagamento Até</label>
+                    <input type="date" name="data_pag_fim" value="{{ filtro_data_pag_fim|default:'' }}" class="w-full border p-2 rounded text-sm h-9">
+                </div>
 
-            <!-- Status -->
-            <div class="md:col-span-2">
-                <label class="text-[10px] font-bold text-gray-500 uppercase">Status</label>
-                <select name="status" class="w-full border p-2 rounded text-sm h-9 bg-white">
-                    <option value="">Todos</option>
-                    <option value="PENDENTE" {% if filtro_status == 'PENDENTE' %}selected{% endif %}>Pendentes</option>
-                    <option value="PARCIAL" {% if filtro_status == 'PARCIAL' %}selected{% endif %}>Parcialmente Pagas</option>
-                    <option value="PAGA" {% if filtro_status == 'PAGA' %}selected{% endif %}>Baixadas</option>
-                    <option value="ATRASADA" {% if filtro_status == 'ATRASADA' %}selected{% endif %}>Atrasadas</option>
-                </select>
-            </div>
-
-            <!-- Botões -->
-            <div class="md:col-span-2 flex gap-1">
-                <button type="submit" class="bg-gray-700 text-white px-2 rounded hover:bg-gray-800 text-sm h-9 flex items-center justify-center flex-1" title="Filtrar">
-                    <i class="fa fa-search"></i>
-                </button>
-                
-                <!-- BOTÃO IMPRIMIR -->
-                <a href="{% url 'financeiro:relatorio_contas' %}?tipo_lista={{ tipo_lista }}&data_ini={{ filtro_data_ini|default:'' }}&data_fim={{ filtro_data_fim|default:'' }}&data_pag_ini={{ filtro_data_pag_ini|default:'' }}&data_pag_fim={{ filtro_data_pag_fim|default:'' }}&cliente={{ filtro_nome|default:'' }}&status={{ filtro_status|default:'' }}&categoria={{ filtro_categoria|default:'' }}" 
-                   target="_blank" 
-                   class="bg-blue-600 text-white px-2 rounded hover:bg-blue-700 text-sm h-9 flex items-center justify-center flex-1" 
-                   title="Imprimir">
-                    <i class="fa fa-print"></i>
-                </a>
+                <!-- Botões -->
+                <div class="md:col-span-4 flex gap-1 justify-end">
+                    <button type="submit" class="bg-gray-700 text-white px-4 rounded hover:bg-gray-800 text-sm h-9 flex items-center justify-center" title="Filtrar">
+                        <i class="fa fa-search mr-1"></i> Filtrar
+                    </button>
+                    
+                    <!-- BOTÃO LIMPAR -->
+                    <a href="{% if tipo_lista == 'receber' %}{% url 'financeiro:lista_contas_receber' %}{% else %}{% url 'financeiro:lista_contas_pagar' %}{% endif %}" class="bg-gray-400 text-white px-3 rounded hover:bg-gray-500 text-sm h-9 flex items-center justify-center" title="Limpar Filtros">
+                        <i class="fa fa-times"></i>
+                    </a>
+                    
+                    <!-- BOTÃO IMPRIMIR -->
+                    <a href="{% url 'financeiro:relatorio_contas' %}?tipo_lista={{ tipo_lista }}&data_ini={{ filtro_data_ini|default:'' }}&data_fim={{ filtro_data_fim|default:'' }}&data_pag_ini={{ filtro_data_pag_ini|default:'' }}&data_pag_fim={{ filtro_data_pag_fim|default:'' }}&cliente={{ filtro_nome|default:'' }}&status={{ filtro_status|default:'' }}&categoria={{ filtro_categoria|default:'' }}" 
+                       target="_blank" 
+                       class="bg-blue-600 text-white px-3 rounded hover:bg-blue-700 text-sm h-9 flex items-center justify-center" 
+                       title="Imprimir">
+                        <i class="fa fa-print"></i>
+                    </a>
+                </div>
             </div>
         </form>
 
@@ -101,12 +111,13 @@
             <thead class="bg-gray-100">
                 <tr>
                     <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Vencimento</th>
-                    <!-- MUDANÇA: Coluna agora foca no Cliente -->
                     <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">
                         {% if tipo_lista == 'receber' %}Cliente{% else %}Fornecedor{% endif %}
                     </th>
                     <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Doc / Descrição</th>
                     <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase">Valor</th>
+                    <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase">Valor Pago</th>
+                    <th class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase">Pgto</th>
                     <th class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase">Status</th>
                     <th class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase">Ações</th>
                 </tr>
@@ -145,6 +156,24 @@
                             <br><span class="text-xs text-orange-500 font-semibold">Restante: {{ c.valor_restante|moeda_br }}</span>
                         {% endif %}
                     </td>
+
+                    <td class="px-6 py-4 text-right">
+                        {% if c.valor_pago > 0 %}
+                            <span class="font-bold text-green-600">{{ c.valor_pago|moeda_br }}</span>
+                        {% else %}
+                            <span class="text-gray-400">-</span>
+                        {% endif %}
+                    </td>
+
+                    <td class="px-6 py-4 text-center text-xs text-gray-600">
+                        {% with pgto=c.lancamentos_vinculados.all|last %}
+                            {% if pgto %}
+                                {{ pgto.data_lancamento|date:"d/m/Y" }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        {% endwith %}
+                    </td>
                     
                     <td class="px-6 py-4 text-center">
                         {% if c.status == 'PAGA' %}
@@ -182,7 +211,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="px-6 py-10 text-center text-gray-500">Nenhum lançamento encontrado.</td>
+                    <td colspan="8" class="px-6 py-10 text-center text-gray-500">Nenhum lançamento encontrado.</td>
                 </tr>
                 {% endfor %}
             </tbody>
