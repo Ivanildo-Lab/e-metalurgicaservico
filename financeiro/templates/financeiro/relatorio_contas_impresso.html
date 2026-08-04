@@ -48,6 +48,13 @@
             </div>
             {% endif %}
             
+            {% if data_pag_ini and data_pag_fim %}
+            <div>
+                <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Período Pagamento:</span>
+                <span class="font-semibold text-gray-700 ml-1">{{ data_pag_ini|date:"d/m/Y" }} a {{ data_pag_fim|date:"d/m/Y" }}</span>
+            </div>
+            {% endif %}
+            
             {% if status_filtro %}
             <div>
                 <span class="text-[9px] font-bold text-gray-400 uppercase tracking-wider">Status:</span>

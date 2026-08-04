@@ -143,9 +143,11 @@ def lista_contas_receber(request):
     # --- FILTROS DE BUSCA ---
     data_ini = request.GET.get('data_ini')
     data_fim = request.GET.get('data_fim')
+    data_pag_ini = request.GET.get('data_pag_ini')
+    data_pag_fim = request.GET.get('data_pag_fim')
     cliente_nome = request.GET.get('cliente')
     status = request.GET.get('status')
-    categoria_id = request.GET.get('categoria') # NOVO
+    categoria_id = request.GET.get('categoria')
 
     if data_ini and data_fim:
         contas = contas.filter(data_vencimento__range=[data_ini, data_fim])
@@ -159,13 +161,17 @@ def lista_contas_receber(request):
         else:
             contas = contas.filter(status=status)
 
-    # Filtro por Categoria (NOVO)
     if categoria_id:
         contas = contas.filter(plano_de_contas_id=categoria_id)
 
+    if data_pag_ini and data_pag_fim:
+        from financeiro.models import Lancamento
+        contas = contas.filter(
+            lancamentos_vinculados__data_lancamento__range=[data_pag_ini, data_pag_fim]
+        ).distinct()
+
     # Dados para os Dropdowns
     caixas = Caixa.objects.filter(empresa=request.user.empresa)
-    # Carrega apenas categorias de RECEITA para o filtro
     categorias = PlanoDeContas.objects.filter(empresa=request.user.empresa, tipo='R').order_by('nome')
     from servicos.models import FormaPagamento
     formas_pagamento = FormaPagamento.objects.filter(empresa=request.user.empresa, ativo=True).order_by('ordem', 'nome')
@@ -177,10 +183,10 @@ def lista_contas_receber(request):
         'formas_pagamento': formas_pagamento,
         'titulo': 'Contas a Receber',
         'tipo_lista': 'receber',
-        
-        # Mantém filtros preenchidos
         'filtro_data_ini': data_ini,
         'filtro_data_fim': data_fim,
+        'filtro_data_pag_ini': data_pag_ini,
+        'filtro_data_pag_fim': data_pag_fim,
         'filtro_nome': cliente_nome,
         'filtro_status': status,
         'filtro_categoria': categoria_id
@@ -196,9 +202,11 @@ def lista_contas_pagar(request):
     # --- FILTROS DE BUSCA ---
     data_ini = request.GET.get('data_ini')
     data_fim = request.GET.get('data_fim')
+    data_pag_ini = request.GET.get('data_pag_ini')
+    data_pag_fim = request.GET.get('data_pag_fim')
     fornecedor_nome = request.GET.get('cliente')
     status = request.GET.get('status')
-    categoria_id = request.GET.get('categoria') # NOVO
+    categoria_id = request.GET.get('categoria')
 
     if data_ini and data_fim:
         contas = contas.filter(data_vencimento__range=[data_ini, data_fim])
@@ -212,12 +220,15 @@ def lista_contas_pagar(request):
         else:
             contas = contas.filter(status=status)
 
-    # Filtro por Categoria (NOVO)
     if categoria_id:
         contas = contas.filter(plano_de_contas_id=categoria_id)
 
+    if data_pag_ini and data_pag_fim:
+        contas = contas.filter(
+            lancamentos_vinculados__data_lancamento__range=[data_pag_ini, data_pag_fim]
+        ).distinct()
+
     caixas = Caixa.objects.filter(empresa=request.user.empresa)
-    # Carrega apenas categorias de DESPESA para o filtro
     categorias = PlanoDeContas.objects.filter(empresa=request.user.empresa, tipo='D').order_by('nome')
     from servicos.models import FormaPagamento
     formas_pagamento = FormaPagamento.objects.filter(empresa=request.user.empresa, ativo=True).order_by('ordem', 'nome')
@@ -231,6 +242,8 @@ def lista_contas_pagar(request):
         'tipo_lista': 'pagar',
         'filtro_data_ini': data_ini,
         'filtro_data_fim': data_fim,
+        'filtro_data_pag_ini': data_pag_ini,
+        'filtro_data_pag_fim': data_pag_fim,
         'filtro_nome': fornecedor_nome,
         'filtro_status': status,
         'filtro_categoria': categoria_id
@@ -818,9 +831,11 @@ def relatorio_contas(request):
 
     data_ini = clean_val(request.GET.get('data_ini'))
     data_fim = clean_val(request.GET.get('data_fim'))
+    data_pag_ini = clean_val(request.GET.get('data_pag_ini'))
+    data_pag_fim = clean_val(request.GET.get('data_pag_fim'))
     nome = clean_val(request.GET.get('cliente'))
     status = clean_val(request.GET.get('status'))
-    categoria_id = clean_val(request.GET.get('categoria')) # NOVO
+    categoria_id = clean_val(request.GET.get('categoria'))
 
     if data_ini and data_fim:
         contas = contas.filter(data_vencimento__range=[data_ini, data_fim])
@@ -834,9 +849,13 @@ def relatorio_contas(request):
         else:
             contas = contas.filter(status=status)
 
-    # Filtro Categoria no Relatório
     if categoria_id:
         contas = contas.filter(plano_de_contas_id=categoria_id)
+
+    if data_pag_ini and data_pag_fim:
+        contas = contas.filter(
+            lancamentos_vinculados__data_lancamento__range=[data_pag_ini, data_pag_fim]
+        ).distinct()
 
     contas = contas.order_by('data_vencimento')
     total_valor = contas.aggregate(Sum('valor'))['valor__sum'] or 0
@@ -849,6 +868,8 @@ def relatorio_contas(request):
         'empresa': request.user.empresa,
         'data_ini': parse_date(data_ini) if data_ini else None,
         'data_fim': parse_date(data_fim) if data_fim else None,
+        'data_pag_ini': parse_date(data_pag_ini) if data_pag_ini else None,
+        'data_pag_fim': parse_date(data_pag_fim) if data_pag_fim else None,
         'status_filtro': status
     })
 
