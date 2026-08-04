@@ -76,7 +76,7 @@
                     </button>
                     
                     <!-- BOTÃO LIMPAR -->
-                    <a href="{% if tipo_lista == 'receber' %}{% url 'financeiro:lista_contas_receber' %}{% else %}{% url 'financeiro:lista_contas_pagar' %}{% endif %}" class="bg-gray-400 text-white px-3 rounded hover:bg-gray-500 text-sm h-9 flex items-center justify-center" title="Limpar Filtros">
+                    <a href="{% if tipo_lista == 'receber' %}{% url 'financeiro:lista_receber' %}{% else %}{% url 'financeiro:lista_pagar' %}{% endif %}" class="bg-gray-400 text-white px-3 rounded hover:bg-gray-500 text-sm h-9 flex items-center justify-center" title="Limpar Filtros">
                         <i class="fa fa-times"></i>
                     </a>
                     
