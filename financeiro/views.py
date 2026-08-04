@@ -485,7 +485,7 @@ def fluxo_caixa(request):
     inicio_mes = hoje.replace(day=1)
     
     # Se não vier no GET, usa os padrões
-    data_inicio = request.GET.get('data_inicio') or inicio_mes.strftime('%Y-%m-%d')
+    data_inicio = request.GET.get('data_inicio') or hoje.strftime('%Y-%m-%d')
     data_fim = request.GET.get('data_fim') or hoje.strftime('%Y-%m-%d')
 
     # 2. Lógica Rígida de Seleção do Caixa
