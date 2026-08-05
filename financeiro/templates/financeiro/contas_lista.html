@@ -105,6 +105,30 @@
         </div>
     </div>
 
+    <!-- RESUMO DE TOTAIS -->
+    {% if contas %}
+    <div class="bg-gray-50 border-b border-gray-200 px-6 py-3">
+        <div class="flex flex-wrap gap-6 text-sm">
+            <span class="font-bold text-gray-700">Registros: <span class="text-gray-900">{{ qtd_total }}</span></span>
+            <span class="text-gray-400">|</span>
+            <span class="text-yellow-700">Pendentes: <b>{{ qtd_pendentes }}</b></span>
+            {% if qtd_parciais > 0 %}
+            <span class="text-orange-600">Parciais: <b>{{ qtd_parciais }}</b></span>
+            {% endif %}
+            <span class="text-green-700">Pagas: <b>{{ qtd_pagas }}</b></span>
+            {% if qtd_atrasadas > 0 %}
+            <span class="text-red-600">Atrasadas: <b>{{ qtd_atrasadas }}</b></span>
+            {% endif %}
+            <span class="text-gray-400">|</span>
+            <span class="font-bold text-gray-700">Total: <span class="text-lg text-gray-900">{{ total_geral|moeda_br }}</span></span>
+            <span class="text-gray-400">|</span>
+            <span class="text-green-700 font-semibold">Recebido: {{ total_pago|moeda_br }}</span>
+            <span class="text-gray-400">|</span>
+            <span class="text-yellow-700 font-semibold">A Receber: {{ total_pendente|moeda_br }}</span>
+        </div>
+    </div>
+    {% endif %}
+
 
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
@@ -214,38 +238,6 @@
                 {% endfor %}
             </tbody>
         </table>
-
-        <!-- RESUMO DE TOTAIS -->
-        {% if contas %}
-        <div class="bg-gray-50 border-t border-gray-200 px-6 py-4">
-            <div class="flex flex-wrap gap-6 text-sm">
-                <!-- Quantidades -->
-                <div class="flex items-center gap-4">
-                    <span class="font-bold text-gray-700">Registros: <span class="text-gray-900">{{ qtd_total }}</span></span>
-                    <span class="text-gray-400">|</span>
-                    <span class="text-yellow-700">Pendentes: <b>{{ qtd_pendentes }}</b></span>
-                    {% if qtd_parciais > 0 %}
-                    <span class="text-orange-600">Parciais: <b>{{ qtd_parciais }}</b></span>
-                    {% endif %}
-                    <span class="text-green-700">Pagas: <b>{{ qtd_pagas }}</b></span>
-                    {% if qtd_atrasadas > 0 %}
-                    <span class="text-red-600">Atrasadas: <b>{{ qtd_atrasadas }}</b></span>
-                    {% endif %}
-                </div>
-
-                <div class="text-gray-400">|</div>
-
-                <!-- Valores -->
-                <div class="flex items-center gap-4">
-                    <span class="font-bold text-gray-700">Total Geral: <span class="text-lg text-gray-900">{{ total_geral|moeda_br }}</span></span>
-                    <span class="text-gray-400">|</span>
-                    <span class="text-green-700 font-semibold">Recebido/Pago: {{ total_pago|moeda_br }}</span>
-                    <span class="text-gray-400">|</span>
-                    <span class="text-yellow-700 font-semibold">A Receber/Pagar: {{ total_pendente|moeda_br }}</span>
-                </div>
-            </div>
-        </div>
-        {% endif %}
     </div>
 </div>
 
