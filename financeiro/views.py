@@ -175,6 +175,21 @@ def lista_contas_receber(request):
     categorias = PlanoDeContas.objects.filter(empresa=request.user.empresa, tipo='R').order_by('nome')
     from servicos.models import FormaPagamento
     formas_pagamento = FormaPagamento.objects.filter(empresa=request.user.empresa, ativo=True).order_by('ordem', 'nome')
+
+    # Totais
+    from django.db.models import Sum, Count, F, ExpressionWrapper, DecimalField
+    totais = contas.aggregate(
+        total_geral=Sum('valor'),
+        total_pago=Sum('valor_pago'),
+    )
+    total_pendente = contas.filter(status__in=['PENDENTE', 'PARCIAL']).aggregate(
+        total=Sum(F('valor') - F('valor_pago'))
+    )['total'] or 0
+    total_pago = contas.filter(status='PAGA').aggregate(total=Sum('valor'))['total'] or 0
+    qtd_pendentes = contas.filter(status='PENDENTE').count()
+    qtd_parciais = contas.filter(status='PARCIAL').count()
+    qtd_pagas = contas.filter(status='PAGA').count()
+    qtd_atrasadas = contas.filter(status__in=['PENDENTE', 'PARCIAL'], data_vencimento__lt=date.today()).count()
     
     return render(request, 'financeiro/contas_lista.html', {
         'contas': contas.order_by('data_vencimento'), 
@@ -189,7 +204,15 @@ def lista_contas_receber(request):
         'filtro_data_pag_fim': data_pag_fim,
         'filtro_nome': cliente_nome,
         'filtro_status': status,
-        'filtro_categoria': categoria_id
+        'filtro_categoria': categoria_id,
+        'total_geral': totais['total_geral'] or 0,
+        'total_pago': total_pago,
+        'total_pendente': total_pendente,
+        'qtd_pendentes': qtd_pendentes,
+        'qtd_parciais': qtd_parciais,
+        'qtd_pagas': qtd_pagas,
+        'qtd_atrasadas': qtd_atrasadas,
+        'qtd_total': qtd_pendentes + qtd_parciais + qtd_pagas,
     })
 
 @login_required
@@ -232,7 +255,21 @@ def lista_contas_pagar(request):
     categorias = PlanoDeContas.objects.filter(empresa=request.user.empresa, tipo='D').order_by('nome')
     from servicos.models import FormaPagamento
     formas_pagamento = FormaPagamento.objects.filter(empresa=request.user.empresa, ativo=True).order_by('ordem', 'nome')
-    
+
+    # Totais
+    from django.db.models import Sum, F
+    totais = contas.aggregate(
+        total_geral=Sum('valor'),
+    )
+    total_pendente = contas.filter(status__in=['PENDENTE', 'PARCIAL']).aggregate(
+        total=Sum(F('valor') - F('valor_pago'))
+    )['total'] or 0
+    total_pago = contas.filter(status='PAGA').aggregate(total=Sum('valor'))['total'] or 0
+    qtd_pendentes = contas.filter(status='PENDENTE').count()
+    qtd_parciais = contas.filter(status='PARCIAL').count()
+    qtd_pagas = contas.filter(status='PAGA').count()
+    qtd_atrasadas = contas.filter(status__in=['PENDENTE', 'PARCIAL'], data_vencimento__lt=date.today()).count()
+
     return render(request, 'financeiro/contas_lista.html', {
         'contas': contas.order_by('data_vencimento'), 
         'caixas': caixas,
@@ -246,7 +283,15 @@ def lista_contas_pagar(request):
         'filtro_data_pag_fim': data_pag_fim,
         'filtro_nome': fornecedor_nome,
         'filtro_status': status,
-        'filtro_categoria': categoria_id
+        'filtro_categoria': categoria_id,
+        'total_geral': totais['total_geral'] or 0,
+        'total_pago': total_pago,
+        'total_pendente': total_pendente,
+        'qtd_pendentes': qtd_pendentes,
+        'qtd_parciais': qtd_parciais,
+        'qtd_pagas': qtd_pagas,
+        'qtd_atrasadas': qtd_atrasadas,
+        'qtd_total': qtd_pendentes + qtd_parciais + qtd_pagas,
     })
 
 # ==========================================================
