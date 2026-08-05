@@ -126,9 +126,8 @@ class Command(BaseCommand):
                     erros_detalhe.append(f'Linha {i}: data de vencimento invalida "{dat_ven}"')
                     continue
 
-                pago = bool(dat_lan and dat_lan.strip())
-                status = 'PAGA' if pago else 'PENDENTE'
-                valor_pago = valor if pago else Decimal('0.00')
+                status = 'PENDENTE'
+                valor_pago = Decimal('0.00')
 
                 obs = f'OS: {numero_os}' if numero_os else ''
 
