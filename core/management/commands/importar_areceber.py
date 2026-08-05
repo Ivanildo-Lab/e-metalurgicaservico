@@ -93,10 +93,11 @@ class Command(BaseCommand):
                             )
                             cadastros_encontrados += 1
                         except (Cadastro.DoesNotExist, ValueError):
+                            cpf_unico = f'000.{cod_cli.zfill(6)}.{cod_cli.zfill(4)[-3:]}-00'
                             cadastro = Cadastro(
                                 empresa=empresa,
                                 nome=f'Cliente Legado {cod_cli}',
-                                cpf_cnpj='000.000.000-00',
+                                cpf_cnpj=cpf_unico,
                                 num_registro=int(cod_cli) if cod_cli.isdigit() else None,
                                 papel='CLI',
                                 tipo_pessoa='PF',
