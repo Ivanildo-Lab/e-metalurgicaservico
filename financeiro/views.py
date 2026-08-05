@@ -191,8 +191,16 @@ def lista_contas_receber(request):
     qtd_pagas = contas.filter(status='PAGA').count()
     qtd_atrasadas = contas.filter(status__in=['PENDENTE', 'PARCIAL'], data_vencimento__lt=date.today()).count()
     
+    # Paginacao
+    from django.core.paginator import Paginator
+    contas_ordenadas = contas.order_by('data_vencimento')
+    paginator = Paginator(contas_ordenadas, 50)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     return render(request, 'financeiro/contas_lista.html', {
-        'contas': contas.order_by('data_vencimento'), 
+        'contas': page_obj, 
+        'page_obj': page_obj,
         'caixas': caixas,
         'categorias': categorias,
         'formas_pagamento': formas_pagamento,
@@ -270,8 +278,16 @@ def lista_contas_pagar(request):
     qtd_pagas = contas.filter(status='PAGA').count()
     qtd_atrasadas = contas.filter(status__in=['PENDENTE', 'PARCIAL'], data_vencimento__lt=date.today()).count()
 
+    # Paginacao
+    from django.core.paginator import Paginator
+    contas_ordenadas = contas.order_by('data_vencimento')
+    paginator = Paginator(contas_ordenadas, 50)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
     return render(request, 'financeiro/contas_lista.html', {
-        'contas': contas.order_by('data_vencimento'), 
+        'contas': page_obj, 
+        'page_obj': page_obj,
         'caixas': caixas,
         'categorias': categorias,
         'formas_pagamento': formas_pagamento,

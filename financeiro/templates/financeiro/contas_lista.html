@@ -150,46 +150,46 @@
                 {% for c in contas %}
                 <tr class="hover:bg-gray-50 transition">
                     
-                    <td class="px-6 py-4 whitespace-nowrap text-gray-700 font-mono">
+                    <td class="px-3 py-3 whitespace-nowrap text-gray-700 font-mono text-xs">
                         {{ c.data_vencimento|date:"d/m/Y" }}
                     </td>
                     
-                    <!-- NOME DO CLIENTE EM DESTAQUE -->
-                    <td class="px-6 py-4">
-                        <div class="font-bold text-gray-900 text-base">
+                    <!-- NOME DO CLIENTE -->
+                    <td class="px-4 py-3">
+                        <div class="font-semibold text-gray-900 text-xs leading-tight truncate max-w-[200px]" title="{{ c.cadastro.nome }}">
                             {{ c.cadastro.nome|default:"-- Sem Cadastro --" }}
                         </div>
-                        <div class="text-xs text-gray-500">{{ c.plano_de_contas.nome }}</div>
+                        <div class="text-[10px] text-gray-400">{{ c.plano_de_contas.nome }}</div>
                     </td>
 
                     <!-- DOCUMENTO E DESCRIÇÃO -->
-                    <td class="px-6 py-4">
+                    <td class="px-3 py-3">
                         {% if c.documento %}
-                            <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800 mb-1">
+                            <span class="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-100 text-blue-800 mb-0.5">
                                 Doc: {{ c.documento }}
                             </span><br>
                         {% endif %}
-                        <span class="text-gray-600 text-xs">{{ c.descricao }}</span>
+                        <span class="text-gray-500 text-[10px]">{{ c.descricao }}</span>
                     </td>
 
-                    <td class="px-6 py-4 text-right">
-                        <span class="font-bold {% if c.plano_de_contas.tipo == 'R' %}text-green-600{% else %}text-red-600{% endif %}">
+                    <td class="px-3 py-3 text-right">
+                        <span class="font-bold text-xs {% if c.plano_de_contas.tipo == 'R' %}text-green-600{% else %}text-red-600{% endif %}">
                             {{ c.valor|moeda_br }}
                         </span>
                         {% if c.valor_pago > 0 and c.status != 'PAGA' %}
-                            <br><span class="text-xs text-orange-500 font-semibold">Restante: {{ c.valor_restante|moeda_br }}</span>
+                            <br><span class="text-[10px] text-orange-500 font-semibold">Rest: {{ c.valor_restante|moeda_br }}</span>
                         {% endif %}
                     </td>
 
-                    <td class="px-6 py-4 text-right">
+                    <td class="px-3 py-3 text-right">
                         {% if c.valor_pago > 0 %}
-                            <span class="font-bold text-green-600">{{ c.valor_pago|moeda_br }}</span>
+                            <span class="font-bold text-green-600 text-xs">{{ c.valor_pago|moeda_br }}</span>
                         {% else %}
-                            <span class="text-gray-400">-</span>
+                            <span class="text-gray-300 text-xs">-</span>
                         {% endif %}
                     </td>
 
-                    <td class="px-6 py-4 text-center text-xs text-gray-600">
+                    <td class="px-3 py-3 text-center text-[10px] text-gray-600">
                         {% if c.data_pagamento %}
                             {{ c.data_pagamento|date:"d/m/Y" }}
                         {% else %}
@@ -197,24 +197,24 @@
                         {% endif %}
                     </td>
                     
-                    <td class="px-6 py-4 text-center">
+                    <td class="px-3 py-3 text-center">
                         {% if c.status == 'PAGA' %}
-                            <span class="px-2 py-1 bg-green-100 text-green-800 rounded-full text-xs font-bold">Baixada</span>
+                            <span class="px-1.5 py-0.5 bg-green-100 text-green-800 rounded-full text-[10px] font-bold">Baixada</span>
                         {% elif c.status == 'PARCIAL' %}
-                            <span class="px-2 py-1 bg-orange-100 text-orange-800 rounded-full text-xs font-bold">Parcial</span>
+                            <span class="px-1.5 py-0.5 bg-orange-100 text-orange-800 rounded-full text-[10px] font-bold">Parcial</span>
                         {% elif c.status == 'CANCELADA' %}
-                            <span class="px-2 py-1 bg-gray-100 text-gray-800 rounded-full text-xs">Cancelada</span>
+                            <span class="px-1.5 py-0.5 bg-gray-100 text-gray-800 rounded-full text-[10px]">Cancelada</span>
                         {% else %}
                             {% now "Y-m-d" as hoje %}
                             {% if c.data_vencimento|date:"Y-m-d" < hoje %}
-                                <span class="px-2 py-1 bg-red-100 text-red-800 rounded-full text-xs font-bold">Atrasada</span>
+                                <span class="px-1.5 py-0.5 bg-red-100 text-red-800 rounded-full text-[10px] font-bold">Atrasada</span>
                             {% else %}
-                                <span class="px-2 py-1 bg-yellow-100 text-yellow-800 rounded-full text-xs font-bold">Pendente</span>
+                                <span class="px-1.5 py-0.5 bg-yellow-100 text-yellow-800 rounded-full text-[10px] font-bold">Pendente</span>
                             {% endif %}
                         {% endif %}
                     </td>
                     
-                    <td class="px-6 py-4 text-center whitespace-nowrap text-sm font-medium">
+                    <td class="px-3 py-3 text-center whitespace-nowrap text-xs font-medium">
                         {% if c.status == 'PENDENTE' or c.status == 'PARCIAL' %}
                         <button onclick="abrirModalBaixa('{{ c.id }}', '{{ c.cadastro.nome|escapejs }}', '{{ c.descricao|escapejs }}', '{{ c.valor|floatformat:2 }}', '{{ c.valor_restante|floatformat:2 }}')" 
                                 class="bg-green-500 hover:bg-green-600 text-white p-1.5 rounded shadow transition hover:scale-110" title="Baixar">
@@ -238,6 +238,36 @@
                 {% endfor %}
             </tbody>
         </table>
+
+        <!-- PAGINACAO -->
+        {% if page_obj.has_other_pages %}
+        <div class="bg-gray-50 border-t border-gray-200 px-6 py-3 flex items-center justify-between">
+            <div class="text-sm text-gray-500">
+                Pagina {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+            </div>
+            <div class="flex gap-1">
+                {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}&{{ request.GET.urlencode }}" class="px-3 py-1 text-sm bg-white border border-gray-300 rounded hover:bg-gray-100">
+                    <i class="fa fa-chevron-left"></i>
+                </a>
+                {% endif %}
+
+                {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                        <span class="px-3 py-1 text-sm bg-blue-600 text-white rounded font-bold">{{ num }}</span>
+                    {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <a href="?page={{ num }}&{{ request.GET.urlencode }}" class="px-3 py-1 text-sm bg-white border border-gray-300 rounded hover:bg-gray-100">{{ num }}</a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}&{{ request.GET.urlencode }}" class="px-3 py-1 text-sm bg-white border border-gray-300 rounded hover:bg-gray-100">
+                    <i class="fa fa-chevron-right"></i>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
     </div>
 </div>
 
