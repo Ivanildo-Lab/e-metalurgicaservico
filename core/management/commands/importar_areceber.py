@@ -27,16 +27,16 @@ class Command(BaseCommand):
         try:
             empresa = Empresa.objects.get(id=empresa_id)
         except Empresa.DoesNotExist:
-            self.stderr.write(self.style.ERROR(f'Empresa com id={empresa_id} não encontrada'))
+            self.stderr.write(self.style.ERROR(f'Empresa com id={empresa_id} nao encontrada'))
             return
 
         if not os.path.exists(arquivo):
-            self.stderr.write(self.style.ERROR(f'Arquivo não encontrado: {arquivo}'))
+            self.stderr.write(self.style.ERROR(f'Arquivo nao encontrado: {arquivo}'))
             return
 
         plano, _ = PlanoDeContas.objects.get_or_create(
             empresa=empresa,
-            nome='Receita de Serviços',
+            nome='Receita de Servicos',
             defaults={'tipo': 'R', 'codigo': '1.01'}
         )
 
@@ -52,11 +52,11 @@ class Command(BaseCommand):
         total = len(linhas) - 1
 
         self.stdout.write(f'\n{"="*60}')
-        self.stdout.write(f'  IMPORTAÇÃO DE CONTAS A RECEBER - LEGADO')
+        self.stdout.write(f'  IMPORTACAO DE CONTAS A RECEBER - LEGADO')
         self.stdout.write(f'  Empresa: {empresa.nome} (id={empresa_id})')
         self.stdout.write(f'  Arquivo: {arquivo}')
         self.stdout.write(f'  Total de registros: {total}')
-        self.stdout.write(f'  Modo: {"DRY-RUN (sem gravar)" if dry_run else "IMPORTAÇÃO REAL"}')
+        self.stdout.write(f'  Modo: {"DRY-RUN (sem gravar)" if dry_run else "IMPORTACAO REAL"}')
         self.stdout.write(f'{"="*60}\n')
 
         cadastros_cache = {}
@@ -68,18 +68,19 @@ class Command(BaseCommand):
 
             try:
                 campos = linha.split(';')
-                if len(campos) < 7:
+                if len(campos) < 9:
                     erros += 1
-                    erros_detalhe.append(f'Linha {i}: número insuficiente de colunas ({len(campos)})')
+                    erros_detalhe.append(f'Linha {i}: numero insuficiente de colunas ({len(campos)})')
                     continue
 
                 cod_cli = campos[0].strip().strip('"')
-                num_doc = campos[1].strip().strip('"')
-                numero_os = campos[2].strip().strip('"')
-                num_dup = campos[3].strip().strip('"')
-                dat_lan = campos[4].strip().strip('"')
-                dat_ven = campos[5].strip().strip('"')
-                valor_par = campos[6].strip().strip('"')
+                nome_cli = campos[1].strip().strip('"')
+                num_doc = campos[2].strip().strip('"')
+                numero_os = campos[3].strip().strip('"')
+                num_dup = campos[4].strip().strip('"')
+                dat_lan = campos[5].strip().strip('"')
+                dat_ven = campos[6].strip().strip('"')
+                valor_par = campos[7].strip().strip('"')
 
                 cadastro = None
                 if cod_cli:
@@ -89,20 +90,20 @@ class Command(BaseCommand):
                         try:
                             cadastro = Cadastro.objects.get(
                                 empresa=empresa,
-                                num_registro=int(cod_cli)
+                                id=int(cod_cli)
                             )
                             cadastros_encontrados += 1
                         except (Cadastro.DoesNotExist, ValueError):
                             cpf_unico = f'000.{cod_cli.zfill(6)}.{cod_cli.zfill(4)[-3:]}-00'
                             cadastro = Cadastro(
                                 empresa=empresa,
-                                nome=f'Cliente Legado {cod_cli}',
+                                nome=nome_cli or f'Cliente Legado {cod_cli}',
                                 cpf_cnpj=cpf_unico,
                                 num_registro=int(cod_cli) if cod_cli.isdigit() else None,
                                 papel='CLI',
                                 tipo_pessoa='PF',
                                 situacao='ATIVO',
-                                observacoes=f'Cadastro criado automaticamente na importação legado. CODCLI={cod_cli}'
+                                observacoes=f'Cadastro criado na importacao legado. CODCLI={cod_cli}'
                             )
                             if not dry_run:
                                 cadastro.save()
@@ -116,13 +117,13 @@ class Command(BaseCommand):
                 valor = self.parse_valor(valor_par)
                 if valor is None:
                     erros += 1
-                    erros_detalhe.append(f'Linha {i}: valor inválido "{valor_par}"')
+                    erros_detalhe.append(f'Linha {i}: valor invalido "{valor_par}"')
                     continue
 
                 data_vencimento = self.parse_data(dat_ven)
                 if data_vencimento is None:
                     erros += 1
-                    erros_detalhe.append(f'Linha {i}: data de vencimento inválida "{dat_ven}"')
+                    erros_detalhe.append(f'Linha {i}: data de vencimento invalida "{dat_ven}"')
                     continue
 
                 pago = bool(dat_lan and dat_lan.strip())
@@ -156,7 +157,7 @@ class Command(BaseCommand):
                 erros_detalhe.append(f'Linha {i}: erro inesperado: {e}')
 
         self.stdout.write(f'\n{"="*60}')
-        self.stdout.write(self.style.SUCCESS(f'  RESUMO DA IMPORTAÇÃO'))
+        self.stdout.write(self.style.SUCCESS(f'  RESUMO DA IMPORTACAO'))
         self.stdout.write(f'{"="*60}')
         self.stdout.write(f'  Total de registros no arquivo: {total}')
         self.stdout.write(self.style.SUCCESS(f'  Contas criadas:              {contas_criadas}'))
