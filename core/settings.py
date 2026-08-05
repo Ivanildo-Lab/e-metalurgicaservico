@@ -29,7 +29,7 @@ ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if os.envi
 AUTH_USER_MODEL = 'core.Usuario'
 
 LOGIN_URL = 'login'
-LOGIN_REDIRECT_URL = 'home'  # Ao logar, vai para a Home (que mostra o banner da empresa)
+LOGIN_REDIRECT_URL = 'dashboard'  # Ao logar, vai para o Dashboard
 LOGOUT_REDIRECT_URL = 'login' # Ao sair, volta para o login
 
 # Application definition
