@@ -34,8 +34,8 @@ class Command(BaseCommand):
 
         plano, _ = PlanoDeContas.objects.get_or_create(
             empresa=empresa,
-            nome='Despesa de Retificacao',
-            defaults={'tipo': 'D', 'codigo': '2.01'}
+            nome='Receita de Retificacao',
+            defaults={'tipo': 'R', 'codigo': '1.02'}
         )
 
         contas_criadas = 0
