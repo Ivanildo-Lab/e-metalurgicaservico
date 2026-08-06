@@ -549,17 +549,17 @@ def fechar_os(request, id):
         return redirect('servicos:editar_os', id=os_obj.id)
 
     # Validações
-    valor_total = os_obj.valor_total
+    valor_bruto_servicos = os_obj.servicos.aggregate(total=models.Sum('valor'))['total'] or 0
     remuneracao_total = os_obj.remuneracao_total
 
-    if valor_total == 0:
+    if valor_bruto_servicos == 0:
         messages.error(request, "A OS não possui serviços com valor. Adicione serviços antes de fechar.")
         return redirect('servicos:editar_os', id=os_obj.id)
 
-    if remuneracao_total != valor_total:
+    if remuneracao_total != valor_bruto_servicos:
         messages.error(
             request,
-            f"A remuneração (R$ {remuneracao_total:.2f}) não confere com o valor total (R$ {valor_total:.2f}). "
+            f"A remuneração (R$ {remuneracao_total:.2f}) não confere com o valor total (R$ {valor_bruto_servicos:.2f}). "
             f"Ajuste antes de fechar."
         )
         return redirect('servicos:editar_os', id=os_obj.id)
@@ -575,6 +575,12 @@ def fechar_os(request, id):
     elif ',' in desconto_text:
         desconto_text = desconto_text.replace(',', '.')
     desconto = Decimal(desconto_text or '0')
+
+    if desconto > valor_bruto_servicos:
+        messages.error(request, f"O desconto (R$ {desconto:.2f}) não pode ser maior que o valor total (R$ {valor_bruto_servicos:.2f}).")
+        return redirect('servicos:editar_os', id=os_obj.id)
+
+    valor_total = valor_bruto_servicos - desconto
 
     def _parse_decimal(valor):
         if valor is None:
@@ -660,14 +666,10 @@ def fechar_os(request, id):
             'caixa_id': caixa_id,
         })
 
-    # Aplicar desconto
+    # Aplicar desconto ao OS
     if desconto > 0:
-        if desconto > valor_total:
-            messages.error(request, f"O desconto (R$ {desconto:.2f}) não pode ser maior que o valor total (R$ {valor_total:.2f}).")
-            return redirect('servicos:editar_os', id=os_obj.id)
         os_obj.desconto = desconto
         os_obj.save(update_fields=['desconto'])
-        valor_total = os_obj.valor_total  # Recalcular com desconto
 
     if forma == 'A_PRAZO' and qtd_parcelas < 1:
         messages.error(request, "Para pagamento a prazo, informe pelo menos 1 parcela.")
