@@ -827,13 +827,15 @@ function mascararSaidaMoeda(input) {
     formatarMoedaInput(input);
 }
 
-document.getElementById('form-fechar').addEventListener('submit', function() {
+var _formFechar = document.getElementById('form-fechar');
+if (_formFechar) _formFechar.addEventListener('submit', function() {
     this.querySelectorAll('input[name="desconto"], input[name="pagamento_valor[]"]').forEach(function(input) {
         input.value = input.value.replace('R$ ','').replace(/\./g,'').replace(',','.');
     });
 });
 
-document.getElementById('form-desconto-topo').addEventListener('submit', function() {
+var _formDescontoTopo = document.getElementById('form-desconto-topo');
+if (_formDescontoTopo) _formDescontoTopo.addEventListener('submit', function() {
     var desc = this.querySelector('input[name="desconto"]');
     if (desc) desc.value = desc.value.replace('R$ ','').replace(/\./g,'').replace(',','.');
 });

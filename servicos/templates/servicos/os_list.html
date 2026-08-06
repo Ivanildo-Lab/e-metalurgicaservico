@@ -480,11 +480,13 @@ function calcularParcelaLista() {
     if (spanTexto) spanTexto.textContent = qtd;
 }
 
-document.getElementById('modalFecharOS').addEventListener('click', function(e) {
+var _modalFecharOS = document.getElementById('modalFecharOS');
+if (_modalFecharOS) _modalFecharOS.addEventListener('click', function(e) {
     if (e.target === this) fecharModalFechar();
 });
 
-document.getElementById('formFecharOS').addEventListener('submit', function() {
+var _formFecharOS = document.getElementById('formFecharOS');
+if (_formFecharOS) _formFecharOS.addEventListener('submit', function() {
     this.querySelectorAll('input[name="desconto"], input[name="pagamento_valor[]"]').forEach(function(input) {
         input.value = input.value.replace('R$ ','').replace(/\./g,'').replace(',','.');
     });
