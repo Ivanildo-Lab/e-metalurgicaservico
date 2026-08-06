@@ -549,7 +549,7 @@ def fechar_os(request, id):
         return redirect('servicos:editar_os', id=os_obj.id)
 
     # Validações
-    valor_bruto_servicos = os_obj.servicos.aggregate(total=models.Sum('valor'))['total'] or 0
+    valor_bruto_servicos = os_obj.servicos.aggregate(total=Sum('valor'))['total'] or 0
     remuneracao_total = os_obj.remuneracao_total
 
     if valor_bruto_servicos == 0:
