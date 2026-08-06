@@ -384,10 +384,11 @@
                 <select name="pagamento_forma_id[]" class="flex-1 rounded-md border-gray-300 shadow-sm border p-2 text-sm bg-white" required onchange="recalcularBaixa()">
                     ${optionsHtml}
                 </select>
-                <input type="number" name="pagamento_valor[]" step="0.01" min="0.01"
-                       class="w-32 rounded-md border-gray-300 shadow-sm border p-2 text-sm font-bold text-right" 
+                <input type="text" name="pagamento_valor[]" inputmode="decimal" pattern="[0-9,\\.]*"
+                       class="w-32 rounded-md border-gray-300 shadow-sm border p-2 text-sm font-bold text-green-700 text-right" 
                        placeholder="R$ 0,00" required oninput="recalcularBaixa()"
-                       value="${valorDefault || ''}">
+                       value="${valorDefault || 'R$ 0,00'}"
+                       onfocus="mascararFocoMoeda(this)" onblur="mascararSaidaMoeda(this)">
                 <button type="button" onclick="removerLinhaBaixa(${idx})" 
                         class="text-red-500 hover:text-red-700 text-lg px-1" title="Remover">
                     <i class="fa fa-times-circle"></i>
@@ -406,11 +407,32 @@
         }
     }
 
+    function mascararFocoMoeda(input) {
+        var v = input.value.replace('R$ ','').replace(/\./g,'').replace(',','.');
+        if (v) input.value = parseFloat(v).toFixed(2).replace('.', ',');
+        input.select();
+    }
+
+    function mascararSaidaMoeda(input) {
+        var v = input.value.replace(/\D/g, '');
+        if (v === '') { input.value = 'R$ 0,00'; recalcularBaixa(); return; }
+        var num = parseFloat(v) / 100;
+        input.value = 'R$ ' + num.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        recalcularBaixa();
+    }
+
+    function formatarMoedaInput(input) {
+        var v = input.value.replace(/\D/g, '');
+        if (v === '') { input.value = 'R$ 0,00'; return; }
+        var num = parseFloat(v) / 100;
+        input.value = 'R$ ' + num.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
     function recalcularBaixa() {
         const inputs = document.querySelectorAll('#linhasPagamento input[name="pagamento_valor[]"]');
         let total = 0;
         inputs.forEach(function(input) {
-            const val = parseFloat(input.value) || 0;
+            const val = parseFloat(input.value.replace('R$ ','').replace(/\./g,'').replace(',','.')) || 0;
             total += val;
         });
 
@@ -464,8 +486,10 @@
         linhasBaixaCounter = 0;
         montarOptionsFormaPagamento();
 
-        // Adicionar primeira linha com saldo restante pré-preenchido
-        adicionarLinhaBaixa(valorRestante.replace('.', ','));
+        // Adicionar primeira linha com saldo restante pré-preenchido (formatado como moeda)
+        var vr = parseFloat(valorRestante.replace('.','').replace(',','.')) || 0;
+        var vrFormatado = 'R$ ' + vr.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        adicionarLinhaBaixa(vrFormatado);
     }
 
     function fecharModalBaixa() {
@@ -478,5 +502,11 @@
             modal.classList.add('hidden');
         }
     }
+
+    document.getElementById('formBaixa').addEventListener('submit', function() {
+        this.querySelectorAll('input[name="pagamento_valor[]"]').forEach(function(input) {
+            input.value = input.value.replace('R$ ','').replace(/\./g,'').replace(',','.');
+        });
+    });
 </script>
 {% endblock %}

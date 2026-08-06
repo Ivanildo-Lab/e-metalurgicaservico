@@ -363,7 +363,7 @@
                 </div>
 
                 {% if os.status != 'FECHADA' and os.status != 'CANCELADA' %}
-                <form method="POST" action="{% url 'servicos:salvar_os' os.id %}" class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                <form method="POST" action="{% url 'servicos:salvar_os' os.id %}" id="form-desconto-topo" class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
                     {% csrf_token %}
                     <input type="hidden" name="cadastro_id" value="{{ os.cadastro_id }}">
                     <input type="hidden" name="descricao_geral" value="{{ os.descricao_geral|escape }}">
@@ -373,8 +373,9 @@
                     <div class="flex items-end gap-3">
                         <div class="flex-1">
                             <label class="block text-xs text-gray-500 font-medium mb-1"><i class="fa fa-tag mr-1"></i> Desconto (R$)</label>
-                            <input type="number" name="desconto" step="0.01" min="0" value="{{ os.desconto|floatformat:2 }}" lang="pt-BR"
-                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500">
+                            <input type="text" name="desconto" step="0.01" min="0" value="{{ os.desconto|floatformat:2 }}" lang="pt-BR"
+                                   class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 font-bold text-orange-600"
+                                   onfocus="mascararFocoMoeda(this)" onblur="mascararSaidaMoeda(this)">
                         </div>
                         <button type="submit"
                                 class="bg-orange-500 hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
@@ -553,9 +554,9 @@
                 <!-- Desconto -->
                 <div>
                     <label class="block text-sm font-bold text-gray-700 mb-1">Desconto (R$)</label>
-                    <input type="number" name="desconto" id="desconto-input" step="0.01" min="0" value="{{ os.desconto|floatformat:2 }}" lang="pt-BR"
+                    <input type="text" name="desconto" id="desconto-input" step="0.01" min="0" value="{{ os.desconto|floatformat:2 }}" lang="pt-BR"
                            oninput="recalcularValorOS()"
-                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500">
+                           class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 font-bold text-orange-600 text-lg">
                 </div>
 
                 <!-- Tipo de Pagamento -->
@@ -598,7 +599,7 @@
                                     <option value="{{ fp.id }}">{{ fp.nome }}</option>
                                     {% endfor %}
                                 </select>
-                                <input type="text" name="pagamento_valor[]" inputmode="decimal" pattern="[0-9,\\.]*" autocomplete="off" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white" placeholder="Valor" value="0" required style="pointer-events:auto; cursor:text;" onchange="if(this.value==='') this.value='0';">
+                                <input type="text" name="pagamento_valor[]" inputmode="decimal" pattern="[0-9,\\.]*" autocomplete="off" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white font-bold text-green-700" placeholder="R$ 0,00" value="0" required style="pointer-events:auto; cursor:text;" onfocus="mascararFocoMoeda(this)" onblur="mascararSaidaMoeda(this)" onchange="if(this.value==='') this.value='R$ 0,00';">
                             </div>
                             <label class="block mt-2 text-xs font-semibold text-gray-600">Caixa/Banco</label>
                             <select name="pagamento_caixa_id[]" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
@@ -805,13 +806,15 @@ function adicionarLinhaPagamento() {
     inputValor.inputMode = 'decimal';
     inputValor.autocomplete = 'off';
     inputValor.setAttribute('pattern', '[0-9,\\.]*');
-    inputValor.className = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white';
-    inputValor.placeholder = 'Valor';
-    inputValor.value = '0';
+    inputValor.className = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white font-bold text-green-700';
+    inputValor.placeholder = 'R$ 0,00';
+    inputValor.value = 'R$ 0,00';
     inputValor.required = true;
     inputValor.removeAttribute('disabled');
     inputValor.removeAttribute('readonly');
     inputValor.style.pointerEvents = 'auto';
+    inputValor.addEventListener('focus', function() { mascararFocoMoeda(this); });
+    inputValor.addEventListener('blur', function() { mascararSaidaMoeda(this); });
     
     selectForma.addEventListener('change', function(e) {
         if (e.target.value) {
@@ -872,12 +875,19 @@ function recalcularValorOS() {
     var valorBrutoText = document.querySelector('[style*="font-family:monospace"]:not([id])');
     if (!valorBrutoText) return;
     var valorBruto = parseFloat(valorBrutoText.textContent.replace('R$ ','').replace(/\./g,'').replace(',','.')) || 0;
-    var desconto = parseFloat(document.getElementById('desconto-input').value) || 0;
+    var desconto = parseFloat(document.getElementById('desconto-input').value.replace('R$ ','').replace(/\./g,'').replace(',','.')) || 0;
     var valorTotal = valorBruto - desconto;
     if (valorTotal < 0) valorTotal = 0;
     document.getElementById('desconto-display').textContent = 'R$ ' + desconto.toLocaleString('pt-BR', {minimumFractionDigits: 2});
     document.getElementById('valor-total-display').textContent = 'R$ ' + valorTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2});
     calcularParcela();
+}
+
+function formatarMoedaInput(input) {
+    var v = input.value.replace(/\D/g, '');
+    if (v === '') { input.value = 'R$ 0,00'; return; }
+    var num = parseFloat(v) / 100;
+    input.value = 'R$ ' + num.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
 }
 
 function editarServico(id, descricao, valor) {
@@ -949,13 +959,48 @@ if (btnAbrirModal) {
     };
 }
 
-// Formatar campo desconto com vírgula decimal na carga da página
+// Formatar campo desconto como moeda na carga da página
 document.addEventListener('DOMContentLoaded', function() {
     var descInput = document.querySelector('input[name="desconto"]');
-    if (descInput && descInput.value) {
+    if (descInput) {
         var val = parseFloat(descInput.value) || 0;
-        descInput.value = val.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        descInput.value = 'R$ ' + val.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        descInput.addEventListener('focus', function() {
+            var v = this.value.replace('R$ ','').replace(/\./g,'').replace(',','.');
+            if (v) this.value = parseFloat(v).toFixed(2).replace('.', ',');
+            this.select();
+        });
+        descInput.addEventListener('blur', function() {
+            formatarMoedaInput(this);
+            recalcularValorOS();
+        });
     }
+    document.querySelectorAll('input[name="pagamento_valor[]"]').forEach(function(input) {
+        if (input.value === '0') input.value = 'R$ 0,00';
+        input.addEventListener('focus', function() { mascararFocoMoeda(this); });
+        input.addEventListener('blur', function() { mascararSaidaMoeda(this); });
+    });
+});
+
+function mascararFocoMoeda(input) {
+    var v = input.value.replace('R$ ','').replace(/\./g,'').replace(',','.');
+    if (v) input.value = parseFloat(v).toFixed(2).replace('.', ',');
+    input.select();
+}
+
+function mascararSaidaMoeda(input) {
+    formatarMoedaInput(input);
+}
+
+document.getElementById('form-fechar').addEventListener('submit', function() {
+    this.querySelectorAll('input[name="desconto"], input[name="pagamento_valor[]"]').forEach(function(input) {
+        input.value = input.value.replace('R$ ','').replace(/\./g,'').replace(',','.');
+    });
+});
+
+document.getElementById('form-desconto-topo').addEventListener('submit', function() {
+    var desc = this.querySelector('input[name="desconto"]');
+    if (desc) desc.value = desc.value.replace('R$ ','').replace(/\./g,'').replace(',','.');
 });
 
 function estornarFechamento() {
