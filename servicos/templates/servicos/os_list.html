@@ -302,17 +302,23 @@
 {% block scripts %}
 <script>
 let osValorBruto = 0;
+let osValorTotal = 0;
 
 function abrirModalFechar(osId, numero, valorBruto) {
     document.getElementById('formFecharOS').action = '/servicos/ordens/' + osId + '/fechar/';
     document.getElementById('next-input-fechar').value = '/servicos/ordens/' + osId + '/imprimir/';
     document.getElementById('numeroOS').textContent = numero;
     osValorBruto = valorBruto;
+    osValorTotal = valorBruto;
     document.getElementById('desconto-input').value = 'R$ 0,00';
     document.getElementById('valorBrutoOS').textContent = 'R$ ' + valorBruto.toLocaleString('pt-BR', {minimumFractionDigits: 2});
     document.getElementById('descontoOS').textContent = 'R$ 0,00';
     document.getElementById('valorTotalOS').textContent = 'R$ ' + valorBruto.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-    document.getElementById('valor-recebido-lista').value = valorBruto.toFixed(2).replace('.',',');
+    var valorFormatado = 'R$ ' + valorBruto.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    document.getElementById('valor-recebido-lista').value = valorFormatado;
+    document.querySelectorAll('input[name="pagamento_valor[]"]').forEach(function(input) {
+        input.value = valorFormatado;
+    });
     // Reset form state
     document.getElementById('div-parcelas-lista').style.display = 'none';
     document.getElementById('div-forma-lista').style.display = 'block';
@@ -345,9 +351,13 @@ function recalcularValorOS() {
     var desconto = parseFloat(document.getElementById('desconto-input').value.replace('R$ ','').replace(/\./g,'').replace(',','.')) || 0;
     var valorTotal = osValorBruto - desconto;
     if (valorTotal < 0) valorTotal = 0;
+    var valorFormatado = 'R$ ' + valorTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     document.getElementById('descontoOS').textContent = 'R$ ' + desconto.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-    document.getElementById('valorTotalOS').textContent = 'R$ ' + valorTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-    document.getElementById('valor-recebido-lista').value = valorTotal.toFixed(2).replace('.',',');
+    document.getElementById('valorTotalOS').textContent = valorFormatado;
+    document.getElementById('valor-recebido-lista').value = valorFormatado;
+    document.querySelectorAll('input[name="pagamento_valor[]"]').forEach(function(input) {
+        input.value = valorFormatado;
+    });
     osValorTotal = valorTotal;
     calcularParcelaLista();
 }
@@ -364,6 +374,10 @@ function alternarFormaLista(valor) {
     } else {
         divParcelas.style.display = 'none';
         divFormaLista.style.display = 'block';
+        var valorFormatado = 'R$ ' + (osValorTotal || osValorBruto).toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+        divFormaLista.querySelectorAll('input[name="pagamento_valor[]"]').forEach(function(el) {
+            el.value = valorFormatado;
+        });
         divFormaLista.querySelectorAll('select[name="pagamento_forma_id[]"], input[name="pagamento_valor[]"]').forEach(function(el) {
             el.setAttribute('required', '');
         });
@@ -487,7 +501,7 @@ if (_modalFecharOS) _modalFecharOS.addEventListener('click', function(e) {
 
 var _formFecharOS = document.getElementById('formFecharOS');
 if (_formFecharOS) _formFecharOS.addEventListener('submit', function() {
-    this.querySelectorAll('input[name="desconto"], input[name="pagamento_valor[]"]').forEach(function(input) {
+    this.querySelectorAll('input[name="desconto"], input[name="pagamento_valor[]"], #valor-recebido-lista').forEach(function(input) {
         input.value = input.value.replace('R$ ','').replace(/\./g,'').replace(',','.');
     });
 });

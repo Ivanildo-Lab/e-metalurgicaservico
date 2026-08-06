@@ -589,6 +589,11 @@ function alternarFormaPagamento(valor) {
     } else {
         divParcelas.style.display = 'none';
         divFormaPagamento.style.display = 'block';
+        var valorTotalText = document.getElementById('valor-total-display');
+        var valorFormatado = valorTotalText ? valorTotalText.textContent.trim() : 'R$ 0,00';
+        divFormaPagamento.querySelectorAll('input[name="pagamento_valor[]"]').forEach(function(el) {
+            el.value = valorFormatado;
+        });
         divFormaPagamento.querySelectorAll('select[name="pagamento_forma_id[]"], input[name="pagamento_valor[]"]').forEach(function(el) {
             el.setAttribute('required', '');
         });
@@ -713,8 +718,12 @@ function recalcularValorOS() {
     var desconto = parseFloat(document.getElementById('desconto-input').value.replace('R$ ','').replace(/\./g,'').replace(',','.')) || 0;
     var valorTotal = valorBruto - desconto;
     if (valorTotal < 0) valorTotal = 0;
+    var valorFormatado = 'R$ ' + valorTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     document.getElementById('desconto-display').textContent = 'R$ ' + desconto.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-    document.getElementById('valor-total-display').textContent = 'R$ ' + valorTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2});
+    document.getElementById('valor-total-display').textContent = valorFormatado;
+    document.querySelectorAll('input[name="pagamento_valor[]"]').forEach(function(input) {
+        input.value = valorFormatado;
+    });
     calcularParcela();
 }
 
@@ -829,7 +838,7 @@ function mascararSaidaMoeda(input) {
 
 var _formFechar = document.getElementById('form-fechar');
 if (_formFechar) _formFechar.addEventListener('submit', function() {
-    this.querySelectorAll('input[name="desconto"], input[name="pagamento_valor[]"]').forEach(function(input) {
+    this.querySelectorAll('input[name="desconto"], input[name="pagamento_valor[]"], #valor-recebido-lista').forEach(function(input) {
         input.value = input.value.replace('R$ ','').replace(/\./g,'').replace(',','.');
     });
 });
