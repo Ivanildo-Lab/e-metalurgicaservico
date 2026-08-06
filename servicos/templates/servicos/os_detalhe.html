@@ -524,7 +524,7 @@
                                     <option value="{{ fp.id }}">{{ fp.nome }}</option>
                                     {% endfor %}
                                 </select>
-                                <input type="text" name="pagamento_valor[]" inputmode="decimal" pattern="[0-9,\\.]*" autocomplete="off" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white font-bold text-green-700" placeholder="R$ 0,00" value="0" required style="pointer-events:auto; cursor:text;" onfocus="mascararFocoMoeda(this)" onblur="mascararSaidaMoeda(this)" onchange="if(this.value==='') this.value='R$ 0,00';">
+                                <input type="text" name="pagamento_valor[]" autocomplete="off" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white font-bold text-green-700" placeholder="R$ 0,00" value="0" required style="pointer-events:auto; cursor:text;" onfocus="mascararFocoMoeda(this)" onblur="mascararSaidaMoeda(this)" onchange="if(this.value==='') this.value='R$ 0,00';">
                             </div>
                             <label class="block mt-2 text-xs font-semibold text-gray-600">Caixa/Banco</label>
                             <select name="pagamento_caixa_id[]" class="mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white">
@@ -647,9 +647,7 @@ function adicionarLinhaPagamento() {
     var inputValor = document.createElement('input');
     inputValor.type = 'text';
     inputValor.name = 'pagamento_valor[]';
-    inputValor.inputMode = 'decimal';
     inputValor.autocomplete = 'off';
-    inputValor.setAttribute('pattern', '[0-9,\\.]*');
     inputValor.className = 'w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white font-bold text-green-700';
     inputValor.placeholder = 'R$ 0,00';
     inputValor.value = 'R$ 0,00';
