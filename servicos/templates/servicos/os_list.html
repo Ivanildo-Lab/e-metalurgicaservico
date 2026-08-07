@@ -143,7 +143,7 @@
                                     <i class="fa fa-edit"></i>
                                 </a>
                                 {% if os.status == 'CONCLUIDA' %}
-                                <button type="button" onclick="abrirModalFechar({{ os.id }}, '{{ os.numero }}', {{ os.valor_bruto }})"
+                                <button type="button" onclick="abrirModalFechar({{ os.id }}, '{{ os.numero }}', {{ os.valor_bruto }}, {{ os.desconto|default:'0' }})"
                                    class="text-green-500 hover:text-green-700 p-1" title="Finalizar OS">
                                     <i class="fa fa-check-circle"></i>
                                 </button>
@@ -304,17 +304,21 @@
 let osValorBruto = 0;
 let osValorTotal = 0;
 
-function abrirModalFechar(osId, numero, valorBruto) {
+function abrirModalFechar(osId, numero, valorBruto, descontoExistente) {
     document.getElementById('formFecharOS').action = '/servicos/ordens/' + osId + '/fechar/';
     document.getElementById('next-input-fechar').value = '/servicos/ordens/' + osId + '/imprimir/';
     document.getElementById('numeroOS').textContent = numero;
     osValorBruto = valorBruto;
-    osValorTotal = valorBruto;
-    document.getElementById('desconto-input').value = 'R$ 0,00';
+    var desconto = descontoExistente || 0;
+    var descFormatado = 'R$ ' + desconto.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    document.getElementById('desconto-input').value = descFormatado;
     document.getElementById('valorBrutoOS').textContent = 'R$ ' + valorBruto.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-    document.getElementById('descontoOS').textContent = 'R$ 0,00';
-    document.getElementById('valorTotalOS').textContent = 'R$ ' + valorBruto.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-    var valorFormatado = 'R$ ' + valorBruto.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    document.getElementById('descontoOS').textContent = descFormatado;
+    var valorTotal = valorBruto - desconto;
+    if (valorTotal < 0) valorTotal = 0;
+    osValorTotal = valorTotal;
+    var valorFormatado = 'R$ ' + valorTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    document.getElementById('valorTotalOS').textContent = valorFormatado;
     document.getElementById('valor-recebido-lista').value = valorFormatado;
     document.querySelectorAll('input[name="pagamento_valor[]"]').forEach(function(input) {
         input.value = valorFormatado;
