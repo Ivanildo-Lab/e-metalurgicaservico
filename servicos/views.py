@@ -556,14 +556,6 @@ def fechar_os(request, id):
         messages.error(request, "A OS não possui serviços com valor. Adicione serviços antes de fechar.")
         return redirect('servicos:editar_os', id=os_obj.id)
 
-    if remuneracao_total != valor_bruto_servicos:
-        messages.error(
-            request,
-            f"A remuneração (R$ {remuneracao_total:.2f}) não confere com o valor total (R$ {valor_bruto_servicos:.2f}). "
-            f"Ajuste antes de fechar."
-        )
-        return redirect('servicos:editar_os', id=os_obj.id)
-
     forma = request.POST.get('forma_pagamento', 'A_VISTA')
     qtd_parcelas = int(request.POST.get('qtd_parcelas', 1))
     desconto_text = request.POST.get('desconto', '0').replace('R$', '').replace(' ', '').strip()
@@ -581,6 +573,14 @@ def fechar_os(request, id):
         return redirect('servicos:editar_os', id=os_obj.id)
 
     valor_total = valor_bruto_servicos - desconto
+
+    if remuneracao_total != valor_total:
+        messages.error(
+            request,
+            f"A remuneração (R$ {remuneracao_total:.2f}) não confere com o valor líquido (R$ {valor_total:.2f}). "
+            f"Ajuste antes de fechar."
+        )
+        return redirect('servicos:editar_os', id=os_obj.id)
 
     def _parse_decimal(valor):
         if valor is None:

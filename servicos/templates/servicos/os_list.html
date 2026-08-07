@@ -143,7 +143,12 @@
                                     <i class="fa fa-edit"></i>
                                 </a>
                                 {% if os.status == 'CONCLUIDA' %}
-                                <button type="button" onclick="abrirModalFechar({{ os.id }}, '{{ os.numero }}', {{ os.valor_bruto }}, {{ os.desconto|default:'0' }})"
+                                <button type="button"
+                                   data-os-id="{{ os.id }}"
+                                   data-os-numero="{{ os.numero }}"
+                                   data-valor-bruto="{{ os.valor_bruto }}"
+                                   data-desconto="{{ os.desconto }}"
+                                   onclick="abrirModalFecharFromBtn(this)"
                                    class="text-green-500 hover:text-green-700 p-1" title="Finalizar OS">
                                     <i class="fa fa-check-circle"></i>
                                 </button>
@@ -535,10 +540,19 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 var originalAbrirModalFechar = window.abrirModalFechar;
-window.abrirModalFechar = function(osId, numero, valorBruto) {
-    originalAbrirModalFechar(osId, numero, valorBruto);
+window.abrirModalFechar = function(osId, numero, valorBruto, descontoExistente) {
+    originalAbrirModalFechar(osId, numero, valorBruto, descontoExistente);
     setTimeout(habilitarCamposValorPagamentoLista, 50);
 };
+
+function abrirModalFecharFromBtn(btn) {
+    var osId = parseInt(btn.getAttribute('data-os-id'));
+    var numero = btn.getAttribute('data-os-numero');
+    var valorBruto = parseFloat(btn.getAttribute('data-valor-bruto'));
+    var desconto = parseFloat(btn.getAttribute('data-desconto'));
+    if (isNaN(desconto)) desconto = 0;
+    window.abrirModalFechar(osId, numero, valorBruto, desconto);
+}
 
 function formatarMoedaInput(input) {
     var v = input.value.replace(/\D/g, '');
