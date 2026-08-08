@@ -346,7 +346,7 @@
                 </div>
 
                 <div class="flex gap-3 mt-6">
-                    <button type="button" onclick="fecharModalBaixa()" class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 font-medium rounded hover:bg-gray-300">Cancelar</button>
+                    <button type="button" id="btnCancelarBaixa" class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 font-medium rounded hover:bg-gray-300">Cancelar</button>
                     <button type="submit" id="btnConfirmarBaixa" class="flex-1 px-4 py-2 bg-green-600 text-white font-medium rounded hover:bg-green-700 shadow">Confirmar</button>
                 </div>
             </form>
@@ -493,20 +493,31 @@
     }
 
     function fecharModalBaixa() {
-        document.getElementById('modalBaixa').classList.add('hidden');
-    }
-    
-    window.onclick = function(event) {
-        const modal = document.getElementById('modalBaixa');
-        if (event.target == modal) {
-            modal.classList.add('hidden');
-        }
+        var modal = document.getElementById('modalBaixa');
+        if (modal) modal.classList.add('hidden');
     }
 
-    document.getElementById('formBaixa').addEventListener('submit', function() {
-        this.querySelectorAll('input[name="pagamento_valor[]"]').forEach(function(input) {
-            input.value = input.value.replace('R$ ','').replace(/\./g,'').replace(',','.');
-        });
+    document.addEventListener('DOMContentLoaded', function() {
+        var btnCancelar = document.getElementById('btnCancelarBaixa');
+        if (btnCancelar) {
+            btnCancelar.addEventListener('click', fecharModalBaixa);
+        }
+
+        var modalBaixa = document.getElementById('modalBaixa');
+        if (modalBaixa) {
+            modalBaixa.addEventListener('click', function(e) {
+                if (e.target === modalBaixa) fecharModalBaixa();
+            });
+        }
+
+        var formBaixa = document.getElementById('formBaixa');
+        if (formBaixa) {
+            formBaixa.addEventListener('submit', function() {
+                this.querySelectorAll('input[name="pagamento_valor[]"]').forEach(function(input) {
+                    input.value = input.value.replace('R$ ','').replace(/\./g,'').replace(',','.');
+                });
+            });
+        }
     });
 </script>
 {% endblock %}
