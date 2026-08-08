@@ -384,7 +384,7 @@
                 <select name="pagamento_forma_id[]" class="flex-1 rounded-md border-gray-300 shadow-sm border p-2 text-sm bg-white" required onchange="recalcularBaixa()">
                     ${optionsHtml}
                 </select>
-                <input type="text" name="pagamento_valor[]" inputmode="decimal" pattern="[0-9,\\.]*"
+                <input type="text" name="pagamento_valor[]"
                        class="w-32 rounded-md border-gray-300 shadow-sm border p-2 text-sm font-bold text-green-700 text-right" 
                        placeholder="R$ 0,00" required oninput="recalcularBaixa()"
                        value="${valorDefault || 'R$ 0,00'}"
