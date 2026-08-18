@@ -135,6 +135,13 @@
                 <i class="fa fa-arrow-left mr-1"></i> Voltar
             </a>
             <div class="space-x-2">
+                <form method="POST" action="{% url 'servicos:gerar_os_de_orcamento' orcamento.id %}" class="inline" id="form-gerar-os">
+                    {% csrf_token %}
+                    <button type="button" onclick="if(confirm('Criar uma OS a partir deste orçamento? Os dados do cliente e serviços serão copiados.')) document.getElementById('form-gerar-os').submit()"
+                            class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg text-sm font-bold transition shadow-sm inline-flex items-center">
+                        <i class="fa fa-file-medical mr-1"></i> Gerar OS
+                    </button>
+                </form>
                 <button onclick="if(confirm('Excluir este orçamento?')) document.getElementById('form-excluir').submit()"
                         class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition shadow-sm">
                     <i class="fa fa-trash mr-1"></i> Excluir

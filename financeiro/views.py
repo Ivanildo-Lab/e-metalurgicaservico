@@ -148,6 +148,7 @@ def lista_contas_receber(request):
     cliente_nome = request.GET.get('cliente')
     status = request.GET.get('status')
     categoria_id = request.GET.get('categoria')
+    ordenar = request.GET.get('ordenar', 'data_vencimento')
 
     if data_ini and data_fim:
         contas = contas.filter(data_vencimento__range=[data_ini, data_fim])
@@ -169,6 +170,18 @@ def lista_contas_receber(request):
         contas = contas.filter(
             lancamentos_vinculados__data_lancamento__range=[data_pag_ini, data_pag_fim]
         ).distinct()
+
+    # Ordenação
+    ordenacao_valida = {
+        'data_vencimento': 'data_vencimento',
+        '-data_vencimento': '-data_vencimento',
+        'cliente': 'cadastro__nome',
+        '-cliente': '-cadastro__nome',
+        'data_pagamento': 'lancamentos_vinculados__data_lancamento',
+        '-data_pagamento': '-lancamentos_vinculados__data_lancamento',
+    }
+    campo_ordenacao = ordenacao_valida.get(ordenar, 'data_vencimento')
+    contas = contas.order_by(campo_ordenacao, 'id')
 
     # Dados para os Dropdowns
     caixas = Caixa.objects.filter(empresa=request.user.empresa)
@@ -193,8 +206,7 @@ def lista_contas_receber(request):
     
     # Paginacao
     from django.core.paginator import Paginator
-    contas_ordenadas = contas.order_by('data_vencimento')
-    paginator = Paginator(contas_ordenadas, 50)
+    paginator = Paginator(contas, 50)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -213,6 +225,7 @@ def lista_contas_receber(request):
         'filtro_nome': cliente_nome,
         'filtro_status': status,
         'filtro_categoria': categoria_id,
+        'ordenar': ordenar,
         'total_geral': totais['total_geral'] or 0,
         'total_pago': total_pago,
         'total_pendente': total_pendente,

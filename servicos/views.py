@@ -106,6 +106,8 @@ def lista_ordens(request):
     status_filtro = request.GET.get('status', '')
     periodo_inicio = request.GET.get('data_inicio', '')
     periodo_fim = request.GET.get('data_fim', '')
+    funcionario_filtro = request.GET.get('funcionario', '')
+    ordenar = request.GET.get('ordenar', '-data_entrada')
 
     ordens = OrdemServico.objects.filter(empresa=request.user.empresa).select_related('cadastro')
 
@@ -113,6 +115,9 @@ def lista_ordens(request):
         ordens = ordens.filter(
             Q(numero__icontains=q) |
             Q(cadastro__nome__icontains=q) |
+            Q(cadastro__cpf_cnpj__icontains=q) |
+            Q(cadastro__celular__icontains=q) |
+            Q(cadastro__telefone_fixo__icontains=q) |
             Q(descricao_geral__icontains=q)
         )
     if status_filtro:
@@ -121,6 +126,20 @@ def lista_ordens(request):
         ordens = ordens.filter(data_entrada__gte=periodo_inicio)
     if periodo_fim:
         ordens = ordens.filter(data_entrada__lte=periodo_fim)
+    if funcionario_filtro:
+        ordens = ordens.filter(funcionarios__funcionario_id=funcionario_filtro).distinct()
+
+    # Ordenação
+    ordenacao_valida = {
+        'data_entrada': 'data_entrada',
+        '-data_entrada': '-data_entrada',
+        'cliente': 'cadastro__nome',
+        '-cliente': '-cadastro__nome',
+        'funcionario': 'funcionarios__funcionario__nome',
+        '-funcionario': '-funcionarios__funcionario__nome',
+    }
+    campo_ordenacao = ordenacao_valida.get(ordenar, '-data_entrada')
+    ordens = ordens.order_by(campo_ordenacao, '-numero')
 
     # Resumo para os cards
     total_os = OrdemServico.objects.filter(empresa=request.user.empresa).count()
@@ -142,12 +161,16 @@ def lista_ordens(request):
     except (ParametroSistema.DoesNotExist, ValueError):
         pass
 
+    funcionarios = Funcionario.objects.filter(empresa=request.user.empresa, ativo=True).order_by('nome')
+
     return render(request, 'servicos/os_list.html', {
         'ordens': ordens,
         'q': q,
         'status_filtro': status_filtro,
         'periodo_inicio': periodo_inicio,
         'periodo_fim': periodo_fim,
+        'funcionario_filtro': funcionario_filtro,
+        'ordenar': ordenar,
         'total_os': total_os,
         'abertas': abertas,
         'concluidas': concluidas,
@@ -155,6 +178,7 @@ def lista_ordens(request):
         'formas_pagamento_rapido': FormaPagamento.objects.filter(empresa=request.user.empresa, ativo=True),
         'caixas_rapido': Caixa.objects.filter(empresa=request.user.empresa),
         'caixa_padrao_id_rapido': caixa_padrao_id,
+        'funcionarios': funcionarios,
     })
 
 
@@ -1246,6 +1270,43 @@ def imprimir_orcamento(request, id):
     })
 
 
+@login_required
+@permission_required_module('servicos')
+def gerar_os_de_orcamento(request, id):
+    """Cria uma OS a partir de um Orçamento aprovado"""
+    orcamento = get_object_or_404(Orcamento, id=id, empresa=request.user.empresa)
+
+    if request.method != 'POST':
+        return redirect('servicos:detalhe_orcamento', id=orcamento.id)
+
+    with transaction.atomic():
+        # Criar OS com dados do orçamento
+        os_obj = OrdemServico(
+            empresa=request.user.empresa,
+            cadastro=orcamento.cadastro,
+            descricao_geral=orcamento.descricao or f'OS gerada a partir do {orcamento.numero}',
+            data_entrada=date.today(),
+            data_prevista=None,
+            observacoes=f'Gerada a partir do orçamento {orcamento.numero}',
+        )
+        os_obj.save()
+
+        # Copiar serviços do orçamento para a OS
+        for servico_orc in orcamento.servicos.all():
+            ServicoOS.objects.create(
+                ordem_servico=os_obj,
+                descricao=servico_orc.descricao,
+                valor=servico_orc.valor,
+            )
+
+    messages.success(
+        request,
+        f'OS {os_obj.numero} criada a partir do {orcamento.numero}! '
+        f'{os_obj.servicos.count()} serviço(s) copiado(s). Complete os dados necessários.'
+    )
+    return redirect('servicos:editar_os', id=os_obj.id)
+
+
 # ==========================================================
 # 10. CRUD DE FORMAS DE PAGAMENTO
 # ==========================================================
@@ -1355,6 +1416,33 @@ def buscar_clientes(request):
             'documento': c.cpf_cnpj or '',
             'telefone': c.celular or c.telefone_fixo or '',
             'cidade': f'{c.cidade}/{c.uf}' if c.cidade else '',
+        })
+
+    return JsonResponse({'resultados': resultados})
+
+
+# ==========================================================
+# 12. API BUSCA DE FUNCIONÁRIOS (AJAX)
+# ==========================================================
+@login_required
+@permission_required_module('servicos')
+def buscar_funcionarios(request):
+    """Busca funcionários por nome — retorna JSON"""
+    q = request.GET.get('q', '').strip()
+    if len(q) < 2:
+        return JsonResponse({'resultados': []})
+
+    funcionarios = Funcionario.objects.filter(
+        empresa=request.user.empresa,
+        ativo=True,
+        nome__icontains=q
+    ).order_by('nome')[:20]
+
+    resultados = []
+    for f in funcionarios:
+        resultados.append({
+            'id': f.id,
+            'nome': f.nome,
         })
 
     return JsonResponse({'resultados': resultados})

@@ -64,4 +64,10 @@ urlpatterns = [
 
     # Busca de clientes (AJAX)
     path('api/buscar-clientes/', views.buscar_clientes, name='buscar_clientes'),
+
+    # Busca de funcionários (AJAX)
+    path('api/buscar-funcionarios/', views.buscar_funcionarios, name='buscar_funcionarios'),
+
+    # Criar OS a partir do Orçamento
+    path('orcamentos/<int:id>/gerar-os/', views.gerar_os_de_orcamento, name='gerar_os_de_orcamento'),
 ]

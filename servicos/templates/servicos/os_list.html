@@ -66,23 +66,54 @@
             </div>
 
             <!-- Filtros -->
-            <form method="GET" class="grid grid-cols-1 md:grid-cols-5 gap-3 mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
-                <input type="text" name="q" value="{{ q }}" placeholder="Nº OS, cliente..."
-                       class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
-                <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
-                    <option value="">Todos Status</option>
-                    <option value="ABERTA" {% if status_filtro == 'ABERTA' %}selected{% endif %}>Aberta</option>
-                    <option value="CONCLUIDA" {% if status_filtro == 'CONCLUIDA' %}selected{% endif %}>Concluída</option>
-                    <option value="FECHADA" {% if status_filtro == 'FECHADA' %}selected{% endif %}>Fechada</option>
-                    <option value="CANCELADA" {% if status_filtro == 'CANCELADA' %}selected{% endif %}>Cancelada</option>
-                </select>
-                <input type="date" name="data_inicio" value="{{ periodo_inicio }}" placeholder="De:"
-                       class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
-                <input type="date" name="data_fim" value="{{ periodo_fim }}" placeholder="Até:"
-                       class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
-                <button type="submit" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
-                    <i class="fa fa-search mr-1"></i> Filtrar
-                </button>
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-6 gap-3 mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <div class="md:col-span-2">
+                    <label class="text-[10px] font-bold text-gray-500 uppercase">Buscar</label>
+                    <div class="relative">
+                        <input type="text" id="busca-q" name="q" value="{{ q }}" placeholder="Nº OS, cliente, CPF/CNPJ..."
+                               autocomplete="off"
+                               class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                        <div id="resultado-busca-q" class="hidden absolute z-50 w-full mt-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-y-auto"></div>
+                    </div>
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 uppercase">Status</label>
+                    <select name="status" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                        <option value="">Todos Status</option>
+                        <option value="ABERTA" {% if status_filtro == 'ABERTA' %}selected{% endif %}>Aberta</option>
+                        <option value="CONCLUIDA" {% if status_filtro == 'CONCLUIDA' %}selected{% endif %}>Concluída</option>
+                        <option value="FECHADA" {% if status_filtro == 'FECHADA' %}selected{% endif %}>Fechada</option>
+                        <option value="CANCELADA" {% if status_filtro == 'CANCELADA' %}selected{% endif %}>Cancelada</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 uppercase">Funcionário</label>
+                    <select name="funcionario" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                        <option value="">Todos</option>
+                        {% for func in funcionarios %}
+                        <option value="{{ func.id }}" {% if funcionario_filtro == func.id|stringformat:"s" %}selected{% endif %}>{{ func.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 uppercase">Ordenar por</label>
+                    <select name="ordenar" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-indigo-500">
+                        <option value="-data_entrada" {% if ordenar == '-data_entrada' %}selected{% endif %}>Data (recente)</option>
+                        <option value="data_entrada" {% if ordenar == 'data_entrada' %}selected{% endif %}>Data (antigo)</option>
+                        <option value="cliente" {% if ordenar == 'cliente' %}selected{% endif %}>Cliente (A-Z)</option>
+                        <option value="-cliente" {% if ordenar == '-cliente' %}selected{% endif %}>Cliente (Z-A)</option>
+                        <option value="funcionario" {% if ordenar == 'funcionario' %}selected{% endif %}>Funcionário (A-Z)</option>
+                        <option value="-funcionario" {% if ordenar == '-funcionario' %}selected{% endif %}>Funcionário (Z-A)</option>
+                    </select>
+                </div>
+                <div class="flex items-end gap-1">
+                    <button type="submit" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex-1">
+                        <i class="fa fa-search mr-1"></i> Filtrar
+                    </button>
+                    <a href="{% url 'servicos:lista_ordens' %}" class="bg-gray-400 hover:bg-gray-500 text-white px-3 py-2 rounded-lg text-sm font-medium transition" title="Limpar">
+                        <i class="fa fa-times"></i>
+                    </a>
+                </div>
             </form>
 
             <!-- Tabela -->
@@ -204,6 +235,7 @@
                     <label class="block text-sm font-bold text-gray-700 mb-1">Desconto (R$)</label>
                     <input type="text" name="desconto" id="desconto-input" step="0.01" min="0" value="0" lang="pt-BR"
                            oninput="recalcularValorOS()"
+                           placeholder="Ex: 60 para R$ 60,00"
                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-green-500 font-bold text-orange-600 text-lg">
                 </div>
 
@@ -309,16 +341,65 @@
 let osValorBruto = 0;
 let osValorTotal = 0;
 
+// Autocomplete genérico para busca na lista
+(function() {
+    const input = document.getElementById('busca-q');
+    const resultado = document.getElementById('resultado-busca-q');
+    if (!input || !resultado) return;
+    let timeout = null;
+
+    resultado.addEventListener('mousedown', function(e) {
+        var el = e.target.closest('[data-value]');
+        if (!el) return;
+        e.preventDefault();
+        input.value = el.dataset.value;
+        resultado.classList.add('hidden');
+        input.closest('form').submit();
+    });
+
+    input.addEventListener('input', function() {
+        clearTimeout(timeout);
+        const q = this.value.trim();
+        if (q.length < 2) { resultado.classList.add('hidden'); return; }
+        timeout = setTimeout(() => {
+            fetch('/servicos/api/buscar-clientes/?q=' + encodeURIComponent(q))
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.resultados || data.resultados.length === 0) {
+                        resultado.innerHTML = '<div class="px-4 py-3 text-sm text-gray-500">Nenhum resultado</div>';
+                        resultado.classList.remove('hidden');
+                        return;
+                    }
+                    let html = '';
+                    data.resultados.forEach(c => {
+                        const doc = c.documento ? ' — ' + c.documento : '';
+                        html += '<div class="px-4 py-2 hover:bg-blue-50 cursor-pointer border-b border-gray-100 last:border-0" data-value="' + c.nome + '">'
+                            + '<div class="text-sm font-medium text-gray-800">' + c.nome + '</div>'
+                            + '<div class="text-xs text-gray-500">' + doc + '</div>'
+                            + '</div>';
+                    });
+                    resultado.innerHTML = html;
+                    resultado.classList.remove('hidden');
+                });
+        }, 300);
+    });
+
+    input.addEventListener('blur', () => setTimeout(() => resultado.classList.add('hidden'), 200));
+    input.addEventListener('focus', function() {
+        if (this.value.trim().length >= 2 && resultado.innerHTML) resultado.classList.remove('hidden');
+    });
+})();
+
 function abrirModalFechar(osId, numero, valorBruto, descontoExistente) {
     document.getElementById('formFecharOS').action = '/servicos/ordens/' + osId + '/fechar/';
     document.getElementById('next-input-fechar').value = '/servicos/ordens/' + osId + '/imprimir/';
     document.getElementById('numeroOS').textContent = numero;
     osValorBruto = valorBruto;
     var desconto = descontoExistente || 0;
-    var descFormatado = 'R$ ' + desconto.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    var descFormatado = desconto.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
     document.getElementById('desconto-input').value = descFormatado;
     document.getElementById('valorBrutoOS').textContent = 'R$ ' + valorBruto.toLocaleString('pt-BR', {minimumFractionDigits: 2});
-    document.getElementById('descontoOS').textContent = descFormatado;
+    document.getElementById('descontoOS').textContent = 'R$ ' + descFormatado;
     var valorTotal = valorBruto - desconto;
     if (valorTotal < 0) valorTotal = 0;
     osValorTotal = valorTotal;
@@ -357,7 +438,7 @@ function fecharModalFechar() {
 }
 
 function recalcularValorOS() {
-    var desconto = parseFloat(document.getElementById('desconto-input').value.replace('R$ ','').replace(/\./g,'').replace(',','.')) || 0;
+    var desconto = parseFloat(document.getElementById('desconto-input').value.replace(/\./g,'').replace(',','.')) || 0;
     var valorTotal = osValorBruto - desconto;
     if (valorTotal < 0) valorTotal = 0;
     var valorFormatado = 'R$ ' + valorTotal.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
@@ -508,7 +589,10 @@ if (_modalFecharOS) _modalFecharOS.addEventListener('click', function(e) {
 
 var _formFecharOS = document.getElementById('formFecharOS');
 if (_formFecharOS) _formFecharOS.addEventListener('submit', function() {
-    this.querySelectorAll('input[name="desconto"], input[name="pagamento_valor[]"], #valor-recebido-lista').forEach(function(input) {
+    this.querySelectorAll('input[name="desconto"]').forEach(function(input) {
+        input.value = input.value.replace(/\./g,'').replace(',','.');
+    });
+    this.querySelectorAll('input[name="pagamento_valor[]"], #valor-recebido-lista').forEach(function(input) {
         input.value = input.value.replace('R$ ','').replace(/\./g,'').replace(',','.');
     });
 });
@@ -575,12 +659,13 @@ document.addEventListener('DOMContentLoaded', function() {
     var descInput = document.getElementById('desconto-input');
     if (descInput) {
         descInput.addEventListener('focus', function() {
-            var v = this.value.replace('R$ ','').replace(/\./g,'').replace(',','.');
-            if (v) this.value = parseFloat(v).toFixed(2).replace('.', ',');
             this.select();
         });
         descInput.addEventListener('blur', function() {
-            formatarMoedaInput(this);
+            var v = this.value.replace(/\D/g, '');
+            if (v === '') { this.value = '0'; recalcularValorOS(); return; }
+            var num = parseFloat(v);
+            this.value = num.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
             recalcularValorOS();
         });
     }
