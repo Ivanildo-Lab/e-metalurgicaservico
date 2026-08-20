@@ -18,12 +18,28 @@
             </div>
 
             <!-- Filtros -->
-            <form method="GET" class="grid grid-cols-1 md:grid-cols-3 gap-3 mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+            <form method="GET" class="grid grid-cols-1 md:grid-cols-4 gap-3 mb-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <input type="text" name="q" value="{{ q }}" placeholder="Nº Orçamento, cliente..."
                        class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500">
-                <button type="submit" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition">
-                    <i class="fa fa-search mr-1"></i> Filtrar
-                </button>
+                <select name="status" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500">
+                    <option value="PENDENTE" {% if status_filtro == 'PENDENTE' %}selected{% endif %}>Pendentes</option>
+                    <option value="IMPORTADO" {% if status_filtro == 'IMPORTADO' %}selected{% endif %}>Importados</option>
+                    <option value="" {% if not status_filtro %}selected{% endif %}>Todos</option>
+                </select>
+                <select name="ordenar" class="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-teal-500">
+                    <option value="-data" {% if ordenar == '-data' %}selected{% endif %}>Data (recente)</option>
+                    <option value="data" {% if ordenar == 'data' %}selected{% endif %}>Data (antigo)</option>
+                    <option value="cliente" {% if ordenar == 'cliente' %}selected{% endif %}>Cliente (A-Z)</option>
+                    <option value="-cliente" {% if ordenar == '-cliente' %}selected{% endif %}>Cliente (Z-A)</option>
+                </select>
+                <div class="flex gap-1">
+                    <button type="submit" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition flex-1">
+                        <i class="fa fa-search mr-1"></i> Filtrar
+                    </button>
+                    <a href="{% url 'servicos:lista_orcamentos' %}" class="bg-gray-400 hover:bg-gray-500 text-white px-3 py-2 rounded-lg text-sm font-medium transition" title="Limpar">
+                        <i class="fa fa-times"></i>
+                    </a>
+                </div>
             </form>
 
             <!-- Tabela -->
@@ -37,6 +53,7 @@
                             <th class="text-left px-4 py-3 font-semibold text-gray-600">Descrição</th>
                             <th class="text-center px-4 py-3 font-semibold text-gray-600">Data</th>
                             <th class="text-center px-4 py-3 font-semibold text-gray-600">Validade</th>
+                            <th class="text-center px-4 py-3 font-semibold text-gray-600">Status</th>
                             <th class="text-right px-4 py-3 font-semibold text-gray-600">Valor Total</th>
                             <th class="text-center px-4 py-3 font-semibold text-gray-600">Ações</th>
                         </tr>
@@ -54,6 +71,17 @@
                             <td class="px-4 py-3 text-center text-gray-600">{{ orc.data|date:"d/m/Y" }}</td>
                             <td class="px-4 py-3 text-center text-gray-600">
                                 {% if orc.data_validade %}{{ orc.data_validade|date:"d/m/Y" }}{% else %}—{% endif %}
+                            </td>
+                            <td class="px-4 py-3 text-center">
+                                {% if orc.status == 'PENDENTE' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                                    <i class="fa fa-clock text-[6px] mr-1"></i> Pendente
+                                </span>
+                                {% elif orc.status == 'IMPORTADO' %}
+                                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                    <i class="fa fa-check text-[6px] mr-1"></i> Importado
+                                </span>
+                                {% endif %}
                             </td>
                             <td class="px-4 py-3 text-right font-mono font-semibold text-gray-800">
                                 {{ orc.valor_total|moeda_br }}

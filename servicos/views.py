@@ -1124,16 +1124,35 @@ def imprimir_os(request, id):
 @permission_required_module('servicos')
 def lista_orcamentos(request):
     q = request.GET.get('q', '')
+    status_filtro = request.GET.get('status', 'PENDENTE')
+    ordenar = request.GET.get('ordenar', '-data')
+
     orcamentos = Orcamento.objects.filter(empresa=request.user.empresa)
+
     if q:
         orcamentos = orcamentos.filter(
-            Q(numero__icontains=q) | Q(cadastro__nome__icontains=q)
+            Q(numero__icontains=q) |
+            Q(cadastro__nome__icontains=q) |
+            Q(cadastro__cpf_cnpj__icontains=q)
         )
-    orcamentos = orcamentos[:50]
+    if status_filtro:
+        orcamentos = orcamentos.filter(status=status_filtro)
+
+    # Ordenação
+    ordenacao_valida = {
+        'data': 'data',
+        '-data': '-data',
+        'cliente': 'cadastro__nome',
+        '-cliente': '-cadastro__nome',
+    }
+    campo_ordenacao = ordenacao_valida.get(ordenar, '-data')
+    orcamentos = orcamentos.order_by(campo_ordenacao, '-numero')
 
     return render(request, 'servicos/orcamento_list.html', {
         'orcamentos': orcamentos,
         'q': q,
+        'status_filtro': status_filtro,
+        'ordenar': ordenar,
     })
 
 
@@ -1298,6 +1317,10 @@ def gerar_os_de_orcamento(request, id):
                 descricao=servico_orc.descricao,
                 valor=servico_orc.valor,
             )
+
+        # Marcar orçamento como IMPORTADO
+        orcamento.status = 'IMPORTADO'
+        orcamento.save(update_fields=['status'])
 
     messages.success(
         request,

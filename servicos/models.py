@@ -257,6 +257,11 @@ class Orcamento(ModeloSaaS):
         ('A_PRAZO', 'A Prazo'),
     ]
 
+    STATUS_CHOICES = [
+        ('PENDENTE', 'Pendente'),
+        ('IMPORTADO', 'Importado'),
+    ]
+
     numero = models.CharField(max_length=20, verbose_name="Nº Orçamento", editable=False)
     cadastro = models.ForeignKey(
         Cadastro, on_delete=models.PROTECT, verbose_name="Cliente",
@@ -266,6 +271,8 @@ class Orcamento(ModeloSaaS):
                                  help_text="Descreva o serviço proposto")
     data = models.DateField(verbose_name="Data do Orçamento")
     data_validade = models.DateField(verbose_name="Validade do Orçamento", null=True, blank=True)
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='PENDENTE',
+                              verbose_name="Status")
 
     forma_pagamento = models.CharField(
         max_length=10, choices=FORMA_PGTO_CHOICES, null=True, blank=True,
