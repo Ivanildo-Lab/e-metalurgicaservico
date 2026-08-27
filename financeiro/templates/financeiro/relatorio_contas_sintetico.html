@@ -55,7 +55,9 @@
                     {% for item in agrupado %}
                     <tr class="hover:bg-gray-50">
                         <td class="py-2 text-gray-400 font-mono text-[10px]">{{ forloop.counter }}</td>
-                        <td class="py-2 font-bold text-gray-800">{{ item.cadastro__nome|default:"Sem {{ entidade_label }}" }}</td>
+                        <td class="py-2 font-bold text-gray-800">
+                            {% if item.cadastro__nome %}{{ item.cadastro__nome }}{% else %}Sem {{ entidade_label }}{% endif %}
+                        </td>
                         <td class="py-2 text-gray-500 font-mono text-[10px]">{{ item.cadastro__cpf_cnpj|default:"—" }}</td>
                         <td class="py-2 text-center text-gray-600">{{ item.qtd_contas }}</td>
                         <td class="py-2 text-right font-bold text-red-600 font-mono">{{ item.total_aberto|moeda_br }}</td>
