@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ titulo_relatorio }} Sintético - {{ empresa.nome }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    {% load servicos_filters %}
+    <style>
+        @media print {
+            body { -webkit-print-color-adjust: exact; font-size: 10pt; }
+            .no-print { display: none !important; }
+            @page { margin: 1.5cm; }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 p-4 print:bg-white print:p-0 text-gray-800 font-sans">
+
+    <div class="max-w-3xl mx-auto bg-white shadow-lg print:shadow-none print:w-full min-h-screen relative pb-10">
+        
+        <!-- CABEÇALHO -->
+        <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-start">
+            <div class="flex items-center gap-3">
+                {% if empresa.logo %}
+                    <img src="{{ empresa.logo.url }}" class="h-10 w-auto object-contain">
+                {% else %}
+                    <div class="h-10 w-10 bg-gray-800 text-white flex items-center justify-center font-bold rounded text-lg">
+                        {{ empresa.nome|slice:":1" }}
+                    </div>
+                {% endif %}
+                <div>
+                    <h1 class="text-lg font-bold uppercase tracking-wide text-gray-800 leading-tight">{{ empresa.nome }}</h1>
+                    <p class="text-[10px] text-gray-500">CNPJ: {{ empresa.cnpj }}</p>
+                </div>
+            </div>
+            <div class="text-right">
+                <h2 class="text-base font-semibold text-gray-700">{{ titulo_relatorio }} — Sintético</h2>
+                <p class="text-[10px] text-gray-400 mt-0.5">Emitido em {% now "d/m/Y H:i" %}</p>
+            </div>
+        </div>
+
+        <div class="p-6">
+            
+            <table class="w-full text-[11px]">
+                <thead>
+                    <tr class="text-[9px] text-gray-400 uppercase border-b border-gray-300">
+                        <th class="py-2 text-left font-medium w-8">#</th>
+                        <th class="py-2 text-left font-medium">{{ entidade_label }}</th>
+                        <th class="py-2 text-left font-medium w-32">CPF/CNPJ</th>
+                        <th class="py-2 text-center font-medium w-16">Qtd</th>
+                        <th class="py-2 text-right font-medium w-36">Total em Aberto</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                    {% for item in agrupado %}
+                    <tr class="hover:bg-gray-50">
+                        <td class="py-2 text-gray-400 font-mono text-[10px]">{{ forloop.counter }}</td>
+                        <td class="py-2 font-bold text-gray-800">{{ item.cadastro__nome|default:"Sem {{ entidade_label }}" }}</td>
+                        <td class="py-2 text-gray-500 font-mono text-[10px]">{{ item.cadastro__cpf_cnpj|default:"—" }}</td>
+                        <td class="py-2 text-center text-gray-600">{{ item.qtd_contas }}</td>
+                        <td class="py-2 text-right font-bold text-red-600 font-mono">{{ item.total_aberto|moeda_br }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="py-6 text-center text-gray-400 italic">Nenhum registro em aberto encontrado.</td></tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot>
+                    <tr class="border-t-2 border-gray-300 bg-gray-50">
+                        <td colspan="3" class="py-3 text-right text-[10px] font-bold text-gray-600 uppercase pr-4">Total Geral:</td>
+                        <td class="py-3 text-center font-bold text-gray-700">{{ agrupado|length }}</td>
+                        <td class="py-3 text-right font-bold text-xl text-gray-800 font-mono">{{ total_geral|moeda_br }}</td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            {% if agrupado %}
+            <div class="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                <p class="text-[10px] text-gray-500 font-bold uppercase mb-1">Resumo</p>
+                <p class="text-sm text-gray-700">
+                    Total de <strong>{{ agrupado|length }}</strong> {{ entidade_label|lower }}(es) com saldo em aberto.
+                </p>
+                <p class="text-sm text-gray-700">
+                    Valor total em aberto: <strong class="text-red-600 font-mono">{{ total_geral|moeda_br }}</strong>
+                </p>
+            </div>
+            {% endif %}
+
+        </div>
+
+        <!-- Botão Imprimir -->
+        <div class="fixed bottom-8 right-8 no-print">
+            <button onclick="window.print()" class="bg-gray-800 hover:bg-gray-900 text-white font-bold py-2 px-4 rounded-full shadow-lg flex items-center border border-gray-600 text-xs">
+                <i class="fas fa-print mr-2"></i> Imprimir
+            </button>
+        </div>
+
+    </div>
+</body>
+</html>

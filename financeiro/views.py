@@ -3,7 +3,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from core.decorators import permission_required_module
 from django.contrib import messages
-from django.db.models import Sum, Q
+from django.db.models import Sum, Q, Count
 from django.utils.dateparse import parse_date
 
 # Imports dos Modelos e Formulários
@@ -1069,5 +1069,54 @@ def relatorio_dre_sintetico(request):
         'total_receitas': total_rec,
         'total_despesas': total_desp,
         'resultado': resultado,
+        'empresa': request.user.empresa,
+    })
+
+
+@login_required
+@permission_required_module('financeiro')
+def relatorio_contas_sintetico(request):
+    """Relatório sintético: total em aberto por Cliente/Fornecedor"""
+    tipo_lista = request.GET.get('tipo_lista', 'receber')
+    tipo_plano = 'R' if tipo_lista == 'receber' else 'D'
+
+    contas = Conta.objects.filter(
+        empresa=request.user.empresa,
+        plano_de_contas__tipo=tipo_plano,
+    ).exclude(status__in=['PAGA', 'CANCELADA'])
+
+    # Filtros
+    data_ini = request.GET.get('data_ini')
+    data_fim = request.GET.get('data_fim')
+    status = request.GET.get('status')
+
+    if data_ini and data_fim:
+        contas = contas.filter(data_vencimento__range=[data_ini, data_fim])
+    if status:
+        if status == 'ATRASADA':
+            contas = contas.filter(status__in=['PENDENTE', 'PARCIAL'], data_vencimento__lt=date.today())
+        elif status != 'TODOS':
+            contas = contas.filter(status=status)
+
+    # Agrupar por cliente/fornecedor
+    from django.db.models import Sum, F
+    agrupado = contas.values(
+        'cadastro__id', 'cadastro__nome', 'cadastro__cpf_cnpj'
+    ).annotate(
+        total_aberto=Sum(F('valor') - F('valor_pago')),
+        qtd_contas=Count('id'),
+    ).order_by('cadastro__nome')
+
+    total_geral = sum(item['total_aberto'] for item in agrupado)
+
+    titulo = 'Relatório de Contas a Receber' if tipo_lista == 'receber' else 'Relatório de Contas a Pagar'
+    entidade_label = 'Cliente' if tipo_lista == 'receber' else 'Fornecedor'
+
+    return render(request, 'financeiro/relatorio_contas_sintetico.html', {
+        'agrupado': agrupado,
+        'total_geral': total_geral,
+        'titulo_relatorio': titulo,
+        'entidade_label': entidade_label,
+        'tipo_lista': tipo_lista,
         'empresa': request.user.empresa,
     })

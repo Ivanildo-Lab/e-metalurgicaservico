@@ -14,6 +14,7 @@ urlpatterns = [
     # RELATÓRIO
     path('fluxo/relatorio/', views.relatorio_fluxo, name='relatorio_fluxo'),
     path('contas/relatorio/', views.relatorio_contas, name='relatorio_contas'),
+    path('contas/relatorio/sintetico/', views.relatorio_contas_sintetico, name='relatorio_contas_sintetico'),
     path('relatorios/dre/', views.relatorio_dre, name='relatorio_dre'),
     path('relatorios/dre/sintetico/', views.relatorio_dre_sintetico, name='relatorio_dre_sintetico'),
         
