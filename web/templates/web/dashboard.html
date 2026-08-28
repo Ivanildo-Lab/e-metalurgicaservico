@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% load servicos_filters %}
 
 {% block titulo_cabecalho %}Painel{% endblock %}
 {% block subtitulo_cabecalho %}Visão Geral da Empresa{% endblock %}
@@ -28,7 +29,7 @@
     <div class="bg-green-600 rounded-lg shadow-lg text-white relative overflow-hidden group">
         <div class="p-5">
             <h3 class="text-3xl font-bold flex items-baseline truncate">
-                <span class="text-lg mr-1">R$</span> {{ receita_mensal|floatformat:2 }}
+                {{ receita_mensal|moeda_br }}
             </h3>
             <p class="font-medium opacity-90">Receita (Mês)</p>
         </div>
@@ -44,7 +45,7 @@
     <div class="bg-red-600 rounded-lg shadow-lg text-white relative overflow-hidden group">
         <div class="p-5">
             <h3 class="text-3xl font-bold flex items-baseline truncate">
-                <span class="text-lg mr-1">R$</span> {{ despesa_mensal|floatformat:2 }}
+                {{ despesa_mensal|moeda_br }}
             </h3>
             <p class="font-medium opacity-90">Despesas (Mês)</p>
         </div>
@@ -60,7 +61,7 @@
     <div class="bg-yellow-500 rounded-lg shadow-lg text-white relative overflow-hidden group">
         <div class="p-5">
             <h3 class="text-3xl font-bold flex items-baseline truncate">
-                <span class="text-lg mr-1">R$</span> {{ saldo|floatformat:2 }}
+                {{ saldo|moeda_br }}
             </h3>
             <p class="font-medium opacity-90">Saldo do Mês</p>
         </div>
@@ -160,7 +161,7 @@
                 <li class="p-4 hover:bg-red-50 transition">
                     <div class="flex justify-between mb-1">
                         <span class="font-bold text-gray-800 text-sm">{{ conta.cadastro.nome|default:"Sem nome" }}</span>
-                        <span class="font-bold text-red-600 text-sm">R$ {{ conta.valor|floatformat:2 }}</span>
+                        <span class="font-bold text-red-600 text-sm">{{ conta.valor|moeda_br }}</span>
                     </div>
                     <div class="flex justify-between text-xs text-gray-500">
                         <span>{{ conta.descricao|truncatechars:20 }}</span>
