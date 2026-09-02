@@ -5,12 +5,13 @@ from core.decorators import permission_required_module
 from django.contrib import messages
 from django.db.models import Sum, Q, Count
 from django.utils.dateparse import parse_date
+from django.db import transaction
 
 # Imports dos Modelos e Formulários
-from .models import Conta, Lancamento, Caixa, PlanoDeContas
+from .models import Conta, Lancamento, Caixa, PlanoDeContas, get_taxa_juros_mensal
 from .forms import ContaForm, LancamentoManualForm, CaixaForm, PlanoContasForm
 from core.models import ParametroSistema
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation, ROUND_HALF_UP
 import calendar
 import random
 
@@ -189,7 +190,7 @@ def lista_contas_receber(request):
     from servicos.models import FormaPagamento
     formas_pagamento = FormaPagamento.objects.filter(empresa=request.user.empresa, ativo=True).order_by('ordem', 'nome')
 
-    # Totais
+    # Totais base
     from django.db.models import Sum, Count, F, ExpressionWrapper, DecimalField
     totais = contas.aggregate(
         total_geral=Sum('valor'),
@@ -204,11 +205,32 @@ def lista_contas_receber(request):
     qtd_pagas = contas.filter(status='PAGA').count()
     qtd_atrasadas = contas.filter(status__in=['PENDENTE', 'PARCIAL'], data_vencimento__lt=date.today()).count()
     
+    # Taxa de juros mensal
+    taxa_juros_mensal = get_taxa_juros_mensal(request.user.empresa)
+
     # Paginacao
     from django.core.paginator import Paginator
     paginator = Paginator(contas, 50)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
+
+    # Anexar juros calculados em cada conta do page_obj
+    total_juros = Decimal('0.00')
+    total_com_juros = Decimal('0.00')
+    for c in page_obj:
+        try:
+            juros = c.calcular_juros(taxa_juros_mensal)
+            total_c = c.total_com_juros(taxa_juros_mensal)
+            dias = c.dias_atraso()
+        except Exception:
+            juros = Decimal('0.00')
+            total_c = Decimal(str(c.valor_restante)) if hasattr(c, 'valor_restante') else Decimal(str(c.valor))
+            dias = 0
+        c.juros_calculado = juros
+        c.total_com_juros_calculado = total_c
+        c.dias_atraso_calculado = dias
+        total_juros += juros
+        total_com_juros += total_c
 
     return render(request, 'financeiro/contas_lista.html', {
         'contas': page_obj, 
@@ -234,6 +256,9 @@ def lista_contas_receber(request):
         'qtd_pagas': qtd_pagas,
         'qtd_atrasadas': qtd_atrasadas,
         'qtd_total': qtd_pendentes + qtd_parciais + qtd_pagas,
+        'taxa_juros_mensal': taxa_juros_mensal,
+        'total_juros': total_juros,
+        'total_com_juros': total_com_juros,
     })
 
 @login_required
@@ -506,7 +531,6 @@ def baixar_conta(request, id):
         saldo_restante_antes = conta.valor - conta.valor_pago
 
         # Criar um Lancamento por linha de pagamento
-        from django.db import transaction
         with transaction.atomic():
             for idx, linha in enumerate(linhas_validadas):
                 valor = linha['valor']
@@ -557,6 +581,197 @@ def baixar_conta(request, id):
         else:
             return redirect('financeiro:lista_pagar')
     
+    return redirect('financeiro:lista_receber')
+
+
+@login_required
+@permission_required_module('financeiro')
+def baixar_contas_lote(request):
+    """
+    Baixa em lote: um ÚNICO lançamento no fluxo (financeiro_lancamento) somando os valores
+    líquidos (total_com_juros - desconto_total) de todas as contas selecionadas.
+    Atualiza cada conta para PAGA dentro de transaction.atomic().
+    """
+    if request.method != 'POST':
+        messages.error(request, "Método inválido.")
+        return redirect('financeiro:lista_receber')
+
+    # IDs pode vir como contas_ids[] ou contas_ids
+    ids = request.POST.getlist('contas_ids[]')
+    if not ids:
+        ids = request.POST.getlist('contas_ids')
+    # fallback comma separated
+    if not ids:
+        raw = request.POST.get('contas_ids', '')
+        if raw:
+            ids = [x.strip() for x in raw.split(',') if x.strip()]
+
+    caixa_id = request.POST.get('caixa')
+    data_pagamento_str = request.POST.get('data_pagamento')
+    # forma pode vir como forma_pagamento ou pagamento_forma_id[]
+    forma_id = request.POST.get('forma_pagamento') or request.POST.get('forma_pagamento_id')
+    if not forma_id:
+        # tenta pegar lista
+        lista_fp = request.POST.getlist('pagamento_forma_id[]') or request.POST.getlist('pagamento_forma_id') or request.POST.getlist('forma_pagamento')
+        if lista_fp:
+            forma_id = lista_fp[0]
+
+    if not ids:
+        messages.error(request, "Nenhuma conta selecionada.")
+        return redirect('financeiro:lista_receber')
+    if not caixa_id or not data_pagamento_str:
+        messages.error(request, "Informe Caixa e Data do Movimento.")
+        return redirect('financeiro:lista_receber')
+    if not forma_id:
+        messages.error(request, "Selecione a Forma de Pagamento.")
+        return redirect('financeiro:lista_receber')
+
+    # Validar caixa e forma
+    try:
+        caixa = Caixa.objects.get(id=int(caixa_id), empresa=request.user.empresa)
+    except (Caixa.DoesNotExist, ValueError, TypeError):
+        messages.error(request, "Caixa inválido.")
+        return redirect('financeiro:lista_receber')
+
+    try:
+        from servicos.models import FormaPagamento
+        forma_pagamento = FormaPagamento.objects.get(id=int(forma_id), empresa=request.user.empresa)
+    except Exception:
+        messages.error(request, "Forma de pagamento inválida.")
+        return redirect('financeiro:lista_receber')
+
+    # Parse data_pagamento
+    data_pagamento = parse_date(data_pagamento_str)
+    if not data_pagamento:
+        try:
+            from datetime import datetime
+            data_pagamento = datetime.strptime(data_pagamento_str, '%Y-%m-%d').date()
+        except Exception:
+            data_pagamento = date.today()
+    data_ref_str = data_pagamento_str  # para cálculo de juros
+
+    # Taxa
+    taxa = get_taxa_juros_mensal(request.user.empresa)
+
+    # === NOVO: leitura de desconto_total único ===
+    raw_desc = request.POST.get('desconto_total', '0') or '0'
+    s = str(raw_desc).strip()
+    s = s.replace('R$', '').replace(' ', '').strip()
+    if s == '':
+        s = '0'
+    if ',' in s and '.' in s:
+        s = s.replace('.', '').replace(',', '.')
+    elif ',' in s:
+        s = s.replace(',', '.')
+    try:
+        desconto_total = Decimal(s)
+    except (InvalidOperation, ValueError, AttributeError):
+        messages.error(request, f"Desconto total inválido: {raw_desc}")
+        return redirect('financeiro:lista_receber')
+    desconto_total = desconto_total.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    if desconto_total < 0:
+        messages.error(request, "Desconto total não pode ser negativo.")
+        return redirect('financeiro:lista_receber')
+
+    # Busque contas válidas (apenas PENDENTE/PARCIAL do tipo RECEITA) — spec passo 2
+    contas_qs = Conta.objects.filter(
+        id__in=ids, empresa=request.user.empresa, plano_de_contas__tipo='R', status__in=['PENDENTE', 'PARCIAL']
+    ).select_related('cadastro', 'plano_de_contas')
+    contas_validas = list(contas_qs)
+
+    # Verificar ids não encontrados / já pagas / tipo diferente
+    contas_validas_ids_set = {str(c.id) for c in contas_validas}
+    ids_nao_encontrados = [str(i) for i in ids if str(i) not in contas_validas_ids_set]
+
+    if not contas_validas:
+        if ids_nao_encontrados:
+            messages.warning(request, f"Nenhuma conta válida para baixa (todas já pagas ou não encontradas). IDs ignorados: {', '.join(ids_nao_encontrados)}")
+        else:
+            messages.warning(request, "Nenhuma conta válida para baixa (todas já pagas ou canceladas).")
+        return redirect('financeiro:lista_receber')
+
+    # Calcular totais por conta: juros, total_cj, valor_restante — spec passos 3-4
+    total_geral_com_juros = Decimal('0.00')
+    total_juros = Decimal('0.00')
+    total_restante = Decimal('0.00')
+    for conta in contas_validas:
+        try:
+            juros = conta.calcular_juros(taxa, data_ref_str)
+        except Exception:
+            juros = Decimal('0.00')
+        try:
+            base_restante = conta.valor_restante
+            if base_restante is None:
+                base_restante = conta.valor
+            base_restante = Decimal(str(base_restante))
+        except Exception:
+            base_restante = Decimal(str(conta.valor))
+        total_cj = (base_restante + juros).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        total_geral_com_juros += total_cj
+        total_juros += juros
+        total_restante += base_restante
+    total_geral_com_juros = total_geral_com_juros.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    total_juros = total_juros.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+    total_restante = total_restante.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+    # Valide desconto_total <= total_geral_com_juros — spec passo 5
+    if desconto_total > total_geral_com_juros:
+        messages.error(request, f"Desconto total R$ {desconto_total:.2f} não pode exceder o total com juros R$ {total_geral_com_juros:.2f}.")
+        return redirect('financeiro:lista_receber')
+
+    # valor_liquido_total = total_geral_com_juros - desconto_total — spec passo 6
+    valor_liquido_total = (total_geral_com_juros - desconto_total).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+
+    # Determinar descrição — spec passo 7
+    qtd = len(contas_validas)
+    cadastros = set(c.cadastro.nome for c in contas_validas if c.cadastro and getattr(c.cadastro, 'nome', None))
+    if len(cadastros) == 1:
+        nome = list(cadastros)[0]
+        descricao = f"RECEBIMENTO: MENSALIDADE DE CLIENTES - {nome.upper()} ({qtd} parcelas)"
+    elif len(cadastros) > 1:
+        descricao = f"RECEBIMENTO: MENSALIDADE DE CLIENTES - DIVERSOS CLIENTES ({qtd} parcelas)"
+    else:
+        descricao = f"RECEBIMENTO: MENSALIDADE DE CLIENTES ({qtd} parcelas)"
+
+    # Escolha plano_de_contas para o lançamento: primeiro da lista — spec passo 8
+    # Se todas têm o mesmo plano, usa esse; senão usa o primeiro (com comentário)
+    plano = contas_validas[0].plano_de_contas
+
+    with transaction.atomic():
+        # Cria UM lançamento agregado — conta_origem=None pois é lote (nullable em e-metalurgicaservicos)
+        # Se o model exigir NOT NULL, usar contas_validas[0] mas prefira None quando nullable
+        lanc = Lancamento.objects.create(
+            empresa=request.user.empresa,
+            caixa=caixa,
+            plano_de_contas=plano,
+            conta_origem=None,  # agregado — NÃO vincular a conta específica
+            forma_pagamento=forma_pagamento,
+            data_lancamento=data_pagamento,
+            descricao=descricao,
+            valor=valor_liquido_total,
+            tipo='C'
+        )
+
+        # Atualizar cada conta: valor_pago = valor (integral) e status='PAGA' — spec passo 9
+        for conta in contas_validas:
+            try:
+                conta.valor_pago = conta.valor
+            except Exception:
+                pass
+            conta.status = 'PAGA'
+            try:
+                conta.save(update_fields=['valor_pago', 'status'])
+            except Exception:
+                try:
+                    conta.save(update_fields=['status'])
+                except Exception:
+                    conta.save()
+
+    # Mensagem — spec passo 10
+    msg = f"Baixa em lote realizada! {qtd} parcela(s) baixadas. Total com juros R$ {total_geral_com_juros:.2f} - Desconto R$ {desconto_total:.2f} = Líquido R$ {valor_liquido_total:.2f} lançado no Caixa {caixa.nome} em {data_pagamento} - {descricao}"
+    if ids_nao_encontrados:
+        msg += f" ({len(ids_nao_encontrados)} ignorada(s) já pagas/não encontradas)."
+    messages.success(request, msg)
     return redirect('financeiro:lista_receber')
 
 
@@ -935,8 +1150,32 @@ def relatorio_contas(request):
     total_valor = contas.aggregate(Sum('valor'))['valor__sum'] or 0
     titulo_relatorio = "Relatório de Contas a Receber" if tipo_lista == 'receber' else "Relatório de Contas a Pagar"
 
+    # Juros: anexar em cada conta e calcular totais
+    taxa_juros_mensal = get_taxa_juros_mensal(request.user.empresa)
+    total_juros = Decimal('0.00')
+    total_com_juros = Decimal('0.00')
+    contas_list = list(contas)
+    for c in contas_list:
+        try:
+            juros = c.calcular_juros(taxa_juros_mensal)
+            total_c = c.total_com_juros(taxa_juros_mensal)
+            dias = c.dias_atraso()
+        except Exception:
+            juros = Decimal('0.00')
+            total_c = Decimal(str(c.valor_restante)) if hasattr(c, 'valor_restante') else Decimal(str(c.valor))
+            dias = 0
+        c.juros_calculado = juros
+        c.total_com_juros_calculado = total_c
+        c.dias_atraso_calculado = dias
+        total_juros += juros
+        total_com_juros += total_c
+    # Ajustar total_com_juros geral = total_valor + total_juros (se considérer valor_restante base)
+    # Mas já somamos per conta valor_restante+juros, então total corretamente
+    # Para relatório, total_geral com juros = sum total_com_juros
+    # manter total_valor original
+
     return render(request, 'financeiro/relatorio_contas_impresso.html', {
-        'contas': contas,
+        'contas': contas_list,
         'total_valor': total_valor,
         'titulo_relatorio': titulo_relatorio,
         'empresa': request.user.empresa,
@@ -944,7 +1183,10 @@ def relatorio_contas(request):
         'data_fim': parse_date(data_fim) if data_fim else None,
         'data_pag_ini': parse_date(data_pag_ini) if data_pag_ini else None,
         'data_pag_fim': parse_date(data_pag_fim) if data_pag_fim else None,
-        'status_filtro': status
+        'status_filtro': status,
+        'taxa_juros_mensal': taxa_juros_mensal,
+        'total_juros': total_juros,
+        'total_com_juros': total_com_juros,
     })
 
 @login_required

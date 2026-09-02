@@ -27,6 +27,7 @@ urlpatterns = [
     path('contas/pagar/nova/', views.nova_despesa, name='nova_despesa'), # Atalho para criar
 
     # AÇÕES COMUNS (Editar/Baixar/Excluir servem para ambos)
+    path('contas/baixar-lote/', views.baixar_contas_lote, name='baixar_contas_lote'),
     path('contas/baixar/<int:id>/', views.baixar_conta, name='baixar_conta'),
     path('contas/editar/<int:id>/', views.editar_conta, name='editar_conta'),
     path('contas/excluir/<int:id>/', views.excluir_conta, name='excluir_conta'),

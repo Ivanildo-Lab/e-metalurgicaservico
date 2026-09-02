@@ -133,7 +133,7 @@
     <!-- RESUMO DE TOTAIS -->
     {% if contas %}
     <div class="bg-gray-50 border-b border-gray-200 px-6 py-3">
-        <div class="flex flex-wrap gap-6 text-sm">
+        <div class="flex flex-wrap gap-6 text-sm items-center">
             <span class="font-bold text-gray-700">Registros: <span class="text-gray-900">{{ qtd_total }}</span></span>
             <span class="text-gray-400">|</span>
             <span class="text-yellow-700">Pendentes: <b>{{ qtd_pendentes }}</b></span>
@@ -150,15 +150,36 @@
             <span class="text-green-700 font-semibold">Recebido: {{ total_pago|moeda_br }}</span>
             <span class="text-gray-400">|</span>
             <span class="text-yellow-700 font-semibold">A Receber: {{ total_pendente|moeda_br }}</span>
+            {% if tipo_lista == 'receber' %}
+            <span class="text-gray-400">|</span>
+            <span class="text-red-600 font-semibold">Total Juros ({{ taxa_juros_mensal }}% a.m.): {{ total_juros|moeda_br }}</span>
+            <span class="text-gray-400">|</span>
+            <span class="text-blue-700 font-bold">Total com Juros: {{ total_com_juros|moeda_br }}</span>
+            {% endif %}
         </div>
     </div>
     {% endif %}
 
+    <!-- BARRA DE AÇÃO EM LOTE (hidden por padrão) -->
+    {% if tipo_lista == 'receber' %}
+    <div id="barraLote" class="hidden bg-blue-50 border-b border-blue-200 px-6 py-3 flex flex-wrap gap-4 items-center justify-between">
+        <div class="text-sm font-bold text-blue-800">
+            <span id="qtdSelecionadas">0</span> selecionadas - Total com Juros R$ <span id="totalLote">0,00</span>
+            <span class="text-xs font-normal text-blue-600 ml-2">Juros {{ taxa_juros_mensal }}% a.m. pro-rata dia já incluso</span>
+        </div>
+        <button id="btnBaixaLote" type="button" onclick="abrirModalBaixaLote()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded text-sm font-bold shadow">
+            <i class="fa fa-check mr-1"></i> Baixar Selecionadas
+        </button>
+    </div>
+    {% endif %}
 
     <div class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-100">
                 <tr>
+                    {% if tipo_lista == 'receber' %}
+                    <th class="px-2 py-3 text-center text-xs font-bold text-gray-500 uppercase"><input type="checkbox" id="chkTodos"></th>
+                    {% endif %}
                     <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Vencimento</th>
                     <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">
                         {% if tipo_lista == 'receber' %}Cliente{% else %}Fornecedor{% endif %}
@@ -166,6 +187,11 @@
                     <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Doc / Descrição</th>
                     <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase">Valor</th>
                     <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase">Valor Pago</th>
+                    {% if tipo_lista == 'receber' %}
+                    <th class="px-3 py-3 text-center text-xs font-bold text-gray-500 uppercase">Dias Atraso</th>
+                    <th class="px-3 py-3 text-right text-xs font-bold text-gray-500 uppercase">Juros</th>
+                    <th class="px-3 py-3 text-right text-xs font-bold text-gray-500 uppercase">Total c/ Juros</th>
+                    {% endif %}
                     <th class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase">Pgto</th>
                     <th class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase">Status</th>
                     <th class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase">Ações</th>
@@ -174,6 +200,11 @@
             <tbody class="bg-white divide-y divide-gray-200 text-sm">
                 {% for c in contas %}
                 <tr class="hover:bg-gray-50 transition">
+                    {% if tipo_lista == 'receber' %}
+                    <td class="px-2 py-3 text-center">
+                        <input type="checkbox" class="chk-conta" value="{{ c.id }}" data-valor="{{ c.valor_restante|floatformat:2 }}" data-juros="{{ c.juros_calculado|floatformat:2 }}" data-total="{{ c.total_com_juros_calculado|floatformat:2 }}" {% if c.status == 'PAGA' or c.status == 'CANCELADA' %}disabled{% endif %}>
+                    </td>
+                    {% endif %}
                     
                     <td class="px-3 py-3 whitespace-nowrap text-gray-700 font-mono text-xs">
                         {{ c.data_vencimento|date:"d/m/Y" }}
@@ -213,6 +244,26 @@
                             <span class="text-gray-300 text-xs">-</span>
                         {% endif %}
                     </td>
+
+                    {% if tipo_lista == 'receber' %}
+                    <td class="px-3 py-3 text-center text-xs">
+                        {% if c.dias_atraso_calculado > 0 %}
+                            <span class="font-bold text-red-600">{{ c.dias_atraso_calculado }}d</span>
+                        {% else %}
+                            <span class="text-gray-300">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-3 py-3 text-right text-xs">
+                        {% if c.juros_calculado and c.juros_calculado > 0 %}
+                            <span class="font-bold text-red-600">{{ c.juros_calculado|moeda_br }}</span>
+                        {% else %}
+                            <span class="text-gray-300">-</span>
+                        {% endif %}
+                    </td>
+                    <td class="px-3 py-3 text-right text-xs">
+                        <span class="font-bold {% if c.juros_calculado > 0 %}text-blue-700{% else %}text-gray-700{% endif %}">{{ c.total_com_juros_calculado|moeda_br }}</span>
+                    </td>
+                    {% endif %}
 
                     <td class="px-3 py-3 text-center text-[10px] text-gray-600">
                         {% if c.data_pagamento %}
@@ -258,7 +309,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="8" class="px-6 py-10 text-center text-gray-500">Nenhum lançamento encontrado.</td>
+                    <td colspan="{% if tipo_lista == 'receber' %}12{% else %}8{% endif %}" class="px-6 py-10 text-center text-gray-500">Nenhum lançamento encontrado.</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -373,6 +424,82 @@
                 <div class="flex gap-3 mt-6">
                     <button type="button" id="btnCancelarBaixa" class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 font-medium rounded hover:bg-gray-300">Cancelar</button>
                     <button type="submit" id="btnConfirmarBaixa" class="flex-1 px-4 py-2 bg-green-600 text-white font-medium rounded hover:bg-green-700 shadow">Confirmar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL DE BAIXA EM LOTE -->
+<div id="modalBaixaLote" class="fixed inset-0 bg-gray-900 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50 flex items-center justify-center">
+    <div class="relative p-5 border shadow-lg rounded-md bg-white w-full max-w-3xl max-h-[90vh] overflow-y-auto">
+        <div class="text-center">
+            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Baixa em Lote - Contas Selecionadas</h3>
+            
+            <form id="formBaixaLote" method="POST" action="{% url 'financeiro:baixar_contas_lote' %}">
+                {% csrf_token %}
+                <!-- Tabela de contas selecionadas -->
+                <div id="tabelaLoteContainer" class="text-left mb-4">
+                    <table class="min-w-full divide-y divide-gray-200 text-xs">
+                        <thead class="bg-gray-100">
+                            <tr>
+                                <th class="px-2 py-2 text-left font-bold text-gray-500 uppercase">Vencimento</th>
+                                <th class="px-2 py-2 text-left font-bold text-gray-500 uppercase">Cliente / Descrição</th>
+                                <th class="px-2 py-2 text-right font-bold text-gray-500 uppercase">Restante</th>
+                                <th class="px-2 py-2 text-right font-bold text-gray-500 uppercase">Juros</th>
+                                <th class="px-2 py-2 text-right font-bold text-gray-500 uppercase">Total c/ Juros</th>
+                                <th class="px-2 py-2 text-right font-bold text-gray-500 uppercase">Desc. Rateado</th>
+                                <th class="px-2 py-2 text-right font-bold text-gray-500 uppercase">Líquido</th>
+                            </tr>
+                        </thead>
+                        <tbody id="corpoTabelaLote" class="bg-white divide-y divide-gray-200">
+                            <!-- preenchido via JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Campos comuns -->
+                <div class="text-left grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Data do Movimento</label>
+                        <input type="date" name="data_pagamento" id="dataPagamentoLote" required class="w-full rounded-md border-gray-300 shadow-sm border p-2 text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Conta / Caixa</label>
+                        <select name="caixa" required class="w-full rounded-md border-gray-300 shadow-sm border p-2 bg-white text-sm">
+                            <option value="">-- Selecione --</option>
+                            {% for caixa in caixas %}
+                                <option value="{{ caixa.id }}">{{ caixa.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Forma de Pagamento</label>
+                        <select name="forma_pagamento" required class="w-full rounded-md border-gray-300 shadow-sm border p-2 bg-white text-sm">
+                            <option value="">-- Selecione --</option>
+                            {% for fp in formas_pagamento %}
+                                <option value="{{ fp.id }}">{{ fp.nome }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Desconto Total (R$)</label>
+                        <input type="text" name="desconto_total" id="descontoTotalLote" value="0,00" oninput="recalcularLote()" onfocus="this.select()" onblur="formatarDescontoTotalLote(this)" placeholder="0,00" class="w-full rounded-md border-gray-300 shadow-sm border p-2 text-sm font-bold text-orange-600 text-right">
+                    </div>
+                </div>
+
+                <!-- Totais -->
+                <div class="bg-gray-50 p-3 rounded border border-gray-200 text-sm space-y-1 mb-4">
+                    <div class="flex justify-between"><span class="font-bold text-gray-600">Total Restante:</span> <span class="font-bold" id="loteTotalRestante">R$ 0,00</span></div>
+                    <div class="flex justify-between"><span class="font-bold text-red-600">Total Juros:</span> <span class="font-bold text-red-600" id="loteTotalJuros">R$ 0,00</span></div>
+                    <div class="flex justify-between"><span class="font-bold text-gray-600">Total com Juros:</span> <span class="font-bold" id="loteTotalComJuros">R$ 0,00</span><span class="hidden" id="loteTotalBruto">R$ 0,00</span></div>
+                    <div class="flex justify-between"><span class="font-bold text-orange-600">Desconto Total:</span> <span class="font-bold text-orange-600" id="loteDescontoDisplay">R$ 0,00</span><span class="hidden" id="loteTotalDesconto">R$ 0,00</span></div>
+                    <div class="flex justify-between border-t pt-1 mt-1"><span class="font-bold text-green-700 text-base">Total Líquido (vai p/ Caixa):</span> <span class="font-bold text-green-700 text-base" id="loteTotalLiquido">R$ 0,00</span></div>
+                </div>
+
+                <div class="flex gap-3 mt-6">
+                    <button type="button" id="btnCancelarBaixaLote" class="flex-1 px-4 py-2 bg-gray-200 text-gray-800 font-medium rounded hover:bg-gray-300">Cancelar</button>
+                    <button type="submit" id="btnConfirmarBaixaLote" class="flex-1 px-4 py-2 bg-green-600 text-white font-medium rounded hover:bg-green-700 shadow">Confirmar Baixa em Lote</button>
                 </div>
             </form>
         </div>
@@ -571,6 +698,164 @@
         if (modal) modal.classList.add('hidden');
     }
 
+    // ===== LÓGICA DE BAIXA EM LOTE =====
+    let loteTotalComJurosGlobal = 0;
+    function atualizarBarraLote() {
+        const checks = document.querySelectorAll('.chk-conta:checked');
+        const barra = document.getElementById('barraLote');
+        const qtdEl = document.getElementById('qtdSelecionadas');
+        const totalEl = document.getElementById('totalLote');
+        if (!barra || !qtdEl || !totalEl) return;
+        if (checks.length === 0) {
+            barra.classList.add('hidden');
+            return;
+        }
+        barra.classList.remove('hidden');
+        let total = 0;
+        checks.forEach(function(chk) {
+            const t = parseFloat((chk.dataset.total || '0').replace(',', '.')) || 0;
+            total += t;
+        });
+        qtdEl.innerText = checks.length;
+        totalEl.innerText = total.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+    }
+
+    function abrirModalBaixaLote() {
+        const checks = document.querySelectorAll('.chk-conta:checked');
+        if (checks.length === 0) {
+            alert('Selecione pelo menos uma conta.');
+            return;
+        }
+        const corpo = document.getElementById('corpoTabelaLote');
+        corpo.innerHTML = '';
+        let totalRestante = 0;
+        let totalJuros = 0;
+        let totalBruto = 0;
+        checks.forEach(function(chk) {
+            const id = chk.value;
+            const tr = chk.closest('tr');
+            let venc = tr ? tr.querySelector('td:nth-child(2)')?.innerText.trim() : '';
+            let clienteDesc = tr ? tr.querySelector('td:nth-child(3)')?.innerText.trim() : 'Conta ' + id;
+            const descricao = chk.dataset.descricao || clienteDesc;
+            const valorRest = parseFloat((chk.dataset.valor || '0').replace(',', '.')) || 0;
+            const juros = parseFloat((chk.dataset.juros || '0').replace(',', '.')) || 0;
+            const total = parseFloat((chk.dataset.total || '0').replace(',', '.')) || 0;
+            totalRestante += valorRest;
+            totalJuros += juros;
+            totalBruto += total;
+            const linha = `
+                <tr data-id="${id}" data-total="${total.toFixed(2)}">
+                    <td class="px-2 py-2 font-mono">${venc}</td>
+                    <td class="px-2 py-2">
+                        <div class="font-semibold text-gray-800 truncate max-w-[200px]">${descricao}</div>
+                        <input type="hidden" name="contas_ids[]" value="${id}">
+                        <input type="hidden" name="contas_ids" value="${id}">
+                    </td>
+                    <td class="px-2 py-2 text-right">R$ ${valorRest.toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
+                    <td class="px-2 py-2 text-right text-red-600">R$ ${juros.toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
+                    <td class="px-2 py-2 text-right font-bold text-blue-700">R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
+                    <td class="px-2 py-2 text-right text-orange-600 rateio-desc">R$ 0,00</td>
+                    <td class="px-2 py-2 text-right font-bold text-green-700 rateio-liquido">R$ ${total.toLocaleString('pt-BR', {minimumFractionDigits:2})}</td>
+                </tr>
+            `;
+            corpo.insertAdjacentHTML('beforeend', linha);
+        });
+        loteTotalComJurosGlobal = totalBruto;
+        document.getElementById('loteTotalRestante').innerText = 'R$ ' + totalRestante.toLocaleString('pt-BR', {minimumFractionDigits:2});
+        document.getElementById('loteTotalJuros').innerText = 'R$ ' + totalJuros.toLocaleString('pt-BR', {minimumFractionDigits:2});
+        document.getElementById('loteTotalBruto').innerText = 'R$ ' + totalBruto.toLocaleString('pt-BR', {minimumFractionDigits:2});
+        document.getElementById('loteTotalComJuros').innerText = 'R$ ' + totalBruto.toLocaleString('pt-BR', {minimumFractionDigits:2});
+        const inpDesc = document.getElementById('descontoTotalLote');
+        if (inpDesc) inpDesc.value = '0,00';
+        recalcularLote();
+        const hoje = new Date().toISOString().split('T')[0];
+        const dataInput = document.getElementById('dataPagamentoLote');
+        if (dataInput) dataInput.value = hoje;
+        document.getElementById('modalBaixaLote').classList.remove('hidden');
+    }
+
+    function formatarDescontoTotalLote(input) {
+        let v = input.value.replace(/\D/g, '');
+        if (v === '') { input.value = '0,00'; recalcularLote(); return; }
+        let num = parseFloat(v) / 100;
+        input.value = num.toLocaleString('pt-BR', {minimumFractionDigits:2, maximumFractionDigits:2});
+        recalcularLote();
+    }
+    function formatarDescontoLote(input) { formatarDescontoTotalLote(input); }
+
+    function parseMoedaBR(str) {
+        if (!str) return 0;
+        let s = str.replace('R$', '').trim().replace(/\./g, '').replace(',', '.');
+        return parseFloat(s) || 0;
+    }
+
+    function recalcularLote() {
+        const inp = document.getElementById('descontoTotalLote');
+        let desconto = 0;
+        if (inp) {
+            let v = inp.value.replace(/\D/g, '');
+            if (v === '') v = '0';
+            desconto = parseFloat(v) / 100;
+        }
+        let bruto = loteTotalComJurosGlobal;
+        if (!bruto || bruto === 0) {
+            const brutoText = document.getElementById('loteTotalComJuros')?.innerText || document.getElementById('loteTotalBruto')?.innerText || 'R$ 0,00';
+            bruto = parseMoedaBR(brutoText);
+            loteTotalComJurosGlobal = bruto;
+        }
+        let liquido = bruto - desconto;
+        const displayDesc = document.getElementById('loteDescontoDisplay');
+        const displayDescOld = document.getElementById('loteTotalDesconto');
+        const displayLiquido = document.getElementById('loteTotalLiquido');
+        if (displayDesc) displayDesc.innerText = 'R$ ' + desconto.toLocaleString('pt-BR', {minimumFractionDigits:2});
+        if (displayDescOld) displayDescOld.innerText = 'R$ ' + desconto.toLocaleString('pt-BR', {minimumFractionDigits:2});
+        if (displayLiquido) displayLiquido.innerText = 'R$ ' + liquido.toLocaleString('pt-BR', {minimumFractionDigits:2});
+        const linhas = document.querySelectorAll('#corpoTabelaLote tr[data-total]');
+        if (linhas.length > 0 && bruto > 0) {
+            let acumulado = 0;
+            linhas.forEach(function(tr, idx) {
+                const total = parseFloat(tr.dataset.total) || 0;
+                let rateado = 0;
+                if (idx < linhas.length - 1) {
+                    rateado = Math.round((total / bruto * desconto) * 100) / 100;
+                    rateado = parseFloat(rateado.toFixed(2));
+                    acumulado += rateado;
+                } else {
+                    rateado = parseFloat((desconto - acumulado).toFixed(2));
+                    if (rateado < 0) rateado = 0;
+                    if (rateado > total) rateado = total;
+                }
+                const liquidoLinha = total - rateado;
+                const tdDesc = tr.querySelector('.rateio-desc');
+                const tdLiq = tr.querySelector('.rateio-liquido');
+                if (tdDesc) tdDesc.innerText = 'R$ ' + rateado.toLocaleString('pt-BR', {minimumFractionDigits:2});
+                if (tdLiq) tdLiq.innerText = 'R$ ' + liquidoLinha.toLocaleString('pt-BR', {minimumFractionDigits:2});
+            });
+        } else if (linhas.length > 0) {
+            linhas.forEach(function(tr){
+                const total = parseFloat(tr.dataset.total) || 0;
+                const tdDesc = tr.querySelector('.rateio-desc');
+                const tdLiq = tr.querySelector('.rateio-liquido');
+                if (tdDesc) tdDesc.innerText = 'R$ 0,00';
+                if (tdLiq) tdLiq.innerText = 'R$ ' + total.toLocaleString('pt-BR', {minimumFractionDigits:2});
+            });
+        }
+        const btn = document.getElementById('btnConfirmarBaixaLote');
+        if (!btn) return;
+        if (desconto < -0.001 || desconto > bruto + 0.001 || liquido < -0.01) {
+            btn.disabled = true;
+            btn.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+            btn.disabled = false;
+            btn.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+    }
+
+    function fecharModalBaixaLote() {
+        const m = document.getElementById('modalBaixaLote');
+        if (m) m.classList.add('hidden');
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         var btnCancelar = document.getElementById('btnCancelarBaixa');
         if (btnCancelar) {
@@ -589,6 +874,46 @@
             formBaixa.addEventListener('submit', function() {
                 this.querySelectorAll('input[name="pagamento_valor[]"]').forEach(function(input) {
                     input.value = input.value.replace('R$ ','').replace(/\./g,'').replace(',','.');
+                });
+            });
+        }
+
+        // Lote listeners
+        const chkTodos = document.getElementById('chkTodos');
+        if (chkTodos) {
+            chkTodos.addEventListener('change', function() {
+                const checks = document.querySelectorAll('.chk-conta:not(:disabled)');
+                checks.forEach(c => c.checked = chkTodos.checked);
+                atualizarBarraLote();
+            });
+        }
+        document.querySelectorAll('.chk-conta').forEach(function(chk) {
+            chk.addEventListener('change', atualizarBarraLote);
+        });
+        const btnCancelarLote = document.getElementById('btnCancelarBaixaLote');
+        if (btnCancelarLote) btnCancelarLote.addEventListener('click', fecharModalBaixaLote);
+        const modalLote = document.getElementById('modalBaixaLote');
+        if (modalLote) {
+            modalLote.addEventListener('click', function(e) {
+                if (e.target === modalLote) fecharModalBaixaLote();
+            });
+        }
+        const formLote = document.getElementById('formBaixaLote');
+        if (formLote) {
+            formLote.addEventListener('submit', function() {
+                const inp = document.getElementById('descontoTotalLote');
+                if (inp) {
+                    let v = inp.value.replace(/\D/g, '');
+                    if (v === '') v='0';
+                    let num = parseFloat(v)/100;
+                    inp.value = num.toFixed(2);
+                }
+                // compatibilidade: se houver descontos por linha antigos, converter também
+                this.querySelectorAll('.desconto-lote').forEach(function(inpOld) {
+                    let v = inpOld.value.replace(/\D/g, '');
+                    if (v === '') v = '0';
+                    let num = parseFloat(v)/100;
+                    inpOld.value = num.toFixed(2);
                 });
             });
         }

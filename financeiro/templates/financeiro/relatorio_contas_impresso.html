@@ -36,6 +36,7 @@
             <div class="text-right">
                 <h2 class="text-base font-semibold text-gray-700">{{ titulo_relatorio }}</h2>
                 <p class="text-[10px] text-gray-400 mt-0.5">Emitido em {% now "d/m/Y H:i" %}</p>
+                {% if taxa_juros_mensal %}<p class="text-[9px] text-gray-400">Taxa juros: {{ taxa_juros_mensal }}% a.m. pro-rata dia</p>{% endif %}
             </div>
         </div>
 
@@ -75,12 +76,14 @@
             <table class="w-full text-[10px]">
                 <thead>
                     <tr class="text-[9px] text-gray-400 uppercase border-b border-gray-300">
-                        <th class="py-1 text-left font-medium w-24">Vencimento</th>
+                        <th class="py-1 text-left font-medium w-20">Vencimento</th>
                         <th class="py-1 text-left font-medium">Entidade</th>
-                        <th class="py-1 text-left font-medium w-48">Descrição / Doc</th>
-                        <th class="py-1 text-left font-medium w-32">Categoria</th>
-                        <th class="py-1 text-center font-medium w-20">Status</th>
-                        <th class="py-1 text-right font-medium w-28">Valor</th>
+                        <th class="py-1 text-left font-medium w-36">Descrição / Doc</th>
+                        <th class="py-1 text-left font-medium w-24">Categoria</th>
+                        <th class="py-1 text-center font-medium w-16">Status</th>
+                        <th class="py-1 text-right font-medium w-20">Valor</th>
+                        <th class="py-1 text-right font-medium w-20">Juros</th>
+                        <th class="py-1 text-right font-medium w-24">Total c/ Juros</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
@@ -92,6 +95,9 @@
                             {{ c.descricao }}
                             {% if c.documento %}
                                 <span class="text-[9px] text-gray-400 block">Doc: {{ c.documento }}</span>
+                            {% endif %}
+                            {% if c.dias_atraso_calculado > 0 %}
+                                <span class="text-[8px] text-red-500 block">{{ c.dias_atraso_calculado }}d atraso</span>
                             {% endif %}
                         </td>
                         <td class="py-1 text-gray-500 truncate">{{ c.plano_de_contas.nome }}</td>
@@ -116,15 +122,29 @@
                                 <br><span class="text-[8px] text-orange-500">Restante: {{ c.valor_restante|moeda_br }}</span>
                             {% endif %}
                         </td>
+                        <td class="py-1 text-right font-bold {% if c.juros_calculado > 0 %}text-red-600{% else %}text-gray-300{% endif %}">
+                            {% if c.juros_calculado and c.juros_calculado > 0 %}{{ c.juros_calculado|moeda_br }}{% else %}-{% endif %}
+                        </td>
+                        <td class="py-1 text-right font-bold {% if c.juros_calculado > 0 %}text-blue-700{% else %}text-gray-700{% endif %}">{{ c.total_com_juros_calculado|moeda_br }}</td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="6" class="py-4 text-center text-gray-400 italic">Nenhum registro encontrado.</td></tr>
+                    <tr><td colspan="8" class="py-4 text-center text-gray-400 italic">Nenhum registro encontrado.</td></tr>
                     {% endfor %}
                 </tbody>
                 <tfoot>
                     <tr class="border-t border-gray-300 bg-gray-50">
-                        <td colspan="5" class="py-2 text-right text-[10px] font-bold text-gray-600 uppercase pr-4">Total Geral:</td>
-                        <td class="py-2 text-right font-bold text-lg text-gray-800">{{ total_valor|moeda_br }}</td>
+                        <td colspan="5" class="py-2 text-right text-[10px] font-bold text-gray-600 uppercase pr-4">Total Valor:</td>
+                        <td class="py-2 text-right font-bold text-sm text-gray-800">{{ total_valor|moeda_br }}</td>
+                        <td class="py-2 text-right font-bold text-sm text-red-600">{{ total_juros|moeda_br }}</td>
+                        <td class="py-2 text-right font-bold text-sm text-blue-700">{{ total_com_juros|moeda_br }}</td>
+                    </tr>
+                    <tr class="bg-gray-50">
+                        <td colspan="6" class="py-1 text-right text-[9px] font-bold text-gray-500 uppercase pr-4">Total Juros:</td>
+                        <td colspan="2" class="py-1 text-right font-bold text-red-600">{{ total_juros|moeda_br }}</td>
+                    </tr>
+                    <tr class="bg-blue-50">
+                        <td colspan="6" class="py-1 text-right text-[9px] font-bold text-gray-500 uppercase pr-4">Total com Juros:</td>
+                        <td colspan="2" class="py-1 text-right font-bold text-blue-700 text-base">{{ total_com_juros|moeda_br }}</td>
                     </tr>
                 </tfoot>
             </table>
