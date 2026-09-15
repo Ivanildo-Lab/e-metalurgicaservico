@@ -8,15 +8,17 @@
     {% load servicos_filters %}
     <style>
         @media print {
-            body { -webkit-print-color-adjust: exact; font-size: 10pt; }
+            body { -webkit-print-color-adjust: exact; print-color-adjust: exact; font-size: 10pt; }
             .no-print { display: none !important; }
-            @page { margin: 1.5cm; }
+            @page { size: A4; margin: 1.5cm; }
         }
+        table { width: 100%; font-size: 11px; border-collapse: collapse; }
+        th, td { padding: 6px 8px; }
     </style>
 </head>
 <body class="bg-gray-100 p-4 print:bg-white print:p-0 text-gray-800 font-sans">
 
-    <div class="max-w-3xl mx-auto bg-white shadow-lg print:shadow-none print:w-full min-h-screen relative pb-10">
+    <div class="max-w-4xl mx-auto bg-white shadow-lg print:shadow-none print:w-full min-h-screen relative pb-10">
         
         <!-- CABEÇALHO -->
         <div class="px-6 py-4 border-b border-gray-200 flex justify-between items-start">
@@ -36,6 +38,7 @@
             <div class="text-right">
                 <h2 class="text-base font-semibold text-gray-700">{{ titulo_relatorio }} — Sintético</h2>
                 <p class="text-[10px] text-gray-400 mt-0.5">Emitido em {% now "d/m/Y H:i" %}</p>
+                {% if taxa_juros_mensal %}<p class="text-[9px] text-gray-400">Taxa juros: {{ taxa_juros_mensal }}% a.m. pro-rata dia</p>{% endif %}
             </div>
         </div>
 
@@ -44,45 +47,53 @@
             <table class="w-full text-[11px]">
                 <thead>
                     <tr class="text-[9px] text-gray-400 uppercase border-b border-gray-300">
-                        <th class="py-2 text-left font-medium w-8">#</th>
-                        <th class="py-2 text-left font-medium">{{ entidade_label }}</th>
-                        <th class="py-2 text-left font-medium w-32">CPF/CNPJ</th>
-                        <th class="py-2 text-center font-medium w-16">Qtd</th>
-                        <th class="py-2 text-right font-medium w-36">Total em Aberto</th>
+                        <th style="width:4%; text-align:left">#</th>
+                        <th style="width:26%; text-align:left">CLIENTE</th>
+                        <th style="width:5%; text-align:center">QTD</th>
+                        <th style="width:13%; text-align:right">TOTAL CONTAS</th>
+                        <th style="width:13%; text-align:right">TOTAL JUROS</th>
+                        <th style="width:14%; text-align:right">TOTAL FINAL</th>
+                        <th style="width:18%; text-align:left; padding-left:12px">TELEFONE</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
-                    {% for item in agrupado %}
+                    {% for item in relatorio %}
                     <tr class="hover:bg-gray-50">
-                        <td class="py-2 text-gray-400 font-mono text-[10px]">{{ forloop.counter }}</td>
-                        <td class="py-2 font-bold text-gray-800">
-                            {% if item.cadastro__nome %}{{ item.cadastro__nome }}{% else %}Sem {{ entidade_label }}{% endif %}
-                        </td>
-                        <td class="py-2 text-gray-500 font-mono text-[10px]">{{ item.cadastro__cpf_cnpj|default:"—" }}</td>
-                        <td class="py-2 text-center text-gray-600">{{ item.qtd_contas }}</td>
-                        <td class="py-2 text-right font-bold text-red-600 font-mono">{{ item.total_aberto|moeda_br }}</td>
+                        <td>{{ forloop.counter }}</td>
+                        <td style="font-weight:600">{{ item.cadastro__nome }}</td>
+                        <td style="text-align:center">{{ item.qtd }}</td>
+                        <td style="text-align:right">{{ item.total_contas|moeda_br }}</td>
+                        <td style="text-align:right; color:#ea580c">{{ item.total_juros|moeda_br }}</td>
+                        <td style="text-align:right; font-weight:700; color:#b91c1c; border-right:1px solid #e5e7eb; padding-right:10px">{{ item.total_final|moeda_br }}</td>
+                        <td style="text-align:left; padding-left:12px">{{ item.telefone|default:"—" }}</td>
                     </tr>
                     {% empty %}
-                    <tr><td colspan="5" class="py-6 text-center text-gray-400 italic">Nenhum registro em aberto encontrado.</td></tr>
+                    <tr><td colspan="7" class="py-6 text-center text-gray-400 italic">Nenhum registro em aberto encontrado.</td></tr>
                     {% endfor %}
                 </tbody>
                 <tfoot>
-                    <tr class="border-t-2 border-gray-300 bg-gray-50">
-                        <td colspan="3" class="py-3 text-right text-[10px] font-bold text-gray-600 uppercase pr-4">Total Geral:</td>
-                        <td class="py-3 text-center font-bold text-gray-700">{{ agrupado|length }}</td>
-                        <td class="py-3 text-right font-bold text-xl text-gray-800 font-mono">{{ total_geral|moeda_br }}</td>
+                    <tr class="bg-gray-50 font-bold border-t-2">
+                        <td colspan="2" style="text-align:right; padding-right:12px">TOTAL GERAL:</td>
+                        <td style="text-align:center">{{ total_qtd }}</td>
+                        <td style="text-align:right">{{ total_contas_geral|moeda_br }}</td>
+                        <td style="text-align:right; color:#ea580c">{{ total_juros_geral|moeda_br }}</td>
+                        <td style="text-align:right; color:#b91c1c; border-right:1px solid #e5e7eb; padding-right:10px">{{ total_final_geral|moeda_br }}</td>
+                        <td style="text-align:left; padding-left:12px">—</td>
                     </tr>
                 </tfoot>
             </table>
 
-            {% if agrupado %}
+            {% if relatorio %}
             <div class="mt-6 p-4 bg-gray-50 rounded-lg border border-gray-200">
                 <p class="text-[10px] text-gray-500 font-bold uppercase mb-1">Resumo</p>
                 <p class="text-sm text-gray-700">
-                    Total de <strong>{{ agrupado|length }}</strong> {{ entidade_label|lower }}(es) com saldo em aberto.
+                    Total de <strong>{{ relatorio|length }}</strong> {{ entidade_label|lower }}(es) com <strong>{{ total_qtd }}</strong> conta(s) em aberto.
                 </p>
                 <p class="text-sm text-gray-700">
-                    Valor total em aberto: <strong class="text-red-600 font-mono">{{ total_geral|moeda_br }}</strong>
+                    Total contas: <strong class="font-mono">{{ total_contas_geral|moeda_br }}</strong> +
+                    Juros: <strong class="font-mono text-orange-600">{{ total_juros_geral|moeda_br }}</strong> =
+                    <strong class="font-mono" style="color:#b91c1c">{{ total_final_geral|moeda_br }}</strong>
+                    {% if taxa_juros_mensal %}<span class="text-[10px] text-gray-400">({{ taxa_juros_mensal }}% a.m.)</span>{% endif %}
                 </p>
             </div>
             {% endif %}

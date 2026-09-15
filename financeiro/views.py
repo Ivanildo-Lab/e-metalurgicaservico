@@ -1318,47 +1318,121 @@ def relatorio_dre_sintetico(request):
 @login_required
 @permission_required_module('financeiro')
 def relatorio_contas_sintetico(request):
-    """Relatório sintético: total em aberto por Cliente/Fornecedor"""
+    """Relatório sintético: total em aberto por Cliente/Fornecedor
+    Novo layout: QTD | TOTAL CONTAS (valor_restante) | TOTAL JUROS (pro-rata) | TOTAL FINAL | TELEFONE
+    """
     tipo_lista = request.GET.get('tipo_lista', 'receber')
     tipo_plano = 'R' if tipo_lista == 'receber' else 'D'
 
-    contas = Conta.objects.filter(
-        empresa=request.user.empresa,
-        plano_de_contas__tipo=tipo_plano,
-    ).exclude(status__in=['PAGA', 'CANCELADA'])
+    empresa = request.user.empresa
+    taxa = get_taxa_juros_mensal(empresa)
 
-    # Filtros
+    contas_qs = Conta.objects.filter(
+        empresa=empresa,
+        plano_de_contas__tipo=tipo_plano,
+    ).exclude(status__in=['PAGA', 'CANCELADA']).select_related('cadastro', 'plano_de_contas')
+
+    # Filtros existentes
     data_ini = request.GET.get('data_ini')
     data_fim = request.GET.get('data_fim')
     status = request.GET.get('status')
+    cliente_filtro = request.GET.get('cliente') or request.GET.get('cadastro__nome') or request.GET.get('nome')
 
     if data_ini and data_fim:
-        contas = contas.filter(data_vencimento__range=[data_ini, data_fim])
+        contas_qs = contas_qs.filter(data_vencimento__range=[data_ini, data_fim])
+    elif data_ini:
+        contas_qs = contas_qs.filter(data_vencimento__gte=data_ini)
+    elif data_fim:
+        contas_qs = contas_qs.filter(data_vencimento__lte=data_fim)
+
     if status:
         if status == 'ATRASADA':
-            contas = contas.filter(status__in=['PENDENTE', 'PARCIAL'], data_vencimento__lt=date.today())
-        elif status != 'TODOS':
-            contas = contas.filter(status=status)
+            contas_qs = contas_qs.filter(status__in=['PENDENTE', 'PARCIAL'], data_vencimento__lt=date.today())
+        elif status not in ('TODOS', ''):
+            contas_qs = contas_qs.filter(status=status)
 
-    # Agrupar por cliente/fornecedor
-    from django.db.models import Sum, F
-    agrupado = contas.values(
-        'cadastro__id', 'cadastro__nome', 'cadastro__cpf_cnpj'
-    ).annotate(
-        total_aberto=Sum(F('valor') - F('valor_pago')),
-        qtd_contas=Count('id'),
-    ).order_by('cadastro__nome')
+    if cliente_filtro:
+        contas_qs = contas_qs.filter(cadastro__nome__icontains=cliente_filtro)
 
-    total_geral = sum(item['total_aberto'] for item in agrupado)
+    def _extrair_telefone(cad):
+        if not cad:
+            return ''
+        # e-metalurgicaservicos: celular + telefone_fixo ; fallback genérico
+        t_celular = (getattr(cad, 'celular', '') or '').strip()
+        t_fixo = (getattr(cad, 'telefone_fixo', '') or getattr(cad, 'telefone', '') or getattr(cad, 'telefone1', '') or getattr(cad, 'fone', '') or '').strip()
+        # também tenta telefone genérico se celular vazio
+        t_gen = (getattr(cad, 'telefone', '') or '').strip() if not t_celular else t_celular
+        # prioriza celular
+        t1 = t_celular or t_gen
+        t2 = t_fixo
+        if t1 and t2 and t1 != t2:
+            return f"{t1} / {t2}"
+        return t1 or t2 or ''
+
+    agrupado_dict = {}
+    for c in contas_qs:
+        cid = c.cadastro_id or 0
+        if cid not in agrupado_dict:
+            nome = c.cadastro.nome if c.cadastro else ('SEM CLIENTE' if tipo_lista == 'receber' else 'SEM FORNECEDOR')
+            telefone = _extrair_telefone(c.cadastro) if c.cadastro else ''
+            agrupado_dict[cid] = {
+                'cadastro__id': cid,
+                'cadastro__nome': nome,
+                'telefone': telefone,
+                'qtd': 0,
+                'total_contas': Decimal('0.00'),
+                'total_juros': Decimal('0.00'),
+                'total_final': Decimal('0.00'),
+            }
+        agrupado_dict[cid]['qtd'] += 1
+        try:
+            base = c.valor_restante
+            if base is None:
+                base = c.valor - getattr(c, 'valor_pago', Decimal('0'))
+            base = Decimal(str(base))
+        except Exception:
+            base = Decimal(str(c.valor))
+        base = base.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP) if base else Decimal('0.00')
+        agrupado_dict[cid]['total_contas'] += base
+        try:
+            juros = c.calcular_juros(taxa)
+        except Exception:
+            juros = Decimal('0.00')
+        juros = juros.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP) if juros else Decimal('0.00')
+        agrupado_dict[cid]['total_juros'] += juros
+
+    for v in agrupado_dict.values():
+        v['total_contas'] = v['total_contas'].quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        v['total_juros'] = v['total_juros'].quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        v['total_final'] = (v['total_contas'] + v['total_juros']).quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
+        # aliases para compatibilidade template antigo
+        v['qtd_contas'] = v['qtd']
+        v['total_aberto'] = v['total_contas']
+
+    relatorio = sorted(agrupado_dict.values(), key=lambda x: (x['cadastro__nome'] or '').lower())
+
+    total_qtd = sum(v['qtd'] for v in relatorio)
+    total_contas_geral = sum((v['total_contas'] for v in relatorio), Decimal('0.00'))
+    total_juros_geral = sum((v['total_juros'] for v in relatorio), Decimal('0.00'))
+    total_final_geral = sum((v['total_final'] for v in relatorio), Decimal('0.00'))
 
     titulo = 'Relatório de Contas a Receber' if tipo_lista == 'receber' else 'Relatório de Contas a Pagar'
     entidade_label = 'Cliente' if tipo_lista == 'receber' else 'Fornecedor'
 
     return render(request, 'financeiro/relatorio_contas_sintetico.html', {
-        'agrupado': agrupado,
-        'total_geral': total_geral,
+        'agrupado': relatorio,
+        'relatorio': relatorio,
+        'total_qtd': total_qtd,
+        'total_contas_geral': total_contas_geral,
+        'total_juros_geral': total_juros_geral,
+        'total_final_geral': total_final_geral,
+        'total_geral': total_final_geral,  # compatibilidade
         'titulo_relatorio': titulo,
         'entidade_label': entidade_label,
         'tipo_lista': tipo_lista,
-        'empresa': request.user.empresa,
+        'empresa': empresa,
+        'taxa_juros_mensal': taxa,
+        'data_ini': parse_date(data_ini) if data_ini else None,
+        'data_fim': parse_date(data_fim) if data_fim else None,
+        'status_filtro': status,
     })
