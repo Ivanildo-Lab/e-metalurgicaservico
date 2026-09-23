@@ -897,9 +897,8 @@ def fluxo_caixa(request):
     totais_forma = defaultdict(float)
     for item in resumo_pagamentos_qs:
         forma_nome = item.forma_pagamento.nome if item.forma_pagamento else 'Não informado'
-        tipo_label = 'Recebimento' if item.tipo == 'C' else 'Pagamento'
-        chave = f"{tipo_label} — {forma_nome}"
-        totais_forma[chave] += float(item.valor)
+        # soma valor já com sinal correto (C positivo, D negativo) = líquido por forma
+        totais_forma[forma_nome] += float(item.valor)
 
     resumo_pagamentos = [{'descricao': k, 'valor': v} for k, v in sorted(totais_forma.items())]
 
@@ -1074,14 +1073,13 @@ def relatorio_fluxo(request):
     if caixa_id:
         resumo_pagamentos = resumo_pagamentos.filter(caixa_id=caixa_id)
 
-    # Totalizar por tipo + forma de pagamento usando FK
+    # Totalizar líquido por forma de pagamento (C positivo, D negativo)
     from collections import defaultdict
     totais_forma = defaultdict(float)
     for item in resumo_pagamentos:
         forma_nome = item.forma_pagamento.nome if item.forma_pagamento else 'Não informado'
-        tipo_label = 'Recebimento' if item.tipo == 'C' else 'Pagamento'
-        chave = f"{tipo_label} — {forma_nome}"
-        totais_forma[chave] += float(item.valor)
+        # soma valor já com sinal correto = líquido
+        totais_forma[forma_nome] += float(item.valor)
 
     resumo_pagamentos = [{'descricao': k, 'valor': v} for k, v in sorted(totais_forma.items())]
 

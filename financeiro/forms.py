@@ -1,4 +1,4 @@
-from django import forms
+﻿from django import forms
 from .models import Conta, Lancamento, Caixa, PlanoDeContas
 
 # --- FORMULÁRIO DE CAIXA / BANCO ---
@@ -113,22 +113,37 @@ class ContaForm(forms.ModelForm):
 class LancamentoManualForm(forms.ModelForm):
     class Meta:
         model = Lancamento
-        fields = ['caixa', 'data_lancamento', 'tipo', 'plano_de_contas', 'descricao', 'valor']
+        fields = ['caixa', 'data_lancamento', 'tipo', 'plano_de_contas', 'forma_pagamento', 'descricao', 'valor']
         widgets = {
             # CORREÇÃO AQUI: format='%Y-%m-%d'
             'data_lancamento': forms.DateInput(format='%Y-%m-%d', attrs={'type': 'date'}),
+            'forma_pagamento': forms.Select(attrs={'class': 'form-select border rounded p-2 w-full'}),
         }
     
     def __init__(self, *args, **kwargs):
         user = kwargs.pop('user', None)
         super().__init__(*args, **kwargs)
+
+        # forma_pagamento opcional
+        if 'forma_pagamento' in self.fields:
+            self.fields['forma_pagamento'].required = False
+            self.fields['forma_pagamento'].empty_label = "--- Selecione ---"
         
         for field_name, field in self.fields.items():
             if field_name == 'valor':
                 field.widget.attrs['class'] = 'w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
+            elif field_name == 'forma_pagamento':
+                if 'class' not in field.widget.attrs or 'form-select' not in field.widget.attrs['class']:
+                    field.widget.attrs['class'] = 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
             else:
                 field.widget.attrs['class'] = 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500'
         
-        if user:
+        if user and hasattr(user, 'empresa') and user.empresa:
             self.fields['caixa'].queryset = Caixa.objects.filter(empresa=user.empresa)
             self.fields['plano_de_contas'].queryset = PlanoDeContas.objects.filter(empresa=user.empresa)
+            try:
+                from servicos.models import FormaPagamento
+                self.fields['forma_pagamento'].queryset = FormaPagamento.objects.filter(empresa=user.empresa, ativo=True).order_by('ordem', 'nome')
+            except Exception:
+                pass
+

@@ -52,6 +52,12 @@
             {{ form.plano_de_contas }}
         </div>
 
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">Forma de Pagamento</label>
+            {{ form.forma_pagamento }}
+            {% if form.forma_pagamento.errors %}<p class="text-red-500 text-xs">{{ form.forma_pagamento.errors }}</p>{% endif %}
+        </div>
+
         <div class="mb-6">
             <label class="block text-sm font-medium text-gray-700 mb-1">Descrição / Histórico</label>
             {{ form.descricao }}

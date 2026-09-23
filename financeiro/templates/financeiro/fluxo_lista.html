@@ -110,12 +110,12 @@
 <!-- 2.5 RESUMO POR FORMA DE PAGAMENTO -->
 {% if resumo_pagamentos %}
 <div class="bg-white rounded shadow mb-6 p-4 border-l-4 border-amber-500">
-    <h3 class="text-sm font-bold text-amber-700 uppercase mb-3">Resumo de Formas de Pagamento (Recebimentos)</h3>
+    <h3 class="text-sm font-bold text-amber-700 uppercase mb-3">Resumo por Forma de Pagamento — Saldo Líquido (Créditos - Débitos)</h3>
     <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
         {% for item in resumo_pagamentos %}
-        <div class="bg-amber-50 rounded p-3 border border-amber-200 flex justify-between items-center">
+        <div class="rounded p-3 border flex justify-between items-center {% if item.valor < 0 %}bg-red-50 border-red-200{% elif item.valor > 0 %}bg-green-50 border-green-200{% else %}bg-gray-50 border-gray-200{% endif %}">
             <span class="text-sm font-semibold text-gray-800">{{ item.descricao }}</span>
-            <span class="text-sm font-bold text-amber-700">{{ item.valor|moeda_br }}</span>
+            <span class="text-sm font-bold {% if item.valor < 0 %}text-red-700{% elif item.valor > 0 %}text-green-700{% else %}text-gray-700{% endif %}">{{ item.valor|moeda_br }}</span>
         </div>
         {% endfor %}
     </div>
