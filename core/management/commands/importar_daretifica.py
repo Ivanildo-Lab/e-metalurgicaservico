@@ -80,36 +80,52 @@ class Command(BaseCommand):
                 situacao = campos[6].strip().strip('"')
 
                 cadastro = None
-                if cod_cli:
-                    if cod_cli in cadastros_cache:
-                        cadastro = cadastros_cache[cod_cli]
-                    else:
-                        try:
-                            cadastro = Cadastro.objects.get(
-                                empresa=empresa,
-                                num_registro=int(cod_cli)
-                            )
-                            cadastros_encontrados += 1
-                        except (Cadastro.DoesNotExist, ValueError):
-                            cpf_unico = f'000.{cod_cli.zfill(6)}.{cod_cli.zfill(4)[-3:]}-00'
+                # cache por NOME (lower) para evitar divergencia de IDs entre servidores
+                cache_key = nome_cli.strip().lower() if nome_cli and nome_cli.strip() else (cod_cli.strip().lower() if cod_cli else None)
+                if cache_key and cache_key in cadastros_cache:
+                    cadastro = cadastros_cache[cache_key]
+                elif cache_key or cod_cli:
+                    try:
+                        # Busca por NOME (prioridade) para evitar divergência de IDs entre servidores
+                        cadastro = None
+                        # 1) tenta por nome exato (case-insensitive) dentro da empresa
+                        if nome_cli and nome_cli.strip():
+                            cadastro = Cadastro.objects.filter(empresa=empresa, nome__iexact=nome_cli.strip()).first()
+                            if cadastro:
+                                self.stdout.write(f"[NOME] {nome_cli} -> id {cadastro.id} (num_registro {cadastro.num_registro})")
+                                cadastros_encontrados += 1
+                        # 2) fallback por num_registro se não achou por nome
+                        if not cadastro and cod_cli and cod_cli.strip().isdigit():
+                            cadastro = Cadastro.objects.filter(empresa=empresa, num_registro=int(cod_cli)).first()
+                            if cadastro:
+                                cadastros_encontrados += 1
+                        # 3) fallback por nome contains (para variações com espaços)
+                        if not cadastro and nome_cli and nome_cli.strip():
+                            cadastro = Cadastro.objects.filter(empresa=empresa, nome__icontains=nome_cli.strip()[:30]).first()
+                            if cadastro:
+                                self.stdout.write(f"[NOME] {nome_cli} -> id {cadastro.id} (num_registro {cadastro.num_registro})")
+                                cadastros_encontrados += 1
+                        if not cadastro:
+                            cpf_unico = f'000.{cod_cli.zfill(6)}-{cod_cli.zfill(4)}-00' if cod_cli and cod_cli.strip().isdigit() else '000.000000-0000-00'
                             cadastro = Cadastro(
                                 empresa=empresa,
-                                nome=nome_cli or f'Cliente Legado {cod_cli}',
+                                nome=nome_cli.strip() if nome_cli and nome_cli.strip() else f'Cliente Legado {cod_cli}',
                                 cpf_cnpj=cpf_unico,
-                                num_registro=int(cod_cli) if cod_cli.isdigit() else None,
+                                num_registro=int(cod_cli) if cod_cli and cod_cli.strip().isdigit() else None,
                                 papel='CLI',
                                 tipo_pessoa='PF',
                                 situacao='ATIVO',
-                                observacoes=f'Cadastro criado na importacao legado Da Retifica. CODCLI={cod_cli}'
+                                observacoes=f'Cadastro criado na importacao legado Da Retifica. CODCLI={cod_cli} NOME={nome_cli}'
                             )
                             if not dry_run:
                                 cadastro.save()
                             cadastros_criados += 1
-                        except Exception as e:
-                            erros += 1
-                            erros_detalhe.append(f'Linha {i}: erro ao buscar cadastro CODCLI={cod_cli}: {e}')
-                            continue
-                        cadastros_cache[cod_cli] = cadastro
+                    except Exception as e:
+                        erros += 1
+                        erros_detalhe.append(f'Linha {i}: erro ao buscar cadastro CODCLI={cod_cli} NOME={nome_cli}: {e}')
+                        continue
+                    if cache_key:
+                        cadastros_cache[cache_key] = cadastro
 
                 valor = self.parse_valor(valor_par)
                 if valor is None:

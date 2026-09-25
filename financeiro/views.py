@@ -149,7 +149,7 @@ def lista_contas_receber(request):
     cliente_nome = request.GET.get('cliente')
     status = request.GET.get('status')
     categoria_id = request.GET.get('categoria')
-    ordenar = request.GET.get('ordenar', 'data_vencimento')
+    ordenar = request.GET.get('ordenar') or 'vencimento'
 
     if data_ini and data_fim:
         contas = contas.filter(data_vencimento__range=[data_ini, data_fim])
@@ -157,11 +157,14 @@ def lista_contas_receber(request):
     if cliente_nome:
         contas = contas.filter(cadastro__nome__icontains=cliente_nome)
 
+    # Padrão: mostrar só contas abertas (PENDENTE+PARCIAL, inclui ATRASADA)
     if status:
         if status == 'ATRASADA':
             contas = contas.filter(status__in=['PENDENTE', 'PARCIAL'], data_vencimento__lt=date.today())
         else:
             contas = contas.filter(status=status)
+    else:
+        contas = contas.filter(status__in=['PENDENTE', 'PARCIAL'])
 
     if categoria_id:
         contas = contas.filter(plano_de_contas_id=categoria_id)
@@ -172,17 +175,33 @@ def lista_contas_receber(request):
             lancamentos_vinculados__data_lancamento__range=[data_pag_ini, data_pag_fim]
         ).distinct()
 
-    # Ordenação
-    ordenacao_valida = {
-        'data_vencimento': 'data_vencimento',
-        '-data_vencimento': '-data_vencimento',
+    # Ordenação por clique no cabeçalho (padrão vencimento asc)
+    ORDENACAO_MAP = {
+        'vencimento': 'data_vencimento',
+        '-vencimento': '-data_vencimento',
         'cliente': 'cadastro__nome',
         '-cliente': '-cadastro__nome',
+        'valor': 'valor',
+        '-valor': '-valor',
+        'status': 'status',
+        '-status': '-status',
+        'documento': 'documento',
+        '-documento': '-documento',
+        # compatibilidade com nomes legados
+        'data_vencimento': 'data_vencimento',
+        '-data_vencimento': '-data_vencimento',
         'data_pagamento': 'lancamentos_vinculados__data_lancamento',
         '-data_pagamento': '-lancamentos_vinculados__data_lancamento',
     }
-    campo_ordenacao = ordenacao_valida.get(ordenar, 'data_vencimento')
-    contas = contas.order_by(campo_ordenacao, 'id')
+    if ordenar not in ORDENACAO_MAP:
+        ordenar = 'vencimento'
+    contas = contas.order_by(ORDENACAO_MAP[ordenar], 'id')
+
+    # query_string sem ordenar/page para links de cabeçalho e paginação
+    _qp = request.GET.copy()
+    _qp.pop('ordenar', None)
+    _qp.pop('page', None)
+    query_string = _qp.urlencode()
 
     # Dados para os Dropdowns
     caixas = Caixa.objects.filter(empresa=request.user.empresa)
@@ -248,6 +267,7 @@ def lista_contas_receber(request):
         'filtro_status': status,
         'filtro_categoria': categoria_id,
         'ordenar': ordenar,
+        'query_string': query_string,
         'total_geral': totais['total_geral'] or 0,
         'total_pago': total_pago,
         'total_pendente': total_pendente,
@@ -283,11 +303,14 @@ def lista_contas_pagar(request):
     if fornecedor_nome:
         contas = contas.filter(cadastro__nome__icontains=fornecedor_nome)
 
+    # Padrão: mostrar só contas abertas (PENDENTE+PARCIAL, inclui ATRASADA)
     if status:
         if status == 'ATRASADA':
             contas = contas.filter(status__in=['PENDENTE', 'PARCIAL'], data_vencimento__lt=date.today())
         else:
             contas = contas.filter(status=status)
+    else:
+        contas = contas.filter(status__in=['PENDENTE', 'PARCIAL'])
 
     if categoria_id:
         contas = contas.filter(plano_de_contas_id=categoria_id)
@@ -296,6 +319,32 @@ def lista_contas_pagar(request):
         contas = contas.filter(
             lancamentos_vinculados__data_lancamento__range=[data_pag_ini, data_pag_fim]
         ).distinct()
+
+    # Ordenação por clique no cabeçalho (padrão vencimento asc)
+    ordenar = request.GET.get('ordenar') or 'vencimento'
+    ORDENACAO_MAP = {
+        'vencimento': 'data_vencimento',
+        '-vencimento': '-data_vencimento',
+        'cliente': 'cadastro__nome',
+        '-cliente': '-cadastro__nome',
+        'valor': 'valor',
+        '-valor': '-valor',
+        'status': 'status',
+        '-status': '-status',
+        'documento': 'documento',
+        '-documento': '-documento',
+        'data_vencimento': 'data_vencimento',
+        '-data_vencimento': '-data_vencimento',
+    }
+    if ordenar not in ORDENACAO_MAP:
+        ordenar = 'vencimento'
+    contas = contas.order_by(ORDENACAO_MAP[ordenar], 'id')
+
+    # query_string sem ordenar/page para links
+    _qp = request.GET.copy()
+    _qp.pop('ordenar', None)
+    _qp.pop('page', None)
+    query_string = _qp.urlencode()
 
     caixas = Caixa.objects.filter(empresa=request.user.empresa)
     categorias = PlanoDeContas.objects.filter(empresa=request.user.empresa, tipo='D').order_by('nome')
@@ -318,8 +367,7 @@ def lista_contas_pagar(request):
 
     # Paginacao
     from django.core.paginator import Paginator
-    contas_ordenadas = contas.order_by('data_vencimento')
-    paginator = Paginator(contas_ordenadas, 50)
+    paginator = Paginator(contas, 50)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
 
@@ -338,6 +386,8 @@ def lista_contas_pagar(request):
         'filtro_nome': fornecedor_nome,
         'filtro_status': status,
         'filtro_categoria': categoria_id,
+        'ordenar': ordenar,
+        'query_string': query_string,
         'total_geral': totais['total_geral'] or 0,
         'total_pago': total_pago,
         'total_pendente': total_pendente,
