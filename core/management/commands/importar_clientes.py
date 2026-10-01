@@ -95,13 +95,12 @@ class Command(BaseCommand):
 
                     tipo_pessoa = 'PJ' if cgc_raw else 'PF'
 
-                    # Busca por NOME (prioridade, evita divergencia de IDs entre servidores)
+                    # Busca APENAS por NOME - ID legado (CODCLI) desconsiderado,
+                    # pois nao corresponde aos IDs do servidor
                     nome_key = nome.lower()
                     existing = cache_nome.get(nome_key)
                     if existing is None:
                         existing = Cadastro.objects.filter(empresa_id=empresa_id, nome__iexact=nome).first()
-                        if not existing and cpf_cnpj:
-                            existing = Cadastro.objects.filter(empresa_id=empresa_id, cpf_cnpj=cpf_cnpj).first()
                         cache_nome[nome_key] = existing
 
                     endereco = (row.get('ccEndereco') or '').strip()
@@ -123,6 +122,8 @@ class Command(BaseCommand):
                     obs_parts = []
                     if eh_temporario:
                         obs_parts.append('ATENCAO: Cliente importado sem CPF/CNPJ. Documento temporario gerado pelo sistema.')
+                    if cod_cli:
+                        obs_parts.append(f'CODCLI legado (sem correspondencia de ID): {cod_cli}')
                     for campo in ('ccInfCom', 'ccExtras', 'ccMensagem'):
                         valor = (row.get(campo) or '').strip()
                         if valor and valor not in ('0', '1'):
@@ -168,12 +169,14 @@ class Command(BaseCommand):
                         'uf': uf[:2],
                         'situacao': situacao,
                         'observacoes': '\n'.join(obs_parts)[:2000] if obs_parts else '',
-                        'num_registro': int(cod_cli) if cod_cli.isdigit() else None,
                     }
 
                     if existing:
                         if dry_run:
-                            self.stdout.write(f'[ATUALIZAR] {nome} -> id {existing.id}')
+                            self.stdout.write(
+                                f'[ATUALIZAR por NOME] "{nome}" == cadastro servidor id {existing.id} '
+                                f'(nome no servidor: "{existing.nome}")'
+                            )
                         else:
                             for key, value in dados.items():
                                 if key != 'empresa_id':
@@ -183,7 +186,7 @@ class Command(BaseCommand):
                         cache_nome[nome_key] = existing
                     else:
                         if dry_run:
-                            self.stdout.write(f'[CRIAR] {nome} (CODCLI={cod_cli}, doc={cpf_cnpj})')
+                            self.stdout.write(f'[CRIAR] {nome} (doc={cpf_cnpj})')
                         else:
                             novo = Cadastro.objects.create(**dados)
                             cache_nome[nome_key] = novo
