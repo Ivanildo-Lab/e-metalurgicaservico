@@ -23,7 +23,7 @@
                 <div class="flex items-center gap-3 mb-2">
                     <h2 class="text-2xl font-bold text-gray-800 font-mono">{{ orcamento.numero }}</h2>
                 </div>
-                <p class="text-gray-600"><strong>Cliente:</strong> {{ orcamento.cadastro.nome }}</p>
+                <p class="text-gray-600"><strong>Cliente:</strong> {{ orcamento.nome_cliente }}</p>
                 <p class="text-gray-600 mt-1"><strong>Descrição:</strong> {{ orcamento.descricao }}</p>
                 {% if orcamento.observacoes %}
                 <p class="text-gray-500 text-sm mt-1"><i class="fa fa-sticky-note mr-1"></i> {{ orcamento.observacoes }}</p>

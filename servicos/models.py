@@ -39,8 +39,12 @@ class OrdemServico(ModeloSaaS):
 
     numero = models.CharField(max_length=20, verbose_name="Nº OS", editable=False)
     cadastro = models.ForeignKey(
-        Cadastro, on_delete=models.PROTECT, verbose_name="Cliente",
+        Cadastro, on_delete=models.PROTECT, verbose_name="Cliente", null=True, blank=True,
         help_text="Cliente que enviou a peça / encomenda"
+    )
+    cliente_avulso = models.CharField(
+        max_length=255, blank=True, default='', verbose_name="Cliente Avulso",
+        help_text="Nome do cliente sem cadastro (opcional)"
     )
     descricao_geral = models.TextField(verbose_name="Descrição do Objeto / Peça",
                                        help_text="Descreva o objeto recebido e o trabalho a ser feito")
@@ -62,6 +66,10 @@ class OrdemServico(ModeloSaaS):
     created_at = models.DateTimeField(auto_now_add=True)
 
     # ---- Propriedades ----
+    @property
+    def nome_cliente(self):
+        return self.cadastro.nome if self.cadastro_id else (self.cliente_avulso or '—')
+
     @property
     def valor_total(self):
         soma = self.servicos.aggregate(total=models.Sum('valor'))['total'] or 0
@@ -124,7 +132,7 @@ class OrdemServico(ModeloSaaS):
         return f'{prefixo}{seq:04d}'
 
     def __str__(self):
-        return f"{self.numero} — {self.cadastro.nome}"
+        return f"{self.numero} — {self.nome_cliente}"
 
     class Meta:
         verbose_name = "Ordem de Serviço"
@@ -264,8 +272,12 @@ class Orcamento(ModeloSaaS):
 
     numero = models.CharField(max_length=20, verbose_name="Nº Orçamento", editable=False)
     cadastro = models.ForeignKey(
-        Cadastro, on_delete=models.PROTECT, verbose_name="Cliente",
+        Cadastro, on_delete=models.PROTECT, verbose_name="Cliente", null=True, blank=True,
         help_text="Cliente para quem o orçamento será enviado"
+    )
+    cliente_avulso = models.CharField(
+        max_length=255, blank=True, default='', verbose_name="Cliente Avulso",
+        help_text="Nome do cliente sem cadastro (opcional)"
     )
     descricao = models.TextField(verbose_name="Descrição / Observação do Orçamento",
                                  help_text="Descreva o serviço proposto")
@@ -281,6 +293,10 @@ class Orcamento(ModeloSaaS):
 
     observacoes = models.TextField(blank=True, verbose_name="Observações")
     created_at = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def nome_cliente(self):
+        return self.cadastro.nome if self.cadastro_id else (self.cliente_avulso or '—')
 
     @property
     def valor_total(self):
@@ -314,7 +330,7 @@ class Orcamento(ModeloSaaS):
         return f'{prefixo}{seq:04d}'
 
     def __str__(self):
-        return f"{self.numero} — {self.cadastro.nome}"
+        return f"{self.numero} — {self.nome_cliente}"
 
     class Meta:
         verbose_name = "Orçamento"

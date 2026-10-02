@@ -47,7 +47,7 @@
                     </span>
                     {% endif %}
                 </div>
-                <p class="text-gray-600"><strong>Cliente:</strong> {{ os.cadastro.nome }}</p>
+                <p class="text-gray-600"><strong>Cliente:</strong> {{ os.nome_cliente }}</p>
                 <p class="text-gray-600 mt-1"><strong>Objeto:</strong> {{ os.descricao_geral }}</p>
                 {% if os.observacoes %}
                 <p class="text-gray-500 text-sm mt-1"><i class="fa fa-sticky-note mr-1"></i> {{ os.observacoes }}</p>
@@ -113,7 +113,8 @@
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
         <form method="POST" action="{% url 'servicos:salvar_os' os.id %}" id="form-desconto-topo" class="flex items-end gap-3">
             {% csrf_token %}
-            <input type="hidden" name="cadastro_id" value="{{ os.cadastro_id }}">
+            <input type="hidden" name="cadastro_id" value="{{ os.cadastro_id|default_if_none:'' }}">
+            <input type="hidden" name="cliente_avulso" value="{{ os.cliente_avulso|default_if_none:'' }}">
             <input type="hidden" name="descricao_geral" value="{{ os.descricao_geral|escape }}">
             <input type="hidden" name="data_entrada" value="{{ os.data_entrada|date:'Y-m-d' }}">
             <input type="hidden" name="data_prevista" value="{% if os.data_prevista %}{{ os.data_prevista|date:'Y-m-d' }}{% endif %}">

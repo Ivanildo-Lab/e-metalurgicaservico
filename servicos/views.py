@@ -6,6 +6,7 @@ from core.decorators import permission_required_module
 from django.contrib import messages
 from django.db import transaction
 from django.db.models import Sum, Q
+from django.db.models.functions import Coalesce
 from django.http import JsonResponse
 from cadastros.models import Cadastro
 
@@ -118,6 +119,7 @@ def lista_ordens(request):
             Q(cadastro__cpf_cnpj__icontains=q) |
             Q(cadastro__celular__icontains=q) |
             Q(cadastro__telefone_fixo__icontains=q) |
+            Q(cliente_avulso__icontains=q) |
             Q(descricao_geral__icontains=q)
         )
     if status_filtro:
@@ -133,8 +135,8 @@ def lista_ordens(request):
     ordenacao_valida = {
         'data_entrada': 'data_entrada',
         '-data_entrada': '-data_entrada',
-        'cliente': 'cadastro__nome',
-        '-cliente': '-cadastro__nome',
+        'cliente': Coalesce('cadastro__nome', 'cliente_avulso'),
+        '-cliente': Coalesce('cadastro__nome', 'cliente_avulso').desc(),
         'funcionario': 'funcionarios__funcionario__nome',
         '-funcionario': '-funcionarios__funcionario__nome',
     }
@@ -291,7 +293,8 @@ def salvar_os(request, id):
         messages.error(request, "Não é possível editar uma OS fechada ou cancelada.")
         return redirect('servicos:editar_os', id=os_obj.id)
 
-    cadastro_id = request.POST.get('cadastro_id')
+    cadastro_id = (request.POST.get('cadastro_id') or '').strip()
+    cliente_avulso = (request.POST.get('cliente_avulso') or '').strip()
     descricao_geral = request.POST.get('descricao_geral', '')
     data_entrada = request.POST.get('data_entrada')
     data_prevista = request.POST.get('data_prevista') or None
@@ -299,14 +302,31 @@ def salvar_os(request, id):
     desconto = request.POST.get('desconto', '0')
 
     # Validação básica
-    if not cadastro_id or not descricao_geral or not data_entrada:
-        messages.error(request, "Cliente, Descrição e Data de Entrada são obrigatórios.")
+    if not descricao_geral or not data_entrada:
+        messages.error(request, "Descrição e Data de Entrada são obrigatórios.")
+        return redirect('servicos:editar_os', id=os_obj.id)
+
+    novo_cadastro_id = None
+    if cadastro_id:
+        try:
+            int(cadastro_id)
+        except ValueError:
+            messages.error(request, "Cliente informado é inválido.")
+            return redirect('servicos:editar_os', id=os_obj.id)
+        if not Cadastro.objects.filter(id=int(cadastro_id), empresa=request.user.empresa).exists():
+            messages.error(request, "Cliente selecionado não encontrado. Escolha outro cliente ou use Cliente Avulso.")
+            return redirect('servicos:editar_os', id=os_obj.id)
+        novo_cadastro_id = int(cadastro_id)
+
+    if not novo_cadastro_id and not cliente_avulso:
+        messages.error(request, "Informe um cliente cadastrado ou digite um nome no Cliente Avulso.")
         return redirect('servicos:editar_os', id=os_obj.id)
 
     from django.utils.dateparse import parse_date
     from decimal import Decimal, InvalidOperation
     try:
-        os_obj.cadastro_id = int(cadastro_id)
+        os_obj.cadastro_id = novo_cadastro_id
+        os_obj.cliente_avulso = cliente_avulso
         os_obj.descricao_geral = descricao_geral
         
         # Parse data_entrada - deve ser sempre fornecida
@@ -753,7 +773,7 @@ def fechar_os(request, id):
                         plano_de_contas=plano_de_contas,
                         forma_pagamento=forma_pagamento_obj,
                         data_lancamento=date.today(),
-                        descricao=f"Recebimento OS {os_obj.numero} — {os_obj.cadastro.nome} — {forma_pagamento_obj.nome}",
+                        descricao=f"Recebimento OS {os_obj.numero} — {os_obj.nome_cliente} — {forma_pagamento_obj.nome}",
                         valor=valor_parcela,
                         tipo='C',
                     )
@@ -1133,7 +1153,8 @@ def lista_orcamentos(request):
         orcamentos = orcamentos.filter(
             Q(numero__icontains=q) |
             Q(cadastro__nome__icontains=q) |
-            Q(cadastro__cpf_cnpj__icontains=q)
+            Q(cadastro__cpf_cnpj__icontains=q) |
+            Q(cliente_avulso__icontains=q)
         )
     if status_filtro:
         orcamentos = orcamentos.filter(status=status_filtro)
@@ -1142,8 +1163,8 @@ def lista_orcamentos(request):
     ordenacao_valida = {
         'data': 'data',
         '-data': '-data',
-        'cliente': 'cadastro__nome',
-        '-cliente': '-cadastro__nome',
+        'cliente': Coalesce('cadastro__nome', 'cliente_avulso'),
+        '-cliente': Coalesce('cadastro__nome', 'cliente_avulso').desc(),
     }
     campo_ordenacao = ordenacao_valida.get(ordenar, '-data')
     orcamentos = orcamentos.order_by(campo_ordenacao, '-numero')
@@ -1303,6 +1324,7 @@ def gerar_os_de_orcamento(request, id):
         os_obj = OrdemServico(
             empresa=request.user.empresa,
             cadastro=orcamento.cadastro,
+            cliente_avulso=orcamento.cliente_avulso,
             descricao_geral=orcamento.descricao or f'OS gerada a partir do {orcamento.numero}',
             data_entrada=date.today(),
             data_prevista=None,

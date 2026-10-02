@@ -26,11 +26,14 @@ class FuncionarioForm(forms.ModelForm):
 class OrdemServicoForm(forms.ModelForm):
     class Meta:
         model = OrdemServico
-        fields = ['cadastro', 'descricao_geral', 'data_entrada', 'data_prevista', 'observacoes']
+        fields = ['cadastro', 'cliente_avulso', 'descricao_geral', 'data_entrada', 'data_prevista', 'observacoes']
         widgets = {
             'data_entrada': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
             'data_prevista': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
             'descricao_geral': forms.Textarea(attrs={'rows': 4}),
+            'cliente_avulso': forms.TextInput(attrs={
+                'placeholder': 'Nome do cliente quando não selecionar um cadastro'
+            }),
         }
 
     def __init__(self, *args, **kwargs):
@@ -43,6 +46,7 @@ class OrdemServicoForm(forms.ModelForm):
             if self.instance and self.instance.pk and self.instance.cadastro_id:
                 qs = qs | Cadastro.objects.filter(id=self.instance.cadastro_id)
             self.fields['cadastro'].queryset = qs
+        self.fields['cadastro'].required = False
         for field in self.fields.values():
             field.widget.attrs['class'] = (
                 'w-full px-3 py-2 border border-gray-300 rounded-lg '
@@ -60,9 +64,15 @@ class OrdemServicoForm(forms.ModelForm):
                     cadastro = Cadastro.objects.get(id=int(cadastro_id))
                 except (Cadastro.DoesNotExist, ValueError):
                     raise forms.ValidationError("Selecione um cliente válido.")
-            else:
-                raise forms.ValidationError("O campo Cliente é obrigatório.")
         return cadastro
+
+    def clean(self):
+        cleaned = super().clean()
+        if not cleaned.get('cadastro') and not (cleaned.get('cliente_avulso') or '').strip():
+            raise forms.ValidationError(
+                "Informe um cliente cadastrado ou digite um nome no Cliente Avulso."
+            )
+        return cleaned
 
 
 class ServicoOSForm(forms.ModelForm):
@@ -158,11 +168,14 @@ class MetaFuncionarioForm(forms.ModelForm):
 class OrcamentoForm(forms.ModelForm):
     class Meta:
         model = Orcamento
-        fields = ['cadastro', 'descricao', 'data', 'data_validade', 'observacoes']
+        fields = ['cadastro', 'cliente_avulso', 'descricao', 'data', 'data_validade', 'observacoes']
         widgets = {
             'data': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
             'data_validade': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
             'descricao': forms.Textarea(attrs={'rows': 4}),
+            'cliente_avulso': forms.TextInput(attrs={
+                'placeholder': 'Nome do cliente quando não selecionar um cadastro'
+            }),
         }
 
     def __init__(self, *args, **kwargs):
@@ -175,6 +188,7 @@ class OrcamentoForm(forms.ModelForm):
             if self.instance and self.instance.pk and self.instance.cadastro_id:
                 qs = qs | Cadastro.objects.filter(id=self.instance.cadastro_id)
             self.fields['cadastro'].queryset = qs
+        self.fields['cadastro'].required = False
         for field in self.fields.values():
             field.widget.attrs['class'] = (
                 'w-full px-3 py-2 border border-gray-300 rounded-lg '
@@ -192,9 +206,15 @@ class OrcamentoForm(forms.ModelForm):
                     cadastro = Cadastro.objects.get(id=int(cadastro_id))
                 except (Cadastro.DoesNotExist, ValueError):
                     raise forms.ValidationError("Selecione um cliente válido.")
-            else:
-                raise forms.ValidationError("O campo Cliente é obrigatório.")
         return cadastro
+
+    def clean(self):
+        cleaned = super().clean()
+        if not cleaned.get('cadastro') and not (cleaned.get('cliente_avulso') or '').strip():
+            raise forms.ValidationError(
+                "Informe um cliente cadastrado ou digite um nome no Cliente Avulso."
+            )
+        return cleaned
 
 
 class ServicoOrcamentoForm(forms.ModelForm):

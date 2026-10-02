@@ -59,11 +59,11 @@
                     <i class="fa fa-user mr-1"></i> Dados do Cliente
                 </h3>
                 <div class="grid grid-cols-2 gap-x-4 gap-y-0.5 text-xs-print">
-                    <div><span class="text-gray-500">Nome:</span> <strong>{{ orcamento.cadastro.nome }}</strong></div>
-                    <div><span class="text-gray-500">CPF/CNPJ:</span> <strong>{{ orcamento.cadastro.cpf_cnpj }}</strong></div>
-                    <div><span class="text-gray-500">Telefone:</span> <strong>{{ orcamento.cadastro.celular|default:orcamento.cadastro.telefone_fixo|default:"—" }}</strong></div>
-                    <div><span class="text-gray-500">E-mail:</span> <strong>{{ orcamento.cadastro.email|default:"—" }}</strong></div>
-                    <div class="col-span-2"><span class="text-gray-500">Endereço:</span> <strong>{{ orcamento.cadastro.endereco }} {{ orcamento.cadastro.bairro }} {{ orcamento.cadastro.cidade }}/{{ orcamento.cadastro.uf }}</strong></div>
+                    <div><span class="text-gray-500">Nome:</span> <strong>{{ orcamento.nome_cliente }}</strong></div>
+                    <div><span class="text-gray-500">CPF/CNPJ:</span> <strong>{{ orcamento.cadastro.cpf_cnpj|default:"—" }}</strong></div>
+                    <div><span class="text-gray-500">Telefone:</span> <strong>{% if orcamento.cadastro %}{{ orcamento.cadastro.celular|default:orcamento.cadastro.telefone_fixo|default:"—" }}{% else %}—{% endif %}</strong></div>
+                    <div><span class="text-gray-500">E-mail:</span> <strong>{% if orcamento.cadastro %}{{ orcamento.cadastro.email|default:"—" }}{% else %}—{% endif %}</strong></div>
+                    <div class="col-span-2"><span class="text-gray-500">Endereço:</span> <strong>{% if orcamento.cadastro %}{{ orcamento.cadastro.endereco }} {{ orcamento.cadastro.bairro }} {{ orcamento.cadastro.cidade }}/{{ orcamento.cadastro.uf }}{% else %}—{% endif %}</strong></div>
                 </div>
             </div>
 
