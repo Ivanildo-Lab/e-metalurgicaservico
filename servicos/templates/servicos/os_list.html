@@ -179,6 +179,7 @@
                                    data-os-numero="{{ os.numero }}"
                                    data-valor-bruto="{{ os.valor_bruto }}"
                                    data-desconto="{{ os.desconto }}"
+                                   data-tem-cadastro="{{ os.cadastro_id|yesno:'1,0' }}"
                                    onclick="abrirModalFecharFromBtn(this)"
                                    class="text-green-500 hover:text-green-700 p-1" title="Finalizar OS">
                                     <i class="fa fa-check-circle"></i>
@@ -635,7 +636,22 @@ function abrirModalFecharFromBtn(btn) {
     var valorBruto = parseFloat(btn.getAttribute('data-valor-bruto'));
     var desconto = parseFloat(btn.getAttribute('data-desconto'));
     if (isNaN(desconto)) desconto = 0;
+    var temCadastro = btn.getAttribute('data-tem-cadastro') === '1';
     window.abrirModalFechar(osId, numero, valorBruto, desconto);
+
+    // Contas a receber (A Prazo) exige cliente cadastrado
+    var radioPrazo = document.querySelector('#modalFecharOS input[name="forma_pagamento"][value="A_PRAZO"]');
+    if (radioPrazo) {
+        radioPrazo.disabled = !temCadastro;
+        radioPrazo.title = temCadastro ? '' : 'Exige cliente cadastrado na OS';
+        if (!temCadastro) {
+            var radioVista = document.querySelector('#modalFecharOS input[name="forma_pagamento"][value="A_VISTA"]');
+            if (radioVista) {
+                radioVista.checked = true;
+                if (typeof alternarFormaLista === 'function') alternarFormaLista('A_VISTA');
+            }
+        }
+    }
 }
 
 function formatarMoedaInput(input) {

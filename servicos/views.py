@@ -601,6 +601,13 @@ def fechar_os(request, id):
         return redirect('servicos:editar_os', id=os_obj.id)
 
     forma = request.POST.get('forma_pagamento', 'A_VISTA')
+    if forma == 'A_PRAZO' and not os_obj.cadastro_id:
+        messages.error(
+            request,
+            "Gerar Contas a Receber (A Prazo) exige um cliente CADASTRADO na OS. "
+            "Selecione um cliente cadastrado ou feche à Vista."
+        )
+        return redirect('servicos:editar_os', id=os_obj.id)
     qtd_parcelas = int(request.POST.get('qtd_parcelas', 1))
     desconto_text = request.POST.get('desconto', '0').replace('R$', '').replace(' ', '').strip()
     if ',' in desconto_text and '.' in desconto_text:

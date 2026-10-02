@@ -595,13 +595,14 @@
                                 <p class="text-xs text-gray-500 mt-0.5">Pagamento imediato.</p>
                             </div>
                         </label>
-                        <label class="flex items-start space-x-3 cursor-pointer p-3 rounded-lg border-2 border-gray-200 hover:border-blue-400 transition">
+                        <label class="flex items-start space-x-3 p-3 rounded-lg border-2 {% if form.instance.cadastro_id %}border-gray-200 hover:border-blue-400 cursor-pointer{% else %}border-gray-100 bg-gray-50 cursor-not-allowed{% endif %} transition">
                             <input type="radio" name="forma_pagamento" value="A_PRAZO"
                                    onclick="alternarFormaPagamento(this.value)"
+                                   {% if not form.instance.cadastro_id %}disabled title="Exige cliente cadastrado na OS"{% endif %}
                                    class="text-blue-600 focus:ring-blue-500 mt-0.5">
                             <div>
                                 <span class="text-sm font-bold text-gray-700">A Prazo</span>
-                                <p class="text-xs text-gray-500 mt-0.5">Gera parcelas no Contas a Receber.</p>
+                                <p class="text-xs text-gray-500 mt-0.5">Gera parcelas no Contas a Receber.{% if not form.instance.cadastro_id %} <strong class="text-red-500">Exige cliente cadastrado.</strong>{% endif %}</p>
                             </div>
                         </label>
                     </div>
