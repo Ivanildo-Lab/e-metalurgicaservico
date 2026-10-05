@@ -110,7 +110,9 @@ def lista_ordens(request):
     funcionario_filtro = request.GET.get('funcionario', '')
     ordenar = request.GET.get('ordenar', '-data_entrada')
 
-    ordens = OrdemServico.objects.filter(empresa=request.user.empresa).select_related('cadastro')
+    ordens = (OrdemServico.objects.filter(empresa=request.user.empresa)
+              .select_related('cadastro')
+              .prefetch_related('funcionarios__funcionario'))
 
     if q:
         ordens = ordens.filter(

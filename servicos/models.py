@@ -1,5 +1,4 @@
 from django.db import models
-from django.core.exceptions import ValidationError
 from core.models import ModeloSaaS
 from cadastros.models import Cadastro
 
@@ -95,14 +94,9 @@ class OrdemServico(ModeloSaaS):
 
     def clean(self):
         super().clean()
-        # Validação de fechamento: remuneração deve bater com valor total
-        if self.status == 'FECHADA':
-            if self.remuneracao_total != self.valor_total:
-                raise ValidationError(
-                    f"A remuneração dos funcionários (R$ {self.remuneracao_total:.2f}) "
-                    f"não confere com o valor total dos serviços (R$ {self.valor_total:.2f}). "
-                    f"Ajuste antes de fechar a OS."
-                )
+        # Obs: a validação remuneração == valor total é feita na view fechar_os
+        # antes do fechamento. Após fechar, o remanejo de funcionários é permitido
+        # e não deve bloquear edições posteriores da OS.
 
     def save(self, *args, **kwargs):
         if not self.numero:

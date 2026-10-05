@@ -275,7 +275,7 @@
             <div id="tab-funcionarios" class="tab-content space-y-5 hidden">
                 <div class="flex items-center justify-between">
                     <h3 class="text-lg font-bold text-gray-800"><i class="fa fa-hard-hat mr-2 text-teal-500"></i>Funcionários Participantes</h3>
-                    {% if os.status == 'ABERTA' or os.status == 'CONCLUIDA' %}
+                    {% if os.status == 'ABERTA' or os.status == 'CONCLUIDA' or os.status == 'FECHADA' %}
                     <button type="button" onclick="document.getElementById('modal-funcionario').classList.remove('hidden')"
                             class="bg-teal-600 hover:bg-teal-700 text-white px-3 py-1.5 rounded-lg text-xs font-medium transition">
                         <i class="fa fa-plus mr-1"></i> Adicionar Funcionário
@@ -291,7 +291,7 @@
                                 <th class="text-left px-4 py-2 font-semibold text-gray-600">#</th>
                                 <th class="text-left px-4 py-2 font-semibold text-gray-600">Funcionário</th>
                                 <th class="text-right px-4 py-2 font-semibold text-gray-600">Remuneração (R$)</th>
-                                {% if os.status != 'FECHADA' and os.status != 'CANCELADA' %}
+                                {% if os.status != 'CANCELADA' %}
                                 <th class="text-center px-4 py-2 font-semibold text-gray-600">Ações</th>
                                 {% endif %}
                             </tr>
@@ -309,7 +309,7 @@
                                     </div>
                                 </td>
                                 <td class="px-4 py-2 text-right font-mono font-semibold text-blue-700">{{ fo.valor_remuneracao|moeda_br }}</td>
-                                {% if os.status != 'FECHADA' and os.status != 'CANCELADA' %}
+                                {% if os.status != 'CANCELADA' %}
                                 <td class="px-4 py-2 text-center">
                                     <button type="button" onclick="editarFuncionarioOS({{ fo.id }}, {{ fo.funcionario.id }}, {{ fo.valor_remuneracao }})"
                                             class="text-blue-500 hover:text-blue-700 p-1" title="Editar">
