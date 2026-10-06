@@ -51,6 +51,7 @@ urlpatterns = [
     path('orcamentos/<int:id>/', views.detalhe_orcamento, name='detalhe_orcamento'),
     path('orcamentos/editar/<int:id>/', views.editar_orcamento, name='editar_orcamento'),
     path('orcamentos/excluir/<int:id>/', views.excluir_orcamento, name='excluir_orcamento'),
+    path('orcamentos/<int:id>/desconto/', views.salvar_desconto_orcamento, name='salvar_desconto_orcamento'),
     path('orcamentos/<int:id>/imprimir/', views.imprimir_orcamento, name='imprimir_orcamento'),
     path('orcamentos/<int:os_id>/servico/adicionar/', views.adicionar_servico_orcamento, name='adicionar_servico_orcamento'),
     path('orcamentos/servico/editar/<int:id>/', views.editar_servico_orcamento, name='editar_servico_orcamento'),

@@ -1,5 +1,5 @@
 from datetime import date
-from decimal import Decimal
+from decimal import Decimal, InvalidOperation
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from core.decorators import permission_required_module
@@ -1321,6 +1321,50 @@ def excluir_servico_orcamento(request, id):
             'valor_total': float(orcamento.valor_total),
         })
     return JsonResponse({'sucesso': False, 'erro': 'Método não permitido'}, status=400)
+
+
+@login_required
+@permission_required_module('servicos')
+def salvar_desconto_orcamento(request, id):
+    """Aplica/remove o desconto do orçamento (finalização, após serviços)"""
+    orcamento = get_object_or_404(Orcamento, id=id, empresa=request.user.empresa)
+
+    if request.method != 'POST':
+        return redirect('servicos:detalhe_orcamento', id=orcamento.id)
+
+    texto = request.POST.get('desconto', '0').replace('R$', '').replace(' ', '').strip()
+    if ',' in texto and '.' in texto:
+        if texto.rfind(',') > texto.rfind('.'):
+            texto = texto.replace('.', '').replace(',', '.')
+        else:
+            texto = texto.replace(',', '')
+    elif ',' in texto:
+        texto = texto.replace(',', '.')
+    try:
+        desconto = Decimal(texto or '0')
+    except (InvalidOperation, TypeError):
+        desconto = Decimal('0')
+
+    if desconto < 0:
+        messages.error(request, "O desconto não pode ser negativo.")
+        return redirect('servicos:detalhe_orcamento', id=orcamento.id)
+
+    soma = orcamento.valor_bruto
+    if desconto > soma:
+        messages.error(
+            request,
+            f"O desconto (R$ {desconto:.2f}) não pode ser maior que o "
+            f"valor dos serviços (R$ {soma:.2f})."
+        )
+        return redirect('servicos:detalhe_orcamento', id=orcamento.id)
+
+    orcamento.desconto = desconto
+    orcamento.save(update_fields=['desconto'])
+    if desconto > 0:
+        messages.success(request, f"Desconto de R$ {desconto:.2f} aplicado ao orçamento.")
+    else:
+        messages.success(request, "Desconto removido do orçamento.")
+    return redirect('servicos:detalhe_orcamento', id=orcamento.id)
 
 
 @login_required

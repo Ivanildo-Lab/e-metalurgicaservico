@@ -1,5 +1,4 @@
 from django import forms
-from django.db import models
 from .models import (
     Funcionario, OrdemServico, ServicoOS, FuncionarioOS,
     MetaFuncionario, Orcamento, ServicoOrcamento, FormaPagamento
@@ -169,7 +168,7 @@ class MetaFuncionarioForm(forms.ModelForm):
 class OrcamentoForm(forms.ModelForm):
     class Meta:
         model = Orcamento
-        fields = ['cadastro', 'cliente_avulso', 'descricao', 'data', 'data_validade', 'desconto', 'observacoes']
+        fields = ['cadastro', 'cliente_avulso', 'descricao', 'data', 'data_validade', 'observacoes']
         widgets = {
             'data': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
             'data_validade': forms.DateInput(attrs={'type': 'date'}, format='%Y-%m-%d'),
@@ -208,21 +207,6 @@ class OrcamentoForm(forms.ModelForm):
                 except (Cadastro.DoesNotExist, ValueError):
                     raise forms.ValidationError("Selecione um cliente válido.")
         return cadastro
-
-    def clean_desconto(self):
-        desconto = self.cleaned_data.get('desconto')
-        if desconto is not None:
-            if desconto < 0:
-                raise forms.ValidationError("O desconto não pode ser negativo.")
-            if self.instance and self.instance.pk:
-                soma = self.instance.servicos.aggregate(
-                    total=models.Sum('valor'))['total'] or 0
-                if desconto > soma:
-                    raise forms.ValidationError(
-                        f"O desconto (R$ {desconto:.2f}) não pode ser maior "
-                        f"que o valor dos serviços (R$ {soma:.2f})."
-                    )
-        return desconto
 
     def clean(self):
         cleaned = super().clean()
