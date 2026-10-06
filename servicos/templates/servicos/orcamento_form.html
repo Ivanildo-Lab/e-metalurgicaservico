@@ -110,6 +110,17 @@
                 </div>
             </div>
 
+            <!-- Desconto -->
+            <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
+                <label class="block text-sm font-bold text-gray-700 mb-2">
+                    <i class="fa fa-tags mr-1 text-orange-500"></i> Desconto (R$)
+                </label>
+                {{ form.desconto }}
+                {% if form.desconto.errors %}
+                <p class="text-xs text-red-600 mt-1">{{ form.desconto.errors.0 }}</p>
+                {% endif %}
+            </div>
+
             <!-- Observações -->
             <div class="bg-gray-50 rounded-lg p-4 border border-gray-200">
                 <label class="block text-sm font-bold text-gray-700 mb-2">

@@ -286,6 +286,11 @@ class Orcamento(ModeloSaaS):
     )
 
     observacoes = models.TextField(blank=True, verbose_name="Observações")
+    desconto = models.DecimalField(
+        max_digits=12, decimal_places=2, default=0,
+        verbose_name="Desconto (R$)",
+        help_text="Desconto aplicado ao valor total dos serviços"
+    )
     created_at = models.DateTimeField(auto_now_add=True)
 
     @property
@@ -293,8 +298,12 @@ class Orcamento(ModeloSaaS):
         return self.cadastro.nome if self.cadastro_id else (self.cliente_avulso or '—')
 
     @property
-    def valor_total(self):
+    def valor_bruto(self):
         return self.servicos.aggregate(total=models.Sum('valor'))['total'] or 0
+
+    @property
+    def valor_total(self):
+        return self.valor_bruto - (self.desconto or 0)
 
     def save(self, *args, **kwargs):
         if not self.numero:

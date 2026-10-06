@@ -1259,6 +1259,12 @@ def adicionar_servico_orcamento(request, os_id):
         if form.is_valid():
             servico = form.save(commit=False)
             servico.orcamento = orcamento
+            if orcamento.desconto and (orcamento.valor_bruto + servico.valor) < orcamento.desconto:
+                return JsonResponse({
+                    'sucesso': False,
+                    'erro': 'A soma dos serviços ficaria menor que o desconto aplicado. '
+                            'Reduza ou remova o desconto antes de continuar.'
+                }, status=400)
             servico.save()
             return JsonResponse({
                 'sucesso': True,
@@ -1278,8 +1284,15 @@ def editar_servico_orcamento(request, id):
     if request.method == 'POST':
         form = ServicoOrcamentoForm(request.POST, instance=servico)
         if form.is_valid():
-            form.save()
             orcamento = servico.orcamento
+            nova_soma = orcamento.valor_bruto - servico.valor + form.cleaned_data['valor']
+            if orcamento.desconto and nova_soma < orcamento.desconto:
+                return JsonResponse({
+                    'sucesso': False,
+                    'erro': 'A soma dos serviços ficaria menor que o desconto aplicado. '
+                            'Reduza ou remova o desconto antes de continuar.'
+                }, status=400)
+            form.save()
             return JsonResponse({
                 'sucesso': True,
                 'descricao': servico.descricao,
@@ -1296,6 +1309,12 @@ def excluir_servico_orcamento(request, id):
     servico = get_object_or_404(ServicoOrcamento, id=id, orcamento__empresa=request.user.empresa)
     if request.method == 'POST':
         orcamento = servico.orcamento
+        if orcamento.desconto and (orcamento.valor_bruto - servico.valor) < orcamento.desconto:
+            return JsonResponse({
+                'sucesso': False,
+                'erro': 'A soma dos serviços ficaria menor que o desconto aplicado. '
+                        'Reduza ou remova o desconto antes de continuar.'
+            }, status=400)
         servico.delete()
         return JsonResponse({
             'sucesso': True,
@@ -1338,6 +1357,7 @@ def gerar_os_de_orcamento(request, id):
             data_entrada=date.today(),
             data_prevista=None,
             observacoes=f'Gerada a partir do orçamento {orcamento.numero}',
+            desconto=orcamento.desconto or 0,
         )
         os_obj.save()
 
