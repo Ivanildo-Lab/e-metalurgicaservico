@@ -6,6 +6,7 @@ from django.contrib import messages
 from django.db.models import Sum, Q, Count
 from django.utils.dateparse import parse_date
 from django.db import transaction
+from django.http import JsonResponse
 
 # Imports dos Modelos e Formulários
 from .models import Conta, Lancamento, Caixa, PlanoDeContas, get_taxa_juros_mensal
@@ -454,6 +455,48 @@ def processar_lancamento_conta(request, form, tipo_redirect):
     return redirect(tipo_redirect)
 
 # ==========================================================
+# BUSCA DE PLANO DE CONTAS (AJAX)
+# ==========================================================
+def _plano_json(p):
+    return {
+        'id': p.id,
+        'codigo': p.codigo or '',
+        'nome': p.nome,
+        'label': str(p),
+        'tipo': p.tipo,
+    }
+
+
+@login_required
+@permission_required_module('financeiro')
+def buscar_planos(request):
+    """Busca planos de contas por código ou nome — retorna JSON"""
+    q = request.GET.get('q', '').strip()
+    tipo = request.GET.get('tipo', '').strip()
+    plano_id = request.GET.get('id', None)
+
+    # Busca por ID (para pré-preencher na edição)
+    if plano_id:
+        try:
+            p = PlanoDeContas.objects.get(id=int(plano_id), empresa=request.user.empresa)
+            return JsonResponse({'resultados': [_plano_json(p)]})
+        except (PlanoDeContas.DoesNotExist, ValueError):
+            return JsonResponse({'resultados': []})
+
+    if len(q) < 2:
+        return JsonResponse({'resultados': []})
+
+    qs = PlanoDeContas.objects.filter(empresa=request.user.empresa)
+    if tipo in ('R', 'D'):
+        qs = qs.filter(tipo=tipo)
+    planos = qs.filter(
+        Q(codigo__icontains=q) | Q(nome__icontains=q)
+    ).order_by('codigo', 'nome')[:20]
+
+    return JsonResponse({'resultados': [_plano_json(p) for p in planos]})
+
+
+# ==========================================================
 # VIEWS ATUALIZADAS
 # ==========================================================
 
@@ -467,7 +510,9 @@ def nova_receita(request):
             return processar_lancamento_conta(request, form, 'financeiro:lista_receber')
     else:
         form = ContaForm(user=request.user, tipo_filtro='R')
-    return render(request, 'financeiro/conta_form.html', {'form': form, 'titulo': 'Novo Recebimento'})
+    return render(request, 'financeiro/conta_form.html', {
+        'form': form, 'titulo': 'Novo Recebimento', 'tipo_plano': 'R',
+    })
 
 @login_required
 @permission_required_module('financeiro')
@@ -479,7 +524,9 @@ def nova_despesa(request):
             return processar_lancamento_conta(request, form, 'financeiro:lista_pagar')
     else:
         form = ContaForm(user=request.user, tipo_filtro='D')
-    return render(request, 'financeiro/conta_form.html', {'form': form, 'titulo': 'Nova Despesa'})
+    return render(request, 'financeiro/conta_form.html', {
+        'form': form, 'titulo': 'Nova Despesa', 'tipo_plano': 'D',
+    })
 
 @login_required
 @permission_required_module('financeiro')
@@ -497,7 +544,9 @@ def editar_conta(request, id):
             return redirect('financeiro:lista_receber' if tipo_filtro == 'R' else 'financeiro:lista_pagar')
     else:
         form = ContaForm(instance=conta, user=request.user, tipo_filtro=tipo_filtro)
-    return render(request, 'financeiro/conta_form.html', {'form': form})
+    return render(request, 'financeiro/conta_form.html', {
+        'form': form, 'tipo_plano': tipo_filtro,
+    })
 
 @login_required
 @permission_required_module('financeiro')

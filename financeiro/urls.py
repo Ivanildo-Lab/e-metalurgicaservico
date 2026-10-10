@@ -38,6 +38,9 @@ urlpatterns = [
     path('caixas/editar/<int:id>/', views.editar_caixa, name='editar_caixa'),
     path('caixas/excluir/<int:id>/', views.excluir_caixa, name='excluir_caixa'),
 
+    # Busca de plano de contas (AJAX)
+    path('api/buscar-planos/', views.buscar_planos, name='buscar_planos'),
+
     path('plano-de-contas/', views.lista_plano_de_contas, name='lista_plano_de_contas'),
     path('plano-de-contas/novo/', views.adicionar_plano_de_contas, name='adicionar_plano_de_contas'),
     path('plano-de-contas/editar/<int:id>/', views.editar_plano_de_contas, name='editar_plano_de_contas'),
