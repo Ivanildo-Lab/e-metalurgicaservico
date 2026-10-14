@@ -51,10 +51,17 @@
                 <input type="date" name="data_inicio" value="{{ data_inicio|date:'Y-m-d' }}" class="border p-1 rounded">
                 <span>Até:</span>
                 <input type="date" name="data_fim" value="{{ data_fim|date:'Y-m-d' }}" class="border p-1 rounded">
+                <span>Caixa:</span>
+                <select name="caixa" class="border p-1 rounded">
+                    <option value="">Todos os Caixas</option>
+                    {% for c in caixas %}
+                    <option value="{{ c.id }}" {% if caixa_selecionado == c.id|stringformat:"s" %}selected{% endif %}>{{ c.nome }}</option>
+                    {% endfor %}
+                </select>
                 <button type="submit" class="bg-blue-600 text-white px-3 py-1 rounded hover:bg-blue-700">Atualizar</button>
             </form>
             <div class="space-x-2">
-                <a href="{% url 'financeiro:relatorio_dre_sintetico' %}?data_inicio={{ data_inicio|date:'Y-m-d' }}&data_fim={{ data_fim|date:'Y-m-d' }}" class="text-blue-700 hover:underline">Ir para Sintético</a>
+                <a href="{% url 'financeiro:relatorio_dre_sintetico' %}?data_inicio={{ data_inicio|date:'Y-m-d' }}&data_fim={{ data_fim|date:'Y-m-d' }}&caixa={{ caixa_selecionado }}" class="text-blue-700 hover:underline">Ir para Sintético</a>
                 <button onclick="window.print()" class="bg-gray-700 text-white px-3 py-1 rounded hover:bg-gray-800"><i class="fa fa-print"></i> Imprimir</button>
             </div>
         </div>

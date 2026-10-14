@@ -1289,15 +1289,18 @@ def relatorio_contas(request):
 @login_required
 @permission_required_module('financeiro')
 def relatorio_dre(request):
-    # 1. Filtros de Data
+    # 1. Filtros de Data (padrão: mês atual)
     hoje = date.today()
-    inicio_ano = hoje.replace(month=1, day=1)
-    
-    data_inicio_str = request.GET.get('data_inicio') or inicio_ano.strftime('%Y-%m-%d')
+    inicio_mes = hoje.replace(day=1)
+
+    data_inicio_str = request.GET.get('data_inicio') or inicio_mes.strftime('%Y-%m-%d')
     data_fim_str = request.GET.get('data_fim') or hoje.strftime('%Y-%m-%d')
-    
+
     data_inicio = parse_date(data_inicio_str)
     data_fim = parse_date(data_fim_str)
+
+    # Filtro opcional de caixa (padrão: todos)
+    caixa_id = request.GET.get('caixa', '')
 
     # 2. Busca Lançamentos
     lancamentos = Lancamento.objects.filter(
@@ -1305,10 +1308,12 @@ def relatorio_dre(request):
         data_lancamento__range=[data_inicio_str, data_fim_str],
         plano_de_contas__isnull=False
     )
+    if caixa_id:
+        lancamentos = lancamentos.filter(caixa_id=caixa_id)
 
     # 3. Agrupamento (Total por Categoria)
     from django.db.models import Sum
-    
+
     # Receitas
     receitas = lancamentos.filter(tipo='C').values(
         'plano_de_contas__codigo', 'plano_de_contas__nome'
@@ -1335,20 +1340,25 @@ def relatorio_dre(request):
         'total_despesas': total_despesas,
         'resultado': resultado,
         'empresa': request.user.empresa,
+        'caixas': Caixa.objects.filter(empresa=request.user.empresa).order_by('nome'),
+        'caixa_selecionado': caixa_id,
     })
 
 @login_required
 @permission_required_module('financeiro')
 def relatorio_dre_sintetico(request):
-    # 1. Filtros
+    # 1. Filtros (padrão: mês atual)
     hoje = date.today()
-    inicio_ano = hoje.replace(month=1, day=1)
-    
-    data_inicio_str = request.GET.get('data_inicio') or inicio_ano.strftime('%Y-%m-%d')
+    inicio_mes = hoje.replace(day=1)
+
+    data_inicio_str = request.GET.get('data_inicio') or inicio_mes.strftime('%Y-%m-%d')
     data_fim_str = request.GET.get('data_fim') or hoje.strftime('%Y-%m-%d')
-    
+
     data_inicio = parse_date(data_inicio_str)
     data_fim = parse_date(data_fim_str)
+
+    # Filtro opcional de caixa (padrão: todos)
+    caixa_id = request.GET.get('caixa', '')
 
     # 2. Busca
     lancamentos = Lancamento.objects.filter(
@@ -1356,6 +1366,8 @@ def relatorio_dre_sintetico(request):
         data_lancamento__range=[data_inicio_str, data_fim_str],
         plano_de_contas__isnull=False
     )
+    if caixa_id:
+        lancamentos = lancamentos.filter(caixa_id=caixa_id)
 
     # 3. Agrupamento Manual (Soma por Código Pai)
     grupos_receitas = {}
@@ -1409,6 +1421,8 @@ def relatorio_dre_sintetico(request):
         'total_despesas': total_desp,
         'resultado': resultado,
         'empresa': request.user.empresa,
+        'caixas': Caixa.objects.filter(empresa=request.user.empresa).order_by('nome'),
+        'caixa_selecionado': caixa_id,
     })
 
 
