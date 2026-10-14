@@ -127,30 +127,11 @@
                                 <i class="fa fa-credit-card mr-2 w-3"></i> Formas de Pagamento
                             </a>
                         </li>
-                    </ul>
-                </li>
-                {% endif %}
-<!-- 4. RELATÓRIOS (NOVO MENU) -->
-                {% if perms.financeiro.acesso_modulo %}
-                <li>
-                    <button type="button" onclick="toggleMenu('relatorios-menu')" class="w-full flex items-center justify-between py-3 px-4 text-gray-300 hover:text-white sidebar-hover transition-all focus:outline-none {% if '/relatorios/' in request.path %}text-white bg-black/10{% endif %}">
-                        <div class="flex items-center">
-                            <i class="fa fa-print w-6 text-center text-lg"></i>
-                            <span class="ml-2 font-medium">Relatórios</span>
-                        </div>
-                        <i id="relatorios-arrow" class="fa fa-angle-right transition-transform duration-200 text-xs {% if '/relatorios/' in request.path %}rotate-90{% endif %}"></i>
-                    </button>
-                    
-                    <!-- Sub-itens Relatórios -->
-                    <ul id="relatorios-menu" class="bg-black/20 overflow-hidden transition-all duration-300 {% if '/relatorios/' not in request.path %}hidden{% endif %}">
-                        
-                        <!-- DRE (Única opção por enquanto) -->
                         <li>
-                            <a href="{% url 'financeiro:relatorio_dre' %}" target="_blank" class="flex items-center py-2 pl-12 pr-4 text-gray-400 hover:text-white text-xs hover:bg-white/5 border-l-2 border-transparent hover:border-yellow-400">
+                            <a href="{% url 'financeiro:relatorio_dre' %}" target="_blank" class="flex items-center py-2 pl-12 pr-4 text-gray-400 hover:text-white text-xs hover:bg-white/5 border-l-2 border-transparent hover:border-yellow-400 {% if 'relatorios' in request.path %}text-white font-bold{% endif %}">
                                 <i class="fa fa-file-invoice-dollar mr-2 w-3"></i> Demonstrativo (DRE)
                             </a>
                         </li>
-
                     </ul>
                 </li>
                 {% endif %}

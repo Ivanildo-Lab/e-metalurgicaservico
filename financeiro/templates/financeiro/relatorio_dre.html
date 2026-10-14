@@ -1,3 +1,4 @@
+{% load servicos_filters %}
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -70,12 +71,12 @@
                     <tr>
                         <td class="w-16 font-mono text-gray-500">{{ item.plano_de_contas__codigo|default:"" }}</td>
                         <td class="dotted-line py-0.5">{{ item.plano_de_contas__nome }}</td>
-                        <td class="text-right w-24 font-medium py-0.5">{{ item.total|floatformat:2 }}</td>
+                        <td class="text-right w-24 font-medium py-0.5">{{ item.total|moeda_br }}</td>
                     </tr>
                     {% endfor %}
                     <tr class="bg-gray-50 font-bold">
                         <td colspan="2" class="text-right py-1 pr-2">Total Receitas:</td>
-                        <td class="text-right py-1 border-t border-gray-300">{{ total_receitas|floatformat:2 }}</td>
+                        <td class="text-right py-1 border-t border-gray-300">{{ total_receitas|moeda_br }}</td>
                     </tr>
                 </table>
             </div>
@@ -90,12 +91,12 @@
                     <tr>
                         <td class="w-16 font-mono text-gray-500">{{ item.plano_de_contas__codigo|default:"" }}</td>
                         <td class="dotted-line py-0.5">{{ item.plano_de_contas__nome }}</td>
-                        <td class="text-right w-24 font-medium text-red-600 py-0.5">({{ item.total|floatformat:2 }})</td>
+                        <td class="text-right w-24 font-medium text-red-600 py-0.5">({{ item.total|moeda_br_valor }})</td>
                     </tr>
                     {% endfor %}
                     <tr class="bg-gray-50 font-bold">
                         <td colspan="2" class="text-right py-1 pr-2">Total Despesas:</td>
-                        <td class="text-right py-1 text-red-600 border-t border-gray-300">{{ total_despesas|floatformat:2 }}</td>
+                        <td class="text-right py-1 text-red-600 border-t border-gray-300">{{ total_despesas|moeda_br }}</td>
                     </tr>
                 </table>
             </div>
@@ -105,7 +106,7 @@
                 <div class="flex justify-between items-center px-2 py-1 bg-gray-100 rounded">
                     <span class="font-bold text-xs uppercase">Resultado Líquido</span>
                     <span class="font-bold text-sm {% if resultado >= 0 %}text-blue-700{% else %}text-red-700{% endif %}">
-                        R$ {{ resultado|floatformat:2 }}
+                        {{ resultado|moeda_br }}
                     </span>
                 </div>
             </div>
