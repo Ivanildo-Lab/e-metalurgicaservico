@@ -8,7 +8,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('financeiro', '0005_conta_valor_pago_lancamento_conta_origem_fk'),
-        ('servicos', '0001_initial'),
+        ('servicos', '0003_formapagamento'),
     ]
 
     operations = [
