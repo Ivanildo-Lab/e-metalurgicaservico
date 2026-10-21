@@ -1,0 +1,43 @@
+# ---- docker-compose.yml para Coolify (app Django + MySQL) ----
+# App: e-metalurgicaservicos
+#
+# O Coolify cuida do reverse proxy (Traefik) e do SSL automaticamente.
+# Configure as variáveis de ambiente no painel do Coolify (aba Environment).
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+
+    # Variáveis de ambiente configuradas no painel do Coolify.
+    # IMPORTANTE sobre o banco:
+    #   No Coolify, o MySQL roda como OUTRO serviço na mesma rede Docker.
+    #   Dentro de um container, "127.0.0.1" é o PRÓPRIO container — não o MySQL.
+    #   Por isso o DB_HOST deve ser o NOME DO SERVIÇO do MySQL no Coolify
+    #   (ex.: "mysql"), que o Coolify resolve automaticamente na rede interna.
+    environment:
+      GUNICORN_WORKERS: "2"
+      GUNICORN_TIMEOUT: "60"
+      # --- Banco (preencha no Coolify) ---
+      # DB_HOST: "mysql"        # nome do serviço MySQL no Coolify
+      # DB_PORT: "3306"
+      # DB_NAME: "emetalurgicaservico_db"
+      # DB_USER: "appuser"
+      # DB_PASSWORD: "senha-forte"
+      # --- Django ---
+      # DJANGO_SECRET_KEY: "gere-uma-chave-forte"
+      # DJANGO_DEBUG: "False"
+      # DJANGO_ALLOWED_HOSTS: "metalurgica.seudominio.com"
+
+    # Volume persistente para uploads (mídia). Sem isso, uploads somem no redeploy.
+    volumes:
+      - media_data:/app/media
+
+    # Porta interna que o Gunicorn escuta (o Coolify expõe via Traefik)
+    expose:
+      - "8000"
+
+volumes:
+  media_data:

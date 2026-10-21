@@ -17,3 +17,6 @@ media/
 .vscode/
 .idea/
 .DS_Store
+# Exports temporarios de migracao
+tmp_*.sql
+Exportar_*.txt

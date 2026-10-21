@@ -26,6 +26,15 @@ DEBUG = os.environ.get('DJANGO_DEBUG', 'True') == 'True'
 
 ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '').split(',') if os.environ.get('DJANGO_ALLOWED_HOSTS') else []
 
+# Proxy reverso (Coolify/Traefik) — obrigatório para login via HTTPS:
+# sem isto, todo POST (login) cai com erro 403 CSRF.
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+CSRF_TRUSTED_ORIGINS = [
+    origem.strip()
+    for origem in os.environ.get('DJANGO_CSRF_TRUSTED_ORIGINS', '').split(',')
+    if origem.strip()
+]
+
 AUTH_USER_MODEL = 'core.Usuario'
 
 LOGIN_URL = 'login'
@@ -52,6 +61,7 @@ INSTALLED_APPS = [
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -137,6 +147,7 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 # Adicione esta lista se ela não existir ou estiver vazia:
 STATICFILES_DIRS = [

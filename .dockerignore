@@ -1,0 +1,46 @@
+# ---- Não copiar para dentro da imagem Docker ----
+.git
+.gitignore
+
+# Segredos e config local (as variáveis vêm do Coolify, não do .env)
+.env
+*.env.local
+.env.example
+
+# Ambiente virtual
+venv/
+.venv/
+env/
+
+# Artefatos Python
+__pycache__/
+*.py[cod]
+*.so
+*.egg-info/
+dist/
+build/
+
+# Mídia e estáticos gerados (mídia vira volume; estáticos são gerados no build)
+media/
+staticfiles/
+*.log
+
+# Scripts/exports temporários de migração (não precisam ir pra imagem)
+*.sql
+*.sql.gz
+*.json
+*.txt
+# ...exceto o requirements, que o build PRECISA copiar!
+!requirements.txt
+*.bat
+*.md
+empresa/
+EXPORTAR_CLIENTES.md
+
+# IDE / OS
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
