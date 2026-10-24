@@ -34,7 +34,7 @@
                 <img src="{{ user.empresa.logo.url }}" class="h-10 w-auto rounded bg-white/10 backdrop-blur p-1 shadow-lg">
             {% else %}
                 <div class="h-10 w-10 rounded bg-blue-600 flex items-center justify-center shadow-lg text-white">
-                    <i class="fa fa-tools"></i>
+                    <i class="fa fa-briefcase"></i>
                 </div>
             {% endif %}
             
@@ -42,7 +42,7 @@
                 {% if user.is_authenticated %}
                     {{ user.empresa.nome }}
                 {% else %}
-                    e-METALURGICA <span class="text-blue-400">SaaS</span>
+                    GESTÃO DE SERVIÇOS <span class="text-blue-400">SaaS</span>
                 {% endif %}
             </span>
         </div>
