@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% if user.is_authenticated %}{{ user.empresa.nome }}{% else %}e-Metalurgica SaaS{% endif %}</title>
+    <title>{% if user.is_authenticated %}{{ user.empresa.nome }}{% else %}Gestão de Serviços SaaS{% endif %}</title>
     <link rel="shortcut icon" type="image/png" href="{% static 'img/favicon.png' %}">
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -113,7 +113,7 @@
 
     <!-- FOOTER -->
     <footer class="relative z-20 w-full py-6 text-center text-gray-400 text-xs">
-        <p>&copy; {% now "Y" %} <strong>e-Metalurgica serviços SaaS</strong>. Todos os direitos reservados.</p>
+        <p>&copy; {% now "Y" %} <strong>Gestão de Serviços SaaS</strong>. Todos os direitos reservados.</p>
     </footer>
 
 </body>
